@@ -70,17 +70,19 @@ export type PlacedTask = { techId: string; start: Ms; end: Ms; minutes: number }
 export type Placement = { bayId: string; start: Ms; end: Ms; tasks: PlacedTask[] }
 
 /** The working calendar of one technician: next moment inside a shift, and the end after n working minutes. */
-function shiftOf(tech: Tech, day: ISODate) {
-  return { open: dhakaAt(day, "00:00") + tech.start * MINUTE, close: dhakaAt(day, "00:00") + tech.end * MINUTE }
-}
+const DAY_MS = 24 * 60 * MINUTE
+const DHAKA_MS = 6 * 60 * MINUTE
+/** Start of the Dhaka day containing a moment (Dhaka is UTC+6, no daylight saving). */
+const dayStart = (t: Ms): Ms => Math.floor((t + DHAKA_MS) / DAY_MS) * DAY_MS - DHAKA_MS
 
 function alignToShift(tech: Tech, t: Ms): Ms {
-  let day = dhakaDate(t)
+  let d = dayStart(t)
   for (let i = 0; i < 4; i++) {
-    const { open, close } = shiftOf(tech, day)
+    const open = d + tech.start * MINUTE
+    const close = d + tech.end * MINUTE
     if (t < open) return open
     if (t < close) return t
-    day = isoAddDays(day, 1)
+    d += DAY_MS
   }
   return t
 }
@@ -89,7 +91,7 @@ function workEnd(tech: Tech, start: Ms, minutes: number): Ms {
   let t = alignToShift(tech, start)
   let left = minutes * MINUTE
   for (let i = 0; i < 10; i++) {
-    const { close } = shiftOf(tech, dhakaDate(t))
+    const close = dayStart(t) + tech.end * MINUTE
     if (t + left <= close) return t + left
     left -= close - t
     t = alignToShift(tech, close)
@@ -99,12 +101,16 @@ function workEnd(tech: Tech, start: Ms, minutes: number): Ms {
 
 type Interval = [Ms, Ms]
 
+const clashIn = (lists: Interval[][], t: Ms, end: Ms): Interval | undefined => {
+  for (const list of lists) for (const iv of list) if (iv[0] < end && t < iv[1]) return iv
+  return undefined
+}
+
 /** First moment at or after `from` when [t, t + span(t)) misses every busy interval. */
-function firstFree(busy: Interval[], from: Ms, span: (t: Ms) => Ms, align: (t: Ms) => Ms): Ms {
+function firstFree(lists: Interval[][], from: Ms, span: (t: Ms) => Ms, align: (t: Ms) => Ms): Ms {
   let t = align(from)
   for (let guard = 0; guard < 500; guard++) {
-    const end = span(t)
-    const clash = busy.find(([a, b]) => a < end && t < b)
+    const clash = clashIn(lists, t, span(t))
     if (!clash) return t
     if (clash[1] === Infinity) return Infinity
     t = align(clash[1])
@@ -135,6 +141,11 @@ export class StudioScheduler {
     return this.list(resourceId).reduce((m, [, b]) => (b === Infinity ? m : Math.max(m, b)), 0)
   }
 
+  /** Forget work that ended before a moment (keeps the searches short). */
+  prune(before: Ms): void {
+    for (const [id, list] of this.busy) this.busy.set(id, list.filter(([, b]) => b >= before))
+  }
+
   /** Make a resource unavailable from a moment on (planted jobs, a locked technician). */
   block(resourceId: string, from: Ms, until: Ms = Infinity): void {
     this.list(resourceId).push([from, until])
@@ -154,14 +165,14 @@ export class StudioScheduler {
     for (const [rank, k] of FALLBACK[kind].entries()) {
       const penalty = rank * 60 * MINUTE
       for (const bay of this.bays.filter((b) => b.kind === k)) {
-        const bayBusy = this.list(bay.id)
+        const bayBusy = [this.list(bay.id)]
         let t = desired
         for (let attempt = 0; attempt < 60 && t !== Infinity; attempt++) {
           const placed = this.placeTasks(t, tasks, allowed)
           if (!placed) break
           const start = placed[0].start
           const finish = placed[placed.length - 1].end
-          const clash = bayBusy.find(([a, b]) => a < finish && start < b)
+          const clash = clashIn(bayBusy, start, finish)
           if (!clash) {
             const placement: Placement = { bayId: bay.id, start, end: finish, tasks: placed }
             if (finish + penalty < bestScore) {
@@ -184,7 +195,7 @@ export class StudioScheduler {
     for (const task of tasks) {
       let choice: { tech: Tech; start: Ms; end: Ms } | null = null
       for (const tech of allowed) {
-        const busy = [...this.list(tech.id), ...(extra.get(tech.id) ?? [])]
+        const busy = [this.list(tech.id), extra.get(tech.id) ?? []]
         const start = firstFree(busy, cursor, (t) => workEnd(tech, t, task.minutes), (t) => alignToShift(tech, t))
         if (start === Infinity) continue
         const end = workEnd(tech, start, task.minutes)
@@ -195,7 +206,9 @@ export class StudioScheduler {
       }
       if (!choice) return null
       placed.push({ techId: choice.tech.id, start: choice.start, end: choice.end, minutes: task.minutes })
-      extra.set(choice.tech.id, [...(extra.get(choice.tech.id) ?? []), [choice.start, choice.end]])
+      const mine = extra.get(choice.tech.id) ?? []
+      mine.push([choice.start, choice.end])
+      extra.set(choice.tech.id, mine)
       cursor = choice.end
     }
     return placed

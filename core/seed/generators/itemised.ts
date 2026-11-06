@@ -160,6 +160,7 @@ export function seedItemised(w: World, q: EventQueue, parties: PartiesOut, credi
     byDay.set(s.day, list)
   }
   for (let day = C; day < today; day = isoAddDays(day, 1)) {
+    for (const sch of Object.values(schedulers)) sch.prune(dhakaAt(isoAddDays(day, -4), "00:00"))
     if (day === yesterday) d3Start = blockYesterday(w, schedulers)
     // Credit and planted jobs first (they never drop), then walk-ins in booking order; a walk-in that
     // cannot start in time is turned away.

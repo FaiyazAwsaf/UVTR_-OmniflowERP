@@ -1,6 +1,7 @@
 import type { ISODate } from "@/core/db/schema"
 
 import type { World } from "../engine/world"
+import { isoAddDays, isoWeekday } from "../time"
 
 /**
  * Retail volumes (seed_data.md §7.1): about 12 retail jobs a day at Gulshan
@@ -18,4 +19,15 @@ export const WEEKDAY_FACTOR: Record<number, number> = { 0: 0.9, 1: 0.85, 2: 0.85
 export function growthFactor(w: World, day: ISODate): number {
   const back = Math.round((Date.parse(w.cal.today) - Date.parse(day)) / 86_400_000)
   return Math.pow(1.0015, -Math.min(150, Math.max(0, back)))
+}
+
+/**
+ * Whether a summary or treasury batch closes on this day: every day in the
+ * daily window; before it, on Saturdays, at each month end, and on the day
+ * before the daily window or the cutover starts.
+ */
+export function isBatchEnd(w: World, day: ISODate): boolean {
+  if (day >= w.cal.dailyFrom) return true
+  const next = isoAddDays(day, 1)
+  return isoWeekday(day) === 6 || next.slice(0, 7) !== day.slice(0, 7) || next === w.cal.dailyFrom || next === w.cal.C
 }

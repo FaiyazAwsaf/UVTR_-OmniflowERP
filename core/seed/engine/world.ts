@@ -32,6 +32,12 @@ export type Calendar = {
   currentMonthStart: ISODate
   /** First day of the current fiscal year */
   fyStart: ISODate
+  /**
+   * Summary days and the treasury are daily from this day on (the last 180
+   * days); older days are batched by week, never across a month end, so the
+   * full profile stays under 5 s in Chromium on long histories.
+   */
+  dailyFrom: ISODate
   /** 0.25 for the small profile, 1 for full */
   volume: number
   small: boolean
@@ -50,6 +56,7 @@ export function makeCalendar(ctx: SeedCtx): Calendar {
     lastMonthStart: addMonthsISO(ctx.today, -1),
     currentMonthStart: firstOfMonth(ctx.today),
     fyStart: fiscalYearBounds(ctx.today).startsOn,
+    dailyFrom: isoAddDays(ctx.today, -180),
     volume: small ? 0.25 : 1,
     small,
   }

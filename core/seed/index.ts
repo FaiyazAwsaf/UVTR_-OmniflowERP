@@ -39,7 +39,11 @@ import type { SeedOptions, SeedSummary } from "./types"
 export async function seedDatabase(db: OmniflowDb, opts: SeedOptions): Promise<SeedSummary> {
   const started = performance.now()
   const { bag, counters } = buildSeed(opts)
+  const built = performance.now()
   await writeBag(db, bag, counters)
+  // Timing marks for the performance budget (seed_data.md §0: under 5 s in Chromium).
+  performance.measure?.("seed:build", { start: started, end: built })
+  performance.measure?.("seed:write", { start: built, end: performance.now() })
 
   const counts: Record<string, number> = {}
   for (const name of bag.tableNames()) counts[name] = bag.count(name)

@@ -7,7 +7,8 @@ import type { ISODate, Id, Ms } from "@/core/db/schema"
  * uses before any value exists.
  */
 
-export type StockEvent = { at: Ms; seq: number; run: () => void }
+/** `prio` 0 = supply (opening, goods received, transfers), 1 = demand (jobs, sales): supply first at the same moment, as the plan assumes. */
+export type StockEvent = { at: Ms; prio: number; seq: number; run: () => void }
 export type Demand = { itemId: Id; loc: Id; qty: number; at: Ms; date: ISODate }
 
 export class EventQueue {
@@ -15,17 +16,17 @@ export class EventQueue {
   readonly demand: Demand[] = []
   private seq = 0
 
-  add(at: Ms, run: () => void): void {
-    this.events.push({ at, seq: this.seq++, run })
+  add(at: Ms, run: () => void, prio = 1): void {
+    this.events.push({ at, prio, seq: this.seq++, run })
   }
 
   need(d: Demand): void {
     this.demand.push(d)
   }
 
-  /** Run every event in time order (ties keep the order they were added). */
+  /** Run every event in time order (supply before demand at the same moment, then the order added). */
   runAll(): void {
-    const list = [...this.events].sort((a, b) => a.at - b.at || a.seq - b.seq)
+    const list = [...this.events].sort((a, b) => a.at - b.at || a.prio - b.prio || a.seq - b.seq)
     this.events.length = 0
     for (const e of list) e.run()
   }

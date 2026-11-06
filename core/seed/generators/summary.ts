@@ -9,10 +9,11 @@ import { isoAddDays, isoWeekday } from "../time"
 import type { CreditPlan } from "./credit-plan"
 import { drawClass, drawRetailPick, priceJob, recipeFor, stdValueP } from "./jobs"
 import type { Studio } from "./scheduler"
-import { STUDIO_BASE, WEEKDAY_FACTOR, growthFactor } from "./volumes"
+import { STUDIO_BASE, WEEKDAY_FACTOR, growthFactor, isBatchEnd } from "./volumes"
 
 /**
- * F to C − 1 (seed_data.md §7.1): one `SM` voucher per studio per day (R2)
+ * F to C − 1 (seed_data.md §7.1): one `SM` voucher per studio per day (R2;
+ * days older than the last 180 batched by week, see `isBatchEnd`)
  * for the retail jobs (credit customers are itemised separately), with the
  * consumption of all the day's jobs at the studio and the retail goods sold,
  * both at standard cost. Records the consumption per month for the summary
@@ -48,15 +49,17 @@ export function seedSummary(w: World, credit: CreditPlan): SummaryOut {
     creditByDay.set(k, list)
   }
 
+  type Acc = { revenue: Map<RevenueTag, number>; discount: number; vat: number; collected: number; consumption: Map<InventoryTag, number>; cogs: number; days: number }
+  const fresh = (): Acc => ({ revenue: new Map(), discount: 0, vat: 0, collected: 0, consumption: new Map(), cogs: 0, days: 0 })
+  const acc: Record<Studio, Acc> = { GUL: fresh(), UTT: fresh() }
+
   for (let day: ISODate = F; day < C; day = isoAddDays(day, 1)) {
     const month = day.slice(0, 7)
     for (const studio of ["GUL", "UTT"] as Studio[]) {
       const loc = LOC[studio]
+      const a = acc[studio]
+      a.days += 1
       const n = Math.max(1, Math.round(STUDIO_BASE[studio] * WEEKDAY_FACTOR[isoWeekday(day)] * rng.around(1, 0.06, 0.88, 1.12) * growthFactor(w, day) * volume))
-      const revenue = new Map<RevenueTag, number>()
-      let discount = 0
-      let vat = 0
-      let collected = 0
       const qty = new Map<string, number>()
       const consume = (itemId: string, q: number) => qty.set(itemId, (qty.get(itemId) ?? 0) + q)
 
@@ -66,10 +69,10 @@ export function seedSummary(w: World, credit: CreditPlan): SummaryOut {
         const roll = rng.next()
         const pct = roll < 0.03 ? 10 : roll < 0.18 ? 5 : 0
         for (const l of priceJob(pick, cls, "pl_retail", pct)) {
-          revenue.set(l.revenueTag, (revenue.get(l.revenueTag) ?? 0) + l.grossP)
-          discount += l.discountP
-          vat += l.vatP
-          collected += l.netP + l.vatP
+          a.revenue.set(l.revenueTag, (a.revenue.get(l.revenueTag) ?? 0) + l.grossP)
+          a.discount += l.discountP
+          a.vat += l.vatP
+          a.collected += l.netP + l.vatP
           if (l.serviceId) for (const r of recipeFor(l.serviceId, cls)) consume(r.itemId, r.qty)
         }
       }
@@ -87,34 +90,33 @@ export function seedSummary(w: World, credit: CreditPlan): SummaryOut {
         sold.set(itemId, (sold.get(itemId) ?? 0) + q)
         goods += ITEM_BY_ID.get(itemId)!.retail! * 100 * q
       }
-      let cogs = 0
       for (const [itemId, q] of sold) {
         const net = ITEM_BY_ID.get(itemId)!.retail! * 100 * q
-        revenue.set("REV_PRODUCTS", (revenue.get("REV_PRODUCTS") ?? 0) + net)
+        a.revenue.set("REV_PRODUCTS", (a.revenue.get("REV_PRODUCTS") ?? 0) + net)
         const lineVat = percentOf(net, 15)
-        vat += lineVat
-        collected += net + lineVat
+        a.vat += lineVat
+        a.collected += net + lineVat
         const value = stdValueP(itemId, q)
-        cogs += value
+        a.cogs += value
         add(out.used, `${loc}|INV_RETAIL|${month}`, value)
         add(out.networkQty, `${month}|${itemId}`, q)
         if (day >= recentFrom) add(out.recentQty, `${loc}|${itemId}`, q)
       }
-      const consumption = new Map<InventoryTag, number>()
       for (const [itemId, q] of qty) {
         const value = stdValueP(itemId, q)
         const tag = TAG_OF_KIND[ITEM_BY_ID.get(itemId)!.kind]
-        consumption.set(tag, (consumption.get(tag) ?? 0) + value)
+        a.consumption.set(tag, (a.consumption.get(tag) ?? 0) + value)
         add(out.used, `${loc}|${tag}|${month}`, value)
         add(out.networkQty, `${month}|${itemId}`, q)
         if (day >= recentFrom) add(out.recentQty, `${loc}|${itemId}`, q)
       }
+      if (!isBatchEnd(w, day)) continue
 
       // Collections: cash 34%, card 28%, bKash 30%, Nagad 8% (with a little noise).
-      const card = Math.round(collected * rng.around(0.28, 0.03, 0.22, 0.34))
-      const bkash = Math.round(collected * rng.around(0.3, 0.03, 0.24, 0.36))
-      const nagad = Math.round(collected * rng.around(0.08, 0.015, 0.05, 0.11))
-      const cash = collected - card - bkash - nagad
+      const card = Math.round(a.collected * rng.around(0.28, 0.03, 0.22, 0.34))
+      const bkash = Math.round(a.collected * rng.around(0.3, 0.03, 0.24, 0.36))
+      const nagad = Math.round(a.collected * rng.around(0.08, 0.015, 0.05, 0.11))
+      const cash = a.collected - card - bkash - nagad
       w.ledger.post({
         rule: "R2",
         date: day,
@@ -127,14 +129,15 @@ export function seedSummary(w: World, credit: CreditPlan): SummaryOut {
             { tag: "MFS_BKASH", amountP: bkash },
             { tag: "MFS_NAGAD", amountP: nagad },
           ],
-          discountP: discount,
-          revenue: [...revenue].map(([tag, grossP]) => ({ tag, grossP })),
-          vatP: vat,
-          consumption: [...consumption].map(([tag, valueP]) => ({ tag, valueP })),
-          cogsP: cogs,
+          discountP: a.discount,
+          revenue: [...a.revenue].map(([tag, grossP]) => ({ tag, grossP })),
+          vatP: a.vat,
+          consumption: [...a.consumption].map(([tag, valueP]) => ({ tag, valueP })),
+          cogsP: a.cogs,
         }),
-        narration: `Daily sales summary (history), ${STUDIO_NAME[studio]}`,
+        narration: a.days > 1 ? `Sales summary for ${a.days} days to ${day} (history), ${STUDIO_NAME[studio]}` : `Daily sales summary (history), ${STUDIO_NAME[studio]}`,
       })
+      acc[studio] = fresh()
     }
   }
   return out

@@ -6,6 +6,7 @@ import { percentOf } from "@/core/tax/vat"
 import { CBA, LOC, USR } from "../content/seed-refs"
 import type { World } from "../engine/world"
 import { dhakaAt, isoAddDays, lastOfMonth } from "../time"
+import { isBatchEnd } from "./volumes"
 
 /**
  * Treasury (seed_data.md §7.1, R17, R18), run last over the cash flows of
@@ -97,9 +98,11 @@ export function seedTreasury(w: World): void {
   let index = 0
   for (let day = F; day <= today; day = isoAddDays(day, 1), index++) {
     const isToday = day === today
-    // Morning: yesterday's card batch and, every third day, the wallets.
-    settle("card", day, "10:00")
-    if (index % 3 === 2) {
+    const daily = day >= w.cal.dailyFrom
+    const batch = isBatchEnd(w, day)
+    // Morning: yesterday's card batch and, every third day, the wallets (by week before the daily window).
+    if (daily || batch) settle("card", day, "10:00")
+    if (daily ? index % 3 === 2 : batch) {
       settle("bkash", day, "10:10")
       settle("nagad", day, "10:15")
     }
@@ -134,8 +137,8 @@ export function seedTreasury(w: World): void {
         if (amount > 0) transfer("top-up", BRAC, { id: p.id, tag: p.tag, loc: p.loc }, amount, day, "17:00", USR.mahbub)
       }
     }
-    // Evening: till cash above the float to Dutch-Bangla.
-    for (const t of [
+    // Evening: till cash above the float to Dutch-Bangla (by week before the daily window).
+    if (batch) for (const t of [
       { id: CBA.TILL_GUL, tag: "CASH_TILL_GUL" as AccountTag, loc: LOC.GUL, float: T(20_000), by: USR.tania },
       { id: CBA.TILL_UTT, tag: "CASH_TILL_UTT" as AccountTag, loc: LOC.UTT, float: T(15_000), by: USR.sabbir },
     ]) {

@@ -9,7 +9,7 @@ import { dhakaAt, isoAddDays, isoWeekday, MINUTE } from "../time"
  * every user on their working days (studio staff 08:30 to 10:00, head office
  * 09:00 to 10:00), a few failed attempts, Polash's five failures yesterday
  * (locked), and Rashed's session from another device yesterday that ended by
- * timeout. Every other session ended with a sign-out the same evening.
+ * timeout (the one historical session; live windows add their own).
  */
 export function seedLoginHistory(w: World): void {
   const { bag } = w.ctx
@@ -39,18 +39,6 @@ export function seedLoginHistory(w: World): void {
         bag.put("loginEvents", w.ctx.seq("lgn"), at - 2 * MINUTE, { username: u.username, userId: u.id, at: at - 2 * MINUTE, result: "bad-password", method: "password", windowId })
       }
       bag.put("loginEvents", w.ctx.seq("lgn"), at, { username: u.username, userId: u.id, at, result: "success", method: u.mfaEnabled ? "mfa" : "password", windowId })
-      const ended = dhakaAt(day, `${rng.int(17, 21)}:${rng.pick(["05", "20", "35", "50"])}`)
-      bag.put("sessions", w.ctx.seq("ses"), at, {
-        userId: u.id,
-        windowId,
-        locationId: `loc_${u.home.toLowerCase()}`,
-        startedAt: at,
-        lastActivityRealAt: ended - 10 * MINUTE,
-        endedAt: ended,
-        endedReason: "sign-out",
-        endedBy: u.id,
-        method: "password",
-      }, u.id)
       last = at
     }
     // Rashed, from another device last night: ended by the idle timeout (480 minutes).

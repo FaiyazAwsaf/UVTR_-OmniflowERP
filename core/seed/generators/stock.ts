@@ -473,11 +473,11 @@ function scheduleExecution(w: World, q: EventQueue, plan: PlanResult) {
   const rng = w.rng("stock-docs")
   for (const po of plan.pos) {
     if (!po.grnAt || !po.grnId) continue
-    q.add(po.grnAt, () => receiveGoods(w, po))
+    q.add(po.grnAt, () => receiveGoods(w, po), 0)
     for (const l of po.lines) {
       if (!l.rejected) continue
       const back = po.grnAt + rng.int(1, 2) * 24 * 60 * MINUTE
-      if (back <= w.cal.now) q.add(back, () => returnRejected(w, po, l.itemId, back))
+      if (back <= w.cal.now) q.add(back, () => returnRejected(w, po, l.itemId, back), 0)
     }
   }
   for (const t of plan.transfers) {
@@ -534,7 +534,7 @@ function scheduleExecution(w: World, q: EventQueue, plan: PlanResult) {
       })
       row.dispatchJournalId = journal.id
       w.stock.linkJournal(moveIds, journal.id)
-    })
+    }, 0)
     if (!t.receiveAt) continue
     const receiveAt = t.receiveAt
     q.add(receiveAt, () => {
@@ -569,7 +569,7 @@ function scheduleExecution(w: World, q: EventQueue, plan: PlanResult) {
       row.receiveJournalId = journal.id
       row.updatedAt = receiveAt
       w.stock.linkJournal(moveIds, journal.id)
-    })
+    }, 0)
   }
 }
 
