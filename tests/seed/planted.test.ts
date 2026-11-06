@@ -352,7 +352,7 @@ describe("seed hygiene", () => {
   it("no em dashes anywhere in the seeded text", () => {
     for (const table of bag.tableNames()) {
       for (const row of bag.all(table)) {
-        for (const s of strings(row)) expect(s.includes("—"), `${table}/${(row as { id: string }).id}`).toBe(false)
+        for (const s of strings(row)) expect(s.includes(String.fromCharCode(0x2014)), `${table}/${(row as { id: string }).id}`).toBe(false)
       }
     }
   })
