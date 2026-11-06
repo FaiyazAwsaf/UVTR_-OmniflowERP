@@ -116,7 +116,7 @@ export function seedItemised(w: World, q: EventQueue, parties: PartiesOut, credi
       id: w.ctx.seq("so"),
       studio: job.studio,
       day: job.date,
-      desired: desiredTime(w, job.date, "09:00", "12:30"),
+      desired: job.date >= isoAddDays(today, -2) ? desiredTime(w, job.date, "09:00", "10:00") : desiredTime(w, job.date, "09:00", "12:30"),
       partyId: job.partyId,
       vehicleId: job.vehicle.id,
       cls: job.vehicle.cls,
@@ -162,16 +162,19 @@ export function seedItemised(w: World, q: EventQueue, parties: PartiesOut, credi
   for (let day = C; day < today; day = isoAddDays(day, 1)) {
     if (day === yesterday) d3Start = blockYesterday(w, schedulers)
     // Credit and planted jobs first (they never drop), then walk-ins in booking order; a walk-in that
-    // cannot start by noon the next day is turned away.
+    // cannot start in time is turned away.
     const list = (byDay.get(day) ?? []).sort((a, b) => (a.kind === "retail" ? 1 : 0) - (b.kind === "retail" ? 1 : 0) || a.desired - b.desired)
-    const latestStart = dhakaAt(isoAddDays(day, 1), "12:00")
+    // Near today walk-ins must start the same day, so nothing spills into yesterday's planted work.
+    const latestStart = day >= isoAddDays(today, -3) ? dhakaAt(day, "17:30") : dhakaAt(isoAddDays(day, 1), "12:00")
     for (const spec of list) {
       const sch = schedulers[spec.studio]
       const serviceIds = spec.lines.flatMap((l) => (l.serviceId ? [l.serviceId] : []))
       const tasks = spec.lines.map((l) => ({ minutes: l.durationMin, coating: l.serviceId ? SERVICE_BY_ID.get(l.serviceId)!.category === "protection" : false }))
-      const placement = sch.plan(spec.desired, bayKindFor(serviceIds), tasks)
+      let placement = sch.plan(spec.desired, bayKindFor(serviceIds), tasks)
+      // A credit or planted job that would run past the cutoff takes the first slot of the morning instead.
+      if (spec.kind !== "retail" && (!placement || placement.end > cutoff)) placement = sch.plan(dhakaAt(day, "09:00"), bayKindFor(serviceIds), tasks)
       if (!placement || placement.end > cutoff || (spec.kind === "retail" && placement.start > latestStart)) {
-        if (spec.kind !== "retail") throw new Error(`seed: could not schedule ${spec.id} on ${spec.day}`)
+        if (spec.kind !== "retail") throw new Error(`seed: could not schedule ${spec.id} on ${spec.day} ${spec.studio} ${spec.partyId} desired ${new Date(spec.desired).toISOString()} ${placement ? new Date(placement.start).toISOString() + "-" + new Date(placement.end).toISOString() + " " + placement.bayId : "none"} ${spec.lines.map((l) => l.refId + ":" + l.durationMin).join(",")}`)
         continue
       }
       sch.commit(placement)

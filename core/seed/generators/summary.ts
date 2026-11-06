@@ -58,7 +58,7 @@ export function seedSummary(w: World, credit: CreditPlan): SummaryOut {
       let vat = 0
       let collected = 0
       const qty = new Map<string, number>()
-      const use = (itemId: string, q: number) => qty.set(itemId, (qty.get(itemId) ?? 0) + q)
+      const consume = (itemId: string, q: number) => qty.set(itemId, (qty.get(itemId) ?? 0) + q)
 
       for (let i = 0; i < n; i++) {
         const cls = drawClass(rng)
@@ -70,12 +70,12 @@ export function seedSummary(w: World, credit: CreditPlan): SummaryOut {
           discount += l.discountP
           vat += l.vatP
           collected += l.netP + l.vatP
-          if (l.serviceId) for (const r of recipeFor(l.serviceId, cls)) use(r.itemId, r.qty)
+          if (l.serviceId) for (const r of recipeFor(l.serviceId, cls)) consume(r.itemId, r.qty)
         }
       }
       // Credit customers' jobs that day: consumption only (their revenue is invoiced).
       for (const j of creditByDay.get(`${day}|${studio}`) ?? []) {
-        for (const l of j.lines) if (l.serviceId) for (const r of recipeFor(l.serviceId, j.vehicle.cls)) use(r.itemId, r.qty)
+        for (const l of j.lines) if (l.serviceId) for (const r of recipeFor(l.serviceId, j.vehicle.cls)) consume(r.itemId, r.qty)
       }
       // Retail goods, about ৳2,500 a day.
       const target = rng.around(2_500_00, 700_00, 900_00, 4_500_00) * volume * growthFactor(w, day)

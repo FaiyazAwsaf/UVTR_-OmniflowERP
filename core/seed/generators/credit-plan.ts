@@ -186,8 +186,12 @@ export function planCredit(w: World, fleets: Map<string, PoolVehicle[]>): Credit
         const list: CreditJob[] = []
         for (let i = 0; i < 18; i++) {
           const vehicle = r2.pick(fleets.get(c.id)!)
-          const lines = priceJob(swiftPick(r2), vehicle.cls, c.priceListId, 0)
-          list.push({ key: 0, partyId: c.id, studio: "GUL", date: day(-1 - (i % span)), vehicle, lines, totalP: jobTotal(lines) })
+          const date = day(-1 - (i % span))
+          // The last two days' fleet cars get the quick valet (premium wash and engine bay at most).
+          const pick = swiftPick(r2)
+          if (date >= day(-2)) pick.serviceIds = pick.serviceIds.filter((id) => id !== SVC.INT_DEEP)
+          const lines = priceJob(pick, vehicle.cls, c.priceListId, 0)
+          list.push({ key: 0, partyId: c.id, studio: "GUL", date, vehicle, lines, totalP: jobTotal(lines) })
         }
         const sum = list.reduce((s, j) => s + j.totalP, 0)
         const bestSum = best ? best.reduce((s, j) => s + j.totalP, 0) : Infinity

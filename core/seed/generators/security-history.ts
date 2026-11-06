@@ -22,17 +22,17 @@ export function seedLoginHistory(w: World): void {
       const day = isoAddDays(today, -back)
       const wd = isoWeekday(day)
       const atOffice = office.has(u.home)
+      if (u.username === "polash" && day === yesterday) {
+        for (let k = 0; k < 5; k++) {
+          const at = dhakaAt(day, "08:41") + k * 70_000
+          bag.put("loginEvents", w.ctx.seq("lgn"), at, { username: u.username, userId: u.id, at, result: "bad-password", method: "password", windowId: `of-hist-polash-${day}` })
+        }
+        continue
+      }
       if (u.username === "shamima" && wd !== 1 && wd !== 3) continue
       if (atOffice && (wd === 5 || wd === 6)) continue
       if (!atOffice && wd === (index % 7)) continue
       const windowId = `of-hist-${u.username}-${day}`
-      if (u.username === "polash" && day === yesterday) {
-        for (let k = 0; k < 5; k++) {
-          const at = dhakaAt(day, "08:41") + k * 70_000
-          bag.put("loginEvents", w.ctx.seq("lgn"), at, { username: u.username, userId: u.id, at, result: "bad-password", method: "password", windowId })
-        }
-        continue
-      }
       const start = atOffice ? dhakaAt(day, "09:00") : dhakaAt(day, "08:30")
       const at = start + rng.int(0, atOffice ? 60 : 90) * MINUTE
       if (rng.bool(0.03)) {
