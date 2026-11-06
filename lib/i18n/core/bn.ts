@@ -360,6 +360,13 @@ export const coreBn: typeof coreEn = {
       ok: "ঠিক আছে",
     },
   },
+  approvals: {
+    notify: {
+      requested: "নতুন অনুমোদন: {by}-এর {docNo}",
+      approved: "অনুমোদিত: {docNo}, {by}",
+      rejected: "প্রত্যাখ্যাত: {docNo}, {by}",
+    },
+  },
   login: {
     title: "সাইন ইন",
     subtitle: "UVTR_OmniflowERP-এ {tenant}",
@@ -407,6 +414,9 @@ export const coreBn: typeof coreEn = {
     SELF_APPROVAL: "কেউ নিজের কাজ অনুমোদন করেন না। অন্য একজন অনুমোদনকারীকে সিদ্ধান্ত নিতে হবে।",
     NOT_APPROVER: "আপনি এই অনুমোদনের সিদ্ধান্ত নিতে পারেন না: এর জন্য {permission} এবং {amount} পর্যন্ত সীমা দরকার।",
     APPROVAL_DECIDED: "এই অনুমোদনের সিদ্ধান্ত আগেই হয়েছে।",
+    NO_APPROVAL_HANDLER: "{docType}-এর অনুমোদন কোনো মডিউল এখনো পরিচালনা করে না।",
+    PASSWORD_WRONG: "বর্তমান পাসওয়ার্ড ভুল।",
+    PASSWORD_POLICY: "নতুন পাসওয়ার্ডে অন্তত {min}টি অক্ষর থাকতে হবে, একটি সংখ্যাসহ।",
     APPROVAL_LIMIT: "এটি আপনার সীমার বেশি। অনুমোদন প্রয়োজন।",
     BAD_PIN: "অনুমোদনকারীর পিন ভুল।",
     DOC_TOTALS: "নথির মোট পরিমাণ এর লাইনের সাথে মেলেনি।",

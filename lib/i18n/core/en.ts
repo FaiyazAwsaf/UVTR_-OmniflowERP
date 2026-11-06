@@ -361,6 +361,13 @@ export const coreEn = {
       ok: "OK",
     },
   },
+  approvals: {
+    notify: {
+      requested: "New approval: {docNo} from {by}",
+      approved: "Approved: {docNo} by {by}",
+      rejected: "Rejected: {docNo} by {by}",
+    },
+  },
   login: {
     title: "Sign in",
     subtitle: "{tenant} on UVTR_OmniflowERP",
@@ -412,6 +419,9 @@ export const coreEn = {
     SELF_APPROVAL: "Nobody approves their own work. Another approver must decide.",
     NOT_APPROVER: "You can't decide this approval: it needs {permission} with a limit covering {amount}.",
     APPROVAL_DECIDED: "This approval has already been decided.",
+    NO_APPROVAL_HANDLER: "No module handles approvals of {docType} yet.",
+    PASSWORD_WRONG: "The current password is wrong.",
+    PASSWORD_POLICY: "The new password needs at least {min} characters, including a digit.",
     APPROVAL_LIMIT: "This is above your limit. It needs approval.",
     BAD_PIN: "Wrong PIN for the approver.",
     DOC_TOTALS: "The document's totals don't match its lines.",

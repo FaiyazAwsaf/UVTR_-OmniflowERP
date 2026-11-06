@@ -8,7 +8,7 @@ export const demoBn: typeof demoEn = {
       permissionDeniedBlocked: "প্রত্যাখ্যাত: {command}-এর অনুমতি নেই",
       conflictDetected: "{entity}-এ সম্পাদনা দ্বন্দ্ব",
       approvalRequested: "অনুমোদনের অনুরোধ: {docNo}",
-      approvalDecided: "অনুমোদন {decision}: {docNo}",
+      approvalDecided: "অনুমোদনের সিদ্ধান্ত: {docNo}",
       demoReset: "ডেমো ডেটা রিসেট",
       clockAdvanced: "ডেমো ঘড়ি {minutes} মিনিট এগিয়েছে",
       clockReset: "ডেমো ঘড়ি প্রকৃত সময়ে ফিরেছে",

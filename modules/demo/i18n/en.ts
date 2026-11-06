@@ -6,7 +6,7 @@ export const demoEn = {
       permissionDeniedBlocked: "Refused: no permission for {command}",
       conflictDetected: "Edit conflict on {entity}",
       approvalRequested: "Approval requested: {docNo}",
-      approvalDecided: "Approval {decision}: {docNo}",
+      approvalDecided: "Approval decided: {docNo}",
       demoReset: "Demo data reset",
       clockAdvanced: "Demo clock moved forward {minutes} min",
       clockReset: "Demo clock back to real time",

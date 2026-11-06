@@ -220,6 +220,33 @@ export const endSession = defineCommand({
   },
 })
 
+/**
+ * Any signed-in user changes their own password (plan §3.9: authenticated).
+ * The policy's minimum length and digit rule apply.
+ */
+export const changePassword = defineCommand({
+  name: "sac.changePassword",
+  permission: "authenticated",
+  input: z.object({ current: z.string(), next: z.string() }),
+  async run(tx, input) {
+    const user = await tx.get("users", tx.actor.userId)
+    if (hashPassword(user.username, input.current) !== user.passwordHash) {
+      tx.reject("PASSWORD_WRONG", {}, { audit: true })
+    }
+    const policy = await getSetting(tx, "security")
+    if (input.next.length < policy.minLength || (policy.requireDigit && !/\d/.test(input.next))) {
+      tx.reject("PASSWORD_POLICY", { min: policy.minLength })
+    }
+    await tx.update("users", user.id, {
+      passwordHash: hashPassword(user.username, input.next),
+      passwordSetAt: tx.now(),
+      mustChangePassword: false,
+    })
+    tx.emit("PasswordChanged", { refs: { userId: user.id }, params: { user: user.nameEn } })
+    return { changed: true }
+  },
+})
+
 /** System command for the idle sweeper. */
 export const timeoutSessions = defineCommand({
   name: "sac.timeoutSessions",
