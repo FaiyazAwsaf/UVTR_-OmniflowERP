@@ -63,7 +63,6 @@ describe("database schema", () => {
       batchId: "bat_1",
       qtyBase: 40,
       quarantinedQty: 0,
-      updatedAt: 1_000,
     }
     await db.stockBalances.add(balance)
     const hits = await db.stockBalances.where("[itemId+locationId]").equals(["itm_a", "loc_gul"]).toArray()

@@ -2,6 +2,7 @@ import { canonicalJson } from "@/core/audit/chain"
 import type { BaseRow } from "@/core/db/schema"
 import { TABLE_SPECS, type TableName } from "@/core/db/tables"
 
+import { BUSINESS_INVARIANTS } from "./business-invariants"
 import { RuleViolation } from "./errors"
 import type { Change, Tx } from "./types"
 
@@ -82,6 +83,7 @@ const inv06: Invariant = {
 }
 
 const INVARIANTS: Invariant[] = [inv06]
+registerInvariants(BUSINESS_INVARIANTS)
 
 /** Add invariants from a core module (ledger, stock, approvals). Idempotent by id. */
 export function registerInvariants(list: Invariant[]): void {

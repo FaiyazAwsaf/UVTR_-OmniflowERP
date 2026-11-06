@@ -1,7 +1,8 @@
 import type { OmniflowDb } from "@/core/db/database"
 import type { CounterRow } from "@/core/db/schema"
 
-import { createSeedCtx, type SeedBag } from "./context"
+import { createSeedCtx, type SeedBag, type SeedCtx } from "./context"
+import { seedCashBankAccounts, seedChartOfAccounts } from "./generators/accounts"
 import { seedFiscalCalendar, seedOrganisation, seedSecurity } from "./generators/org"
 import type { SeedOptions, SeedSummary } from "./types"
 
@@ -29,10 +30,8 @@ export async function seedDatabase(db: OmniflowDb, opts: SeedOptions): Promise<S
 export function buildSeed(opts: SeedOptions): { bag: SeedBag; counters: CounterRow[] } {
   const ctx = createSeedCtx(opts)
 
-  // Foundation (main agent): organisation, calendar, security.
-  seedOrganisation(ctx)
-  seedFiscalCalendar(ctx)
-  seedSecurity(ctx)
+  // Foundation (main agent): organisation, calendar, security, chart, cash and bank.
+  seedFoundationInto(ctx)
 
   const counters = ctx.numbers.finalize(() => 0)
   return { bag: ctx.bag, counters }
@@ -45,10 +44,17 @@ export function buildSeed(opts: SeedOptions): { bag: SeedBag; counters: CounterR
  */
 export async function seedFoundation(db: OmniflowDb, opts: SeedOptions): Promise<void> {
   const ctx = createSeedCtx(opts)
+  seedFoundationInto(ctx)
+  await writeBag(db, ctx.bag, ctx.numbers.finalize(() => 0))
+}
+
+/** The foundation generators, in order (organisation, calendar, security, chart, cash and bank). */
+export function seedFoundationInto(ctx: SeedCtx): void {
   seedOrganisation(ctx)
   seedFiscalCalendar(ctx)
   seedSecurity(ctx)
-  await writeBag(db, ctx.bag, ctx.numbers.finalize(() => 0))
+  seedChartOfAccounts(ctx)
+  seedCashBankAccounts(ctx)
 }
 
 async function writeBag(db: OmniflowDb, bag: SeedBag, counters: CounterRow[]): Promise<void> {

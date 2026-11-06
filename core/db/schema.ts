@@ -1417,10 +1417,9 @@ export type StockBalanceRow = BaseRow & {
   itemId: Id
   locationId: Id
   batchId?: Id
-  /** Usable base units (excludes quarantined) */
+  /** Usable base units (excludes quarantined); `updatedAt` comes from the base row */
   qtyBase: number
   quarantinedQty: number
-  updatedAt: Ms
 }
 
 /** Authoritative value per item and location. id = sv:<item>:<location>. */
