@@ -15,7 +15,7 @@ import { useDb } from "@/core/db/DbProvider"
 import type { ApprovalRow } from "@/core/db/schema"
 import { usePermissions } from "@/core/security/useCan"
 import { useUserMap } from "@/core/security/users"
-import { useFlashOnChange } from "@/hooks/use-flash-on-change"
+import { useSyncFlash } from "@/components/shell/use-sync-flash"
 import { cn } from "@/lib/utils"
 import { useLocale } from "@/lib/i18n/provider"
 
@@ -54,7 +54,7 @@ export function ApprovalsBell({ className }: { className?: string }) {
   const [open, setOpen] = React.useState(false)
   const waiting = inbox?.forMe ?? []
   const count = waiting.length
-  const flash = useFlashOnChange(count)
+  const flash = useSyncFlash(inbox ? count : undefined)
   const label = count
     ? `${t("shell.bell.title")} (${t("shell.bell.waiting", { count: num(count) })})`
     : t("shell.bell.title")

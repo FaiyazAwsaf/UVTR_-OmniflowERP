@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/tooltip"
 import { usePermissions } from "@/core/security/useCan"
 import type { NavItem } from "@/core/security/types"
-import { useFlashOnChange } from "@/hooks/use-flash-on-change"
+import { useSyncFlash } from "@/components/shell/use-sync-flash"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { useModKey } from "@/hooks/use-mod-key"
 import { cn } from "@/lib/utils"
@@ -42,7 +42,7 @@ export function useSidebarCollapsed(): boolean {
  */
 export function Wordmark({ className, chip = true }: { className?: string; chip?: boolean }) {
   return (
-    <span className="inline-flex items-center gap-2">
+    <span className="inline-flex items-center gap-1.5">
       <span
         className={cn(
           "inline-flex items-baseline text-[1.25rem] leading-none font-bold tracking-tight whitespace-nowrap",
@@ -103,12 +103,12 @@ export function AppSidebar() {
       <div
         className={cn(
           "flex h-18 shrink-0 items-center",
-          collapsed ? "justify-center" : "px-6"
+          collapsed ? "justify-center" : "px-5"
         )}
       >
         <Link
           href={home}
-          className="rounded-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40"
+          className="min-w-0 rounded-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40"
           aria-label="UVTR_OmniflowERP"
         >
           {collapsed ? (
@@ -120,7 +120,8 @@ export function AppSidebar() {
               <span className="text-primary">O</span>
             </span>
           ) : (
-            <Wordmark />
+            // Sized so the wordmark and its SME chip fit the 232px sidebar.
+            <Wordmark className="text-[1.0625rem]" />
           )}
         </Link>
       </div>
@@ -147,7 +148,7 @@ export function AppSidebar() {
                     label={tk(item.labelKey)}
                     active={item.href === active}
                     collapsed={collapsed}
-                    count={counts[item.href]}
+                    count={counts ? (counts[item.href] ?? 0) : undefined}
                     pillId={pillId}
                   />
                 ))}
@@ -257,7 +258,7 @@ function NavRow({
   const Icon = item.icon
   const hasCount = count !== undefined && count > 0
   // A badge that moves because of another window's commit flashes the row.
-  const flash = useFlashOnChange(count ?? 0)
+  const flash = useSyncFlash(count)
   const slug = item.app ?? item.href.slice(1).replace(/\//g, "-")
 
   const link = (

@@ -108,16 +108,23 @@ export function TopBar({ user }: { user: UserRow }) {
         <TenantMark size={30} />
         <span className="text-sm font-semibold">{tenant.shortName[locale]}</span>
       </span>
-      <GlobalSearch className="hidden w-[18rem] shrink @min-[72rem]/topbar:flex @min-[100rem]/topbar:w-[26rem]" />
+      <GlobalSearch className="hidden w-[18rem] shrink @min-[72rem]/topbar:flex @min-[116rem]/topbar:w-[26rem]" />
+      {/* Narrow bars (a Demo Wall pane in a small window) drop what the
+          palette or the Wall header also offers: theme, language, the
+          event stream and the demo panel. */}
       <div className="flex shrink-0 items-center gap-1.5 @min-[60rem]/topbar:gap-2">
         <SearchButton className="@min-[72rem]/topbar:hidden" />
         <LocationSwitcher user={user} />
         <ClockChip />
-        <DemoPanelTrigger />
+        <span className="hidden @min-[36rem]/topbar:contents">
+          <DemoPanelTrigger />
+        </span>
         <ApprovalsBell />
-        <EventStreamTrigger />
-        <LanguageToggle />
-        <ThemeToggle />
+        <span className="hidden @min-[36rem]/topbar:contents">
+          <EventStreamTrigger />
+        </span>
+        <LanguageToggle className="hidden @min-[40rem]/topbar:flex" />
+        <ThemeToggle className="hidden @min-[44rem]/topbar:flex" />
         <UserMenu user={user} />
       </div>
     </header>

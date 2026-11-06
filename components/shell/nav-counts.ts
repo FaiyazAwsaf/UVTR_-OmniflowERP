@@ -30,9 +30,9 @@ const NONE: Waiting = {}
  * - IC: items at or below their reorder minimum at my locations;
  * - CAB: received cheques due for deposit within the PDC warning days;
  * - SAC: locked user accounts.
- * Before the seed fills these tables every count is 0.
+ * Before the seed fills these tables every count is 0. `undefined` while loading.
  */
-function useOperationalWaiting(): Waiting {
+function useOperationalWaiting(): Waiting | undefined {
   const db = useDb()
   const { user, can } = usePermissions()
   const nowMs = useNow(60_000)
@@ -104,32 +104,34 @@ function useOperationalWaiting(): Waiting {
     return out
   }, [db, userId, today, can])
 
-  return result ?? NONE
+  return result
 }
 
 /**
  * Live counts of what waits, keyed by sidebar href (`/approvals`, `/ap`,
  * `/ic`, ...): the yellow badges of the sidebar and the "waiting" line of the
- * /apps tiles (ui_guidelines.md §3, §4).
+ * /apps tiles (ui_guidelines.md §3, §4). `undefined` until every query has
+ * loaded once, so callers can tell a first load from a live change.
  */
-export function useNavCounts(): Record<string, number> {
+export function useNavCounts(): Record<string, number> | undefined {
   const inbox = useApprovalInbox()
   const operational = useOperationalWaiting()
   return React.useMemo(() => {
+    if (!inbox || !operational) return undefined
     const sets = new Map<string, Set<string>>()
     const add = (app: string, key: string) => {
       const set = sets.get(app) ?? new Set<string>()
       set.add(key)
       sets.set(app, set)
     }
-    for (const approval of inbox?.forMe ?? []) {
+    for (const approval of inbox.forMe) {
       const app = docApp(approval.docType)
       if (app) add(app, `${approval.docType}:${approval.docId}`)
     }
     for (const [app, keys] of Object.entries(operational)) {
       for (const key of keys ?? []) add(app, key)
     }
-    const counts: Record<string, number> = { "/approvals": inbox?.forMe.length ?? 0 }
+    const counts: Record<string, number> = { "/approvals": inbox.forMe.length }
     for (const [app, set] of sets) counts[`/${app}`] = set.size
     return counts
   }, [inbox, operational])

@@ -8,7 +8,7 @@ import { useNavCounts } from "@/components/shell/nav-counts"
 import { APP_NAV } from "@/core/security/registry"
 import { SUITES, type AppCode, type NavItem, type SuiteCode } from "@/core/security/types"
 import { usePermissions } from "@/core/security/useCan"
-import { useFlashOnChange } from "@/hooks/use-flash-on-change"
+import { useSyncFlash } from "@/components/shell/use-sync-flash"
 import { cn } from "@/lib/utils"
 import { useLocale } from "@/lib/i18n/provider"
 
@@ -63,7 +63,7 @@ export default function AppsPage() {
                   nav={nav}
                   suite={suite.code}
                   allowed={can(nav.permission)}
-                  waiting={counts[nav.href] ?? 0}
+                  waiting={counts ? (counts[nav.href] ?? 0) : undefined}
                 />
               )
             })}
@@ -85,10 +85,10 @@ function AppTile({
   nav: NavItem
   suite: SuiteCode
   allowed: boolean
-  waiting: number
+  waiting: number | undefined
 }) {
   const { t, tk, num } = useLocale()
-  const flash = useFlashOnChange(`${allowed}:${waiting}`)
+  const flash = useSyncFlash(waiting === undefined ? undefined : `${allowed}:${waiting}`)
   const Icon = nav.icon
   const body = (
     <>
@@ -106,7 +106,7 @@ function AppTile({
             <Lock className="size-3" />
             {t("shell.apps.locked")}
           </span>
-        ) : waiting > 0 ? (
+        ) : waiting ? (
           <span className="mt-0.5 flex items-center gap-1.5 text-xs font-medium" data-testid={`app-waiting-${code}`}>
             <span className="count-badge size-2 shrink-0" aria-hidden />
             {t("shell.apps.waiting", { count: num(waiting) })}
@@ -119,7 +119,7 @@ function AppTile({
     <Link
       href={nav.href}
       data-testid={`app-tile-${code}`}
-      data-waiting={waiting}
+      data-waiting={waiting ?? 0}
       className={cn(
         "surface-card flex items-start gap-3 p-4 transition-colors outline-none hover:bg-surface-raised focus-visible:ring-[3px] focus-visible:ring-ring/40",
         flash

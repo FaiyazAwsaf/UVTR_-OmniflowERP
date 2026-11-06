@@ -59,14 +59,14 @@ export function ClockChip({ className }: { className?: string }) {
         }
       >
         <Clock3 className="size-4 shrink-0 text-primary" />
-        <span className="hidden text-muted-foreground @min-[60rem]/topbar:inline">
+        <span className="hidden text-muted-foreground @min-[100rem]/topbar:inline">
           {date(nowMs, { weekday: "short", day: "numeric", month: "short" })}
         </span>
         <span className="nums font-semibold whitespace-nowrap tabular-nums">
           {time(nowMs)}
         </span>
         {offsetText ? (
-          <span className="nums hidden rounded-full bg-primary-soft px-1.5 py-0.5 text-[0.6875rem] font-semibold whitespace-nowrap text-link @min-[52rem]/topbar:inline">
+          <span className="nums hidden rounded-full bg-primary-soft px-1.5 py-0.5 text-[0.6875rem] font-semibold whitespace-nowrap text-link @min-[62rem]/topbar:inline">
             {offsetText}
           </span>
         ) : null}
