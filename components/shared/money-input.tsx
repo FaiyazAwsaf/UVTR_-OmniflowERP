@@ -36,11 +36,9 @@ export function MoneyInput({
     (p: number | null) => (p === null ? "" : formatDecimal(p / 100, locale, 2)),
     [locale]
   )
-  const [text, setText] = React.useState(() => format(valueP))
-  const [focused, setFocused] = React.useState(false)
-  React.useEffect(() => {
-    if (!focused) setText(format(valueP))
-  }, [valueP, focused, format])
+  // While focused the raw typed text is kept; otherwise the formatted value shows.
+  const [editing, setEditing] = React.useState<string | null>(null)
+  const text = editing ?? format(valueP)
   return (
     <div className={cn("relative", className)}>
       <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm text-muted-foreground">৳</span>
@@ -48,16 +46,10 @@ export function MoneyInput({
         inputMode="decimal"
         value={text}
         placeholder={t("shared.money.placeholder")}
-        onFocus={() => {
-          setFocused(true)
-          setText(valueP === null ? "" : String(valueP / 100))
-        }}
-        onBlur={() => {
-          setFocused(false)
-          setText(format(valueP))
-        }}
+        onFocus={() => setEditing(valueP === null ? "" : String(valueP / 100))}
+        onBlur={() => setEditing(null)}
         onChange={(e) => {
-          setText(e.target.value)
+          setEditing(e.target.value)
           onChange(parseTaka(e.target.value))
         }}
         className="pl-7 text-right font-mono tabular-nums"
@@ -81,18 +73,17 @@ export function QtyInput({
   unit?: string
   step?: number
 } & Omit<React.ComponentProps<"input">, "value" | "onChange" | "type" | "step">) {
-  const [text, setText] = React.useState(value === null ? "" : String(value))
-  React.useEffect(() => {
-    setText((current) => (Number(latinDigits(current)) === value ? current : value === null ? "" : String(value)))
-  }, [value])
+  const [editing, setEditing] = React.useState<string | null>(null)
+  const text = editing ?? (value === null ? "" : String(value))
   return (
     <div className={cn("relative", className)}>
       <Input
         inputMode="decimal"
         value={text}
         data-step={step}
+        onBlur={() => setEditing(null)}
         onChange={(e) => {
-          setText(e.target.value)
+          setEditing(e.target.value)
           const clean = latinDigits(e.target.value).replace(/[,\s]/g, "")
           const n = Number(clean)
           onChange(clean === "" || !Number.isFinite(n) ? null : n)
