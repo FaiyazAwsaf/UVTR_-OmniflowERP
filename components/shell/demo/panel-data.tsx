@@ -11,10 +11,15 @@ import { useLocale } from "@/lib/i18n/provider"
 import { SeedStatus } from "@/modules/demo/components/seed-status"
 import { tamperMiddleAuditRow } from "@/modules/demo/components/tamper"
 
+import { DevControls } from "./dev-controls"
 import { SectionTitle } from "./section-title"
 import { useDemoUi } from "./store"
 
-/** Seed status, reset, the audit tamper test and a link to the audit viewer. */
+/**
+ * Seed status and reset (with a confirm step), the audit tamper test with a
+ * link to the audit trail (/sac/audit), and the checkpoint dev controls
+ * (grant toggle, force sign-out).
+ */
 export function DataSection() {
   const { t } = useLocale()
   const db = useDb()
@@ -42,7 +47,7 @@ export function DataSection() {
       nativeButton={false}
       render={
         <Link
-          href="/audit"
+          href="/sac/audit"
           onClick={() => useDemoUi.getState().setPanelOpen(false)}
         />
       }
@@ -95,6 +100,8 @@ export function DataSection() {
           {auditLink}
         </div>
       </section>
+
+      <DevControls />
     </div>
   )
 }

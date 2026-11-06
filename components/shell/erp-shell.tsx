@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation"
 import { AccessDenied, SignInRequired } from "@/components/shell/access"
 import { AppSidebar } from "@/components/shell/app-sidebar"
 import { CommandPalette, useShellHotkeys } from "@/components/shell/command-palette"
+import { CrossWindowToasts } from "@/components/shell/cross-window-toasts"
 import { CueCard } from "@/components/shell/demo/cue-card"
 import { TopBar } from "@/components/shell/top-bar"
 import { routeAllowed } from "@/core/security/routes"
@@ -14,9 +15,10 @@ import { useSession } from "@/core/session/session"
 
 /**
  * The ERP app frame (ui_guidelines.md §3): sidebar, top bar and the scrolling
- * content area, plus the command palette and the scenario cue card. Guards
- * the route live (plan §3.8): no user shows the sign-in prompt, an
- * off-permission route shows AccessDenied inside the frame.
+ * content area, plus the command palette, the cross-window toasts and the
+ * scenario cue card. Guards the route live (plan §3.8): no user shows the
+ * sign-in prompt, an off-permission route shows AccessDenied inside the
+ * frame (an RBAC revoke in another window takes effect at once).
  */
 export function ErpShell({ children }: { children: React.ReactNode }) {
   const { userId, pendingQuickSignIn } = useSession()
@@ -42,6 +44,7 @@ export function ErpShell({ children }: { children: React.ReactNode }) {
         </main>
       </div>
       <CommandPalette />
+      <CrossWindowToasts />
       <CueCard />
     </div>
   )

@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/tooltip"
 import { usePermissions } from "@/core/security/useCan"
 import type { NavItem } from "@/core/security/types"
+import { useFlashOnChange } from "@/hooks/use-flash-on-change"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { useModKey } from "@/hooks/use-mod-key"
 import { cn } from "@/lib/utils"
@@ -255,11 +256,14 @@ function NavRow({
   const { num } = useLocale()
   const Icon = item.icon
   const hasCount = count !== undefined && count > 0
+  // A badge that moves because of another window's commit flashes the row.
+  const flash = useFlashOnChange(count ?? 0)
+  const slug = item.app ?? item.href.slice(1).replace(/\//g, "-")
 
   const link = (
     <Link
       href={item.href}
-      data-testid={`nav-${item.app ?? item.href.slice(1).replace(/\//g, "-")}`}
+      data-testid={`nav-${slug}`}
       aria-current={active ? "page" : undefined}
       title={collapsed ? undefined : label}
       className={cn(
@@ -267,7 +271,8 @@ function NavRow({
         collapsed ? "w-10 justify-center self-center" : "px-2.5",
         active
           ? "text-primary-foreground"
-          : "text-sidebar-foreground/85 hover:bg-sidebar-accent hover:text-foreground"
+          : "text-sidebar-foreground/85 hover:bg-sidebar-accent hover:text-foreground",
+        !active && flash
       )}
     >
       {active ? (
@@ -306,7 +311,10 @@ function NavRow({
         <>
           <span className="sr-only">{label}</span>
           {hasCount ? (
-            <span className="count-badge nums absolute -top-1 -right-1 z-10 flex h-4 min-w-4 items-center justify-center px-1 text-[0.625rem] font-semibold">
+            <span
+              data-testid={`nav-count-${slug}`}
+              className="count-badge nums absolute -top-1 -right-1 z-10 flex h-4 min-w-4 items-center justify-center px-1 text-[0.625rem] font-semibold"
+            >
               {num(count)}
             </span>
           ) : null}
@@ -315,7 +323,10 @@ function NavRow({
         <>
           <span className="relative z-10 min-w-0 flex-1 truncate">{label}</span>
           {hasCount ? (
-            <span className="count-badge nums relative z-10 flex h-5 min-w-5 items-center justify-center px-1.5 text-[0.6875rem] font-semibold">
+            <span
+              data-testid={`nav-count-${slug}`}
+              className="count-badge nums relative z-10 flex h-5 min-w-5 items-center justify-center px-1.5 text-[0.6875rem] font-semibold"
+            >
               {num(count)}
             </span>
           ) : null}
