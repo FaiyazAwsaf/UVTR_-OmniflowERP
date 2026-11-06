@@ -1,8 +1,8 @@
-import type { ISODate, Ms } from "@/core/db/schema"
+import type { Ms } from "@/core/db/schema"
 
 import { SERVICE_BY_ID } from "../content/catalogue"
 import { BAY, USR } from "../content/seed-refs"
-import { dhakaAt, dhakaDate, isoAddDays, MINUTE } from "../time"
+import { MINUTE } from "../time"
 
 /**
  * Capacity scheduling for the itemised history (seed_data.md §7.4): a bay
