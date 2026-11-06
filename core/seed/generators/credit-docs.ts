@@ -280,9 +280,11 @@ function plantPdcs(w: World, invoices: Map<number, SalesInvoiceRow>) {
       const d = customerDeductions(metro, [{ allocatedP: alloc, invoiceVatP: oldest.vatP, invoiceTotalP: oldest.totalP }], defaultTaxSettings)
       return alloc - d.vdsP - d.aitP
     }
-    let alloc = Math.min(available, Math.round(cash / 0.826))
-    for (let i = 0; i < 400 && gross(alloc) < cash && alloc < available; i++) alloc += 1
+    // Gross the cash up for the VDS and AIT Metro deducts; keep it to part of the invoice.
+    let alloc = Math.round(cash / 0.826)
+    for (let i = 0; i < 400 && gross(alloc) < cash; i++) alloc += 1
     for (let i = 0; i < 400 && gross(alloc) > cash; i++) alloc -= 1
+    if (alloc >= available) alloc = Math.round((available * 0.7) / 100) * 100
     const net = gross(alloc)
     writeCreditReceipt(w, {
       id: PLANT.e8Receipt,

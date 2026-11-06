@@ -59,7 +59,7 @@ export const CREDIT_CUSTOMERS: CreditCustomerDef[] = [
   {
     id: PTY.metroFleet, nameEn: "Metro Corporate Fleet Services Ltd", nameBn: "মেট্রো কর্পোরেট ফ্লিট সার্ভিসেস লিমিটেড", segment: "corporate",
     creditLimit: T(5_00_000), terms: 45, priceListId: PL.fleet, deductsVds: true, deductsAit: true,
-    studios: [["GUL", 2], ["UTT", 1]], ratePerDay: 0.9, vehicles: 58, classes: [["SD", 45], ["SUV", 35], ["LSUV", 10], ["MPV", 10]],
+    studios: [["GUL", 1]], ratePerDay: 1.0, vehicles: 58, classes: [["SD", 45], ["SUV", 35], ["LSUV", 10], ["MPV", 10]],
     services: [[SVC.WSH_PRM, 35], [SVC.INT_DEEP, 25], [SVC.PRT_SLN, 15], [SVC.WSH_EXP, 10], [SVC.INT_LTH, 10], [SVC.GLS_CLN, 5]],
     pays: "cheque", area: "Motijheel",
     contacts: [["Anisur Rahman", "Transport Manager", "Transport Manager"], ["Farhana Akter", "Senior Accountant", "Senior Accountant"]],
