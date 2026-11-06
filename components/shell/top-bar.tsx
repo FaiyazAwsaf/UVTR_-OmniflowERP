@@ -106,7 +106,7 @@ export function TopBar({ user }: { user: UserRow }) {
         data-testid="tenant-mark"
       >
         <TenantMark size={30} />
-        <span className="hidden text-sm font-semibold @min-[116rem]/topbar:inline">{tenant.shortName[locale]}</span>
+        <span className="text-sm font-semibold">{tenant.shortName[locale]}</span>
       </span>
       <GlobalSearch className="hidden w-[18rem] shrink @min-[72rem]/topbar:flex @min-[100rem]/topbar:w-[21.5rem] @min-[116rem]/topbar:w-[26rem]" />
       {/* Narrow bars (a Demo Wall pane in a small window) drop what the
@@ -114,7 +114,7 @@ export function TopBar({ user }: { user: UserRow }) {
           event stream and the demo panel. */}
       <div className="flex shrink-0 items-center gap-1.5 @min-[60rem]/topbar:gap-2">
         <SearchButton className="@min-[72rem]/topbar:hidden" />
-        <LocationSwitcher user={user} />
+        <LocationSwitcher user={user} className="hidden @min-[34rem]/topbar:flex" />
         <ClockChip />
         <span className="hidden @min-[36rem]/topbar:contents">
           <DemoPanelTrigger />

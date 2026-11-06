@@ -59,7 +59,7 @@ export function ClockChip({ className }: { className?: string }) {
         }
       >
         <Clock3 className="size-4 shrink-0 text-primary" />
-        <span className="hidden text-muted-foreground @min-[100rem]/topbar:inline">
+        <span className="hidden text-muted-foreground @min-[116rem]/topbar:inline">
           {date(nowMs, { weekday: "short", day: "numeric", month: "short" })}
         </span>
         <span className="nums font-semibold whitespace-nowrap tabular-nums">
