@@ -13,7 +13,7 @@ import { STUDIO_BASE, WEEKDAY_FACTOR, growthFactor, isBatchEnd } from "./volumes
 
 /**
  * F to C − 1 (seed_data.md §7.1): one `SM` voucher per studio per day (R2;
- * days older than the last 180 batched by week, see `isBatchEnd`)
+ * days older than the last 150 batched by week, see `isBatchEnd`)
  * for the retail jobs (credit customers are itemised separately), with the
  * consumption of all the day's jobs at the studio and the retail goods sold,
  * both at standard cost. Records the consumption per month for the summary

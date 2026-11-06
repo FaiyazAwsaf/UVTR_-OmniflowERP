@@ -33,7 +33,7 @@ export type Calendar = {
   /** First day of the current fiscal year */
   fyStart: ISODate
   /**
-   * Summary days and the treasury are daily from this day on (the last 180
+   * Summary days and the treasury are daily from this day on (the last 150
    * days); older days are batched by week, never across a month end, so the
    * full profile stays under 5 s in Chromium on long histories.
    */
@@ -56,7 +56,7 @@ export function makeCalendar(ctx: SeedCtx): Calendar {
     lastMonthStart: addMonthsISO(ctx.today, -1),
     currentMonthStart: firstOfMonth(ctx.today),
     fyStart: fiscalYearBounds(ctx.today).startsOn,
-    dailyFrom: isoAddDays(ctx.today, -180),
+    dailyFrom: isoAddDays(ctx.today, -150),
     volume: small ? 0.25 : 1,
     small,
   }
@@ -210,6 +210,25 @@ export class World {
     this.fix(() => {
       row.docNo = docNo()
     })
+    // A pending request notifies everyone it is routed to (as requireApproval does).
+    if (input.status === "pending") {
+      const by = this.ctx.bag.get("users", input.requestedBy).nameEn
+      for (const userId of routed) {
+        const note = this.ctx.bag.put("notifications", this.ctx.seq("ntf"), input.requestedAt, {
+          userId,
+          kind: "approval-requested",
+          titleKey: "approvals.notify.requested",
+          params: { docNo: "", by },
+          refs: { approvalId: row.id },
+          href: "/approvals",
+          read: false,
+          at: input.requestedAt,
+        }, input.requestedBy)
+        this.fix(() => {
+          note.params.docNo = row.docNo
+        })
+      }
+    }
     return row
   }
 }

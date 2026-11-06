@@ -307,7 +307,25 @@ function simulate(w: World, q: EventQueue, rules: Map<string, Rule>, input: Plan
       const rule = rules.get(k)!
       let send = Math.ceil((Math.max(rule.max, d.qty) - get(k)) / item.purchaseFactor) * item.purchaseFactor
       if (item.kind === "retail") send = Math.max(d.qty - get(k), 24 - get(k))
-      const cst = get(key(LOC.CST, d.itemId))
+      let cst = get(key(LOC.CST, d.itemId))
+      if (get(k) + cst + 1e-9 < d.qty) {
+        // The store is short too: an urgent purchase, ordered the day before and received that morning.
+        const cstRule = rules.get(key(LOC.CST, d.itemId))!
+        const units = Math.ceil((cstRule.min + d.qty - get(k) - cst) / item.purchaseFactor)
+        const grnAt = d.at - 120 * MINUTE
+        const po: PlannedPo = {
+          id: w.ctx.seq("po"),
+          vendorId: VENDOR_OF_ITEM.get(d.itemId)!,
+          orderAt: grnAt - 20 * 60 * MINUTE,
+          grnId: w.ctx.seq("grn"),
+          grnAt,
+          lines: [{ itemId: d.itemId, units, unitCostP: item.cost * 100, rejected: 0, received: units }],
+          kind: "weekly",
+        }
+        pos.push(po)
+        bump(key(LOC.CST, d.itemId), units * item.purchaseFactor)
+        cst = get(key(LOC.CST, d.itemId))
+      }
       if (send > cst) send = cst
       if (get(k) + send + 1e-9 < d.qty) throw new Error(`seed: no stock anywhere for ${d.itemId} on ${d.date}`)
       bump(key(LOC.CST, d.itemId), -send)
