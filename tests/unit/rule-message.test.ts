@@ -3,12 +3,7 @@ import { describe, expect, it } from "vitest"
 import { ruleMessage } from "@/components/shared/rule-message"
 import { dictionaries, interpolate, lookup } from "@/lib/i18n"
 import type { Locale } from "@/lib/i18n/config"
-import {
-  formatDmy,
-  formatMoney,
-  formatNumber,
-  formatUhid,
-} from "@/lib/i18n/format"
+import { formatDmy, formatMoney, formatNumber } from "@/lib/i18n/format"
 
 function formatters(locale: Locale) {
   return {
@@ -18,7 +13,6 @@ function formatters(locale: Locale) {
     num: (value: number) => formatNumber(value, locale),
     money: (poisha: number) => formatMoney(poisha, locale),
     dmy: (value: string | number | Date) => formatDmy(value, locale),
-    uhid: formatUhid,
   }
 }
 
@@ -26,43 +20,25 @@ describe("ruleMessage", () => {
   const en = formatters("en")
 
   it("reads the engine's shared rules", () => {
-    const message = ruleMessage("NID_EXISTS", {}, en)
-    expect(message).toBe(lookup(dictionaries.en, "rules.NID_EXISTS"))
+    expect(ruleMessage("OUT_OF_SCOPE", {}, en)).toBe(lookup(dictionaries.en, "rules.OUT_OF_SCOPE"))
   })
 
-  it("finds a module's own code on any screen", () => {
-    expect(ruleMessage("SESSION_FULL", {}, en)).toBe(
-      lookup(dictionaries.en, "scheduling.rules.SESSION_FULL")
-    )
-    expect(ruleMessage("TOKEN_STATE", { token: "M-7" }, en)).toContain("M-7")
-  })
-
-  it("prefers the refusing command's module when two modules share a code", () => {
-    const billing = ruleMessage(
-      "PATIENT_MERGED",
-      { uhid: "1234567890" },
-      en,
-      "billing.checkout"
-    )
-    const identity = ruleMessage(
-      "PATIENT_MERGED",
-      { uhid: "1234567890" },
-      en,
-      "identity.register"
-    )
-    expect(billing).toContain("Bill the surviving record")
-    expect(identity).toContain("Search again")
-  })
-
-  it("formats params in the window's language", () => {
+  it("formats dates as DD-MM-YYYY and locations by name, in the window's language", () => {
+    const message = ruleMessage("PERIOD_CLOSED", { period: "2627-04", date: "2026-10-15" }, en)
+    expect(message).toContain("15-10-2026")
     const bn = formatters("bn")
-    const message = ruleMessage(
-      "TENDER_MISMATCH",
-      { tenderedP: 50000, dueP: 80000 },
-      bn,
-      "billing.checkout"
+    const stock = ruleMessage(
+      "STOCK_NEGATIVE",
+      { item: "CH-CC2-50", location: "loc_utt", available: 20, needed: 38 },
+      bn
     )
-    expect(message).toContain(formatMoney(80000, "bn"))
+    expect(stock).toContain("উত্তরা স্টুডিও")
+    expect(stock).toContain("CH-CC2-50")
+  })
+
+  it("formats money params (P suffix) with lakh grouping", () => {
+    const message = interpolate("{amountP}", { amountP: formatMoney(12_000_000, "en") })
+    expect(message).toBe(formatMoney(12_000_000, "en"))
   })
 
   it("falls back to the code for an unknown rule", () => {

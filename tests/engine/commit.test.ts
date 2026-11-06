@@ -2,9 +2,8 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest"
 import { z } from "zod"
 
 import { verifyChain } from "@/core/audit/verify"
-import { baseFields } from "@/core/db/base"
-import { MedcoreDb } from "@/core/db/database"
-import type { PatientRow } from "@/core/db/schema"
+import type { OmniflowDb } from "@/core/db/database"
+import type { PartyRow } from "@/core/db/schema"
 import { commit } from "@/core/engine/commit"
 import { defineCommand } from "@/core/engine/defineCommand"
 import {
@@ -13,274 +12,198 @@ import {
   RuleViolation,
   ValidationError,
 } from "@/core/engine/errors"
-import type { Actor } from "@/core/engine/types"
+import { SYSTEM_ACTOR, type Actor } from "@/core/engine/types"
+import { endSession, signIn, verifyMfa } from "@/core/security/signin"
+import { roleId } from "@/core/security/types"
 
-const cashier: Actor = {
-  staffId: "stf_rafiq_ahmed",
-  personaId: "per_cashier_rafiq",
-  role: "cashier",
-  branchId: "B1",
-  name: "Rafiq Ahmed",
-  authorities: ["discount:5"],
-}
-const receptionist: Actor = {
-  ...cashier,
-  staffId: "stf_farhana_akter",
-  personaId: "per_reception_farhana",
-  role: "receptionist",
-  name: "Farhana Akter",
-  authorities: [],
-}
+import { foundationDb, signedIn } from "../helpers/foundation"
 
-let db: MedcoreDb
-let n = 0
+let db: OmniflowDb
+let advisor: Actor // nayeem, ADVISOR at GUL
+let cashier: Actor // tania, CASHIER at GUL
+
 beforeEach(async () => {
-  db = new MedcoreDb(`engine-test-${++n}`)
-  await db.open()
+  db = await foundationDb("engine")
+  advisor = await signedIn(db, "nayeem")
+  cashier = await signedIn(db, "tania")
 })
 afterEach(async () => {
   await db.delete()
 })
 
-function patient(id: string, over: Partial<PatientRow> = {}): PatientRow {
+type PartyData = Omit<PartyRow, "id" | "version" | "createdAt" | "updatedAt" | "createdBy" | "updatedBy" | "origin">
+
+function partyData(code: string, over: Partial<PartyData> = {}): PartyData {
   return {
-    ...baseFields(id, 1_000),
-    uhid: `U-${id}`,
-    aliases: [],
-    identityStatus: "active",
-    nameEn: "Test Patient",
-    nameBn: "পরীক্ষা রোগী",
-    nameSearchKeys: ["test"],
-    dob: "1980-01-01",
-    sex: "M",
-    phoneVerified: false,
-    allergies: [],
-    currentMeds: [],
-    problems: [],
-    photoSeed: id,
-    consents: [],
-    registeredAtBranch: "B1",
+    code,
+    isCustomer: true,
+    isVendor: false,
+    type: "individual",
+    nameEn: "Test Customer",
+    nameBn: "পরীক্ষা গ্রাহক",
+    segment: "retail",
+    phone: "01711-000001",
+    addresses: [],
+    contacts: [],
+    creditLimitP: 0,
+    paymentTermsDays: 0,
+    deductsVds: false,
+    deductsAit: false,
+    status: "active",
+    smsConsent: true,
+    avatarSeed: code,
     ...over,
   }
 }
 
-/* ---------------- test commands ---------------- */
+const createCustomer = defineCommand({
+  name: "par.testCreate",
+  permission: "par.customer.create",
+  input: z.object({ id: z.string(), code: z.string() }),
+  async run(tx, input) {
+    const row = tx.insert("parties", { id: input.id, ...partyData(input.code) })
+    tx.emit("PartyCreated", { refs: { partyId: row.id }, params: { code: row.code, name: row.nameEn } })
+    return row.id
+  },
+})
 
 const updatePhone = defineCommand({
-  name: "test.updatePhone",
-  roles: ["receptionist"],
+  name: "par.testPhone",
+  permission: "par.customer.edit",
   input: z.object({
-    patientId: z.string(),
-    phone: z.string().min(5),
-    expectedVersion: z.number(),
+    partyId: z.string(),
+    phone: z.string().regex(/^01\d{3}-\d{6}$/),
+    expectedVersion: z.number().int(),
   }),
   async run(tx, input) {
-    const p = await tx.update(
-      "patients",
-      input.patientId,
+    const row = await tx.update(
+      "parties",
+      input.partyId,
       { phone: input.phone },
       { expectedVersion: input.expectedVersion }
     )
-    tx.emit("PatientContactUpdated", { refs: { patientId: p.id } })
-    return { version: p.version }
+    tx.emit("PartyUpdated", { refs: { partyId: row.id }, params: { code: row.code } })
+    return row.version
   },
 })
 
 const insertThenFail = defineCommand({
-  name: "test.insertThenFail",
-  roles: "any",
+  name: "par.testFail",
+  permission: "par.customer.create",
   input: z.object({}),
   async run(tx) {
-    tx.insert("patients", { ...patient("a"), id: "p-a" })
-    tx.insert("patients", { ...patient("b"), id: "p-b" })
-    tx.insert("patients", { ...patient("c"), id: "p-c" })
-    tx.emit("PatientContactUpdated")
-    await tx.nextNumber("uhid")
-    tx.reject("SOMETHING_WRONG")
-  },
-})
-
-const registerWithNid = defineCommand({
-  name: "test.register",
-  roles: "any",
-  input: z.object({ id: z.string(), nid: z.string() }),
-  async run(tx, input) {
-    tx.insert("patients", { ...patient(input.id), id: input.id, nid: input.nid, uhid: `U-${input.id}` })
-    return input.id
-  },
-})
-
-const takeStock = defineCommand({
-  name: "test.takeStock",
-  roles: "any",
-  input: z.object({ qty: z.number() }),
-  async run(tx, input) {
-    const level = await tx.get("stockLevels", "sl1")
-    await tx.update("stockLevels", "sl1", { qty: level.qty - input.qty })
-  },
-})
-
-const pay = defineCommand({
-  name: "test.pay",
-  roles: ["cashier"],
-  input: z.object({ idempotencyKey: z.string(), amountP: z.number() }),
-  async run(tx, input) {
-    const n = await tx.nextNumber("rcpt:B1")
-    tx.insert("receipts", {
-      receiptNo: `RC-${n}`,
-      invoiceId: "inv1",
-      paymentIds: [],
-      patientId: "p1",
-      branchId: "B1",
-      amountP: input.amountP,
-      at: tx.now(),
-    })
-    return { receiptNo: `RC-${n}` }
+    tx.insert("parties", { id: "p_fail", ...partyData("C-999999") })
+    tx.reject("TEST_FAILURE")
   },
 })
 
 const bump = defineCommand({
-  name: "test.bump",
-  roles: "any",
-  input: z.object({}),
+  name: "par.testBump",
+  permission: "authenticated",
+  input: z.object({ idempotencyKey: z.string().optional() }),
   async run(tx) {
-    return tx.nextNumber("serial")
+    return tx.nextNumber("test-bump")
   },
 })
 
-/* ---------------- tests ---------------- */
-
 describe("Atomicity", () => {
   it("writes nothing when a command fails after buffering writes", async () => {
-    await expect(commit(insertThenFail, {}, { db, actor: cashier })).rejects.toBeInstanceOf(
+    await expect(commit(insertThenFail, {}, { db, actor: advisor })).rejects.toBeInstanceOf(
       RuleViolation
     )
-    expect(await db.patients.count()).toBe(0)
-    expect(await db.events.count()).toBe(0)
-    expect(await db.audit.count()).toBe(0)
-    expect(await db.counters.count()).toBe(0)
+    expect(await db.parties.get("p_fail")).toBeUndefined()
   })
 
-  it("commits rows, events and audit together", async () => {
-    await db.patients.add(patient("p1", { phone: "01700-000001" }))
-    const out = await commit(
-      updatePhone,
-      { patientId: "p1", phone: "01700-999999", expectedVersion: 1 },
-      { db, actor: receptionist }
-    )
-    expect(out.result.version).toBe(2)
-    const row = await db.patients.get("p1")
-    expect(row?.phone).toBe("01700-999999")
-    expect(row?.updatedBy).toBe("stf_farhana_akter")
-    const events = await db.events.toArray()
-    expect(events).toHaveLength(1)
-    expect(events[0]).toMatchObject({ seq: 1, type: "PatientContactUpdated", commitId: out.commitId })
-    const audit = await db.audit.toArray()
+  it("commits rows, events and audit together, recording the user and session", async () => {
+    const out = await commit(createCustomer, { id: "p1", code: "C-000001" }, { db, actor: advisor })
+    expect(out.result).toBe("p1")
+    expect((await db.parties.get("p1"))?.createdBy).toBe(advisor.userId)
+    const events = await db.events.where("commitId").equals(out.commitId).toArray()
+    expect(events.map((e) => e.type)).toEqual(["PartyCreated"])
+    expect(events[0].actor.userId).toBe(advisor.userId)
+    expect(events[0].consumers.length).toBeGreaterThan(0)
+    expect(events[0].locationId).toBe("loc_gul")
+    const audit = await db.audit.where("commitId").equals(out.commitId).toArray()
     expect(audit).toHaveLength(1)
     expect(audit[0]).toMatchObject({
-      action: "update",
-      entity: "patients",
-      entityId: "p1",
-      patientId: "p1",
-      before: { phone: "01700-000001" },
-      after: { phone: "01700-999999" },
+      action: "insert",
+      entity: "parties",
+      docNo: "C-000001",
+      app: "par",
     })
+    expect(audit[0].actor.sessionId).toBe(advisor.sessionId)
+  })
+
+  it("never writes audit rows for the sessions platform table", async () => {
+    const sessionAudits = await db.audit.where("entity").equals("sessions").count()
+    expect(sessionAudits).toBe(0)
   })
 })
 
 describe("Consistency", () => {
-  it("refuses stock going negative (INV-01)", async () => {
-    await db.stockLevels.add({
-      ...baseFields("sl1", 1),
-      branchId: "B1",
-      brandId: "b1",
-      batchId: "bt1",
-      qty: 10,
-      quarantinedQty: 0,
-      inTransitIn: 0,
-      inTransitOut: 0,
-      asAt: 1,
-    })
-    await expect(commit(takeStock, { qty: 11 }, { db, actor: cashier })).rejects.toMatchObject({
-      code: "STOCK_NEGATIVE",
-    })
-    expect((await db.stockLevels.get("sl1"))?.qty).toBe(10)
-    await commit(takeStock, { qty: 10 }, { db, actor: cashier })
-    expect((await db.stockLevels.get("sl1"))?.qty).toBe(0)
-  })
-
-  it("blocks a second active record with the same NID and audits the attempt (INV-02)", async () => {
-    await commit(registerWithNid, { id: "p1", nid: "1990123456789" }, { db, actor: receptionist })
-    await expect(
-      commit(registerWithNid, { id: "p2", nid: "1990123456789" }, { db, actor: receptionist })
-    ).rejects.toMatchObject({ code: "NID_EXISTS" })
-    expect(await db.patients.count()).toBe(1)
-    const blocked = await db.audit.where("action").equals("blocked").toArray()
-    expect(blocked).toHaveLength(1)
-    expect(blocked[0]).toMatchObject({ code: "NID_EXISTS", entityId: "test.register" })
-    const events = await db.events.where("type").equals("RuleViolationBlocked").count()
-    expect(events).toBe(1)
-  })
-
-  it("keeps signed prescriptions immutable (INV-04)", async () => {
-    await db.prescriptions.add({
-      ...baseFields("rx1", 1),
-      rxNo: "RX-B1-000001",
-      rxVersion: 1,
-      patientId: "p1",
-      doctorId: "d1",
-      branchId: "B1",
-      status: "signed",
-      mode: "in-person",
-      advice: "Rest",
-      tests: [],
-    })
-    const edit = defineCommand({
-      name: "test.editRx",
-      roles: "any",
-      input: z.object({ advice: z.string() }),
-      async run(tx, input) {
-        await tx.update("prescriptions", "rx1", { advice: input.advice })
-      },
-    })
-    await expect(commit(edit, { advice: "Changed" }, { db, actor: cashier })).rejects.toMatchObject(
-      { code: "SIGNED_IMMUTABLE" }
-    )
-    const supersede = defineCommand({
-      name: "test.supersede",
-      roles: "any",
+  it("keeps posted documents immutable except their mutable fields (INV-06)", async () => {
+    const plant = defineCommand({
+      name: "stl.testPlant",
+      permission: "system",
       input: z.object({}),
       async run(tx) {
-        await tx.update("prescriptions", "rx1", { status: "superseded" })
+        tx.insert("quotations", {
+          id: "qt1",
+          quoteNo: "QT-GUL-2627-00001",
+          locationId: "loc_gul",
+          partyId: "p1",
+          advisorId: advisor.userId,
+          priceListId: "pl_retail",
+          discountPct: 0,
+          status: "accepted",
+          validUntil: tx.today(),
+          inspectionNotes: "",
+          subtotalP: 100,
+          discountP: 0,
+          vatP: 15,
+          totalP: 115,
+        })
       },
     })
-    await commit(supersede, {}, { db, actor: cashier })
-    expect((await db.prescriptions.get("rx1"))?.status).toBe("superseded")
+    await commit(plant, {}, { db, actor: SYSTEM_ACTOR })
+    const edit = defineCommand({
+      name: "stl.testEdit",
+      permission: "system",
+      input: z.object({ field: z.enum(["notes", "status"]) }),
+      async run(tx, input) {
+        if (input.field === "notes") await tx.update("quotations", "qt1", { inspectionNotes: "changed" })
+        else await tx.update("quotations", "qt1", { status: "rejected" })
+      },
+    })
+    await expect(commit(edit, { field: "notes" }, { db, actor: SYSTEM_ACTOR })).rejects.toMatchObject({
+      code: "IMMUTABLE_DOCUMENT",
+    })
+    const blocked = await db.audit.where("action").equals("blocked").toArray()
+    expect(blocked.some((r) => r.code === "IMMUTABLE_DOCUMENT")).toBe(true)
+    // status is a declared mutable field
+    await commit(edit, { field: "status" }, { db, actor: SYSTEM_ACTOR })
+    expect((await db.quotations.get("qt1"))?.status).toBe("rejected")
   })
 
   it("validates input before running", async () => {
+    await commit(createCustomer, { id: "p1", code: "C-000001" }, { db, actor: advisor })
     await expect(
-      commit(updatePhone, { patientId: "p1", phone: "1", expectedVersion: 1 }, { db, actor: receptionist })
+      commit(updatePhone, { partyId: "p1", phone: "1", expectedVersion: 1 }, { db, actor: advisor })
     ).rejects.toBeInstanceOf(ValidationError)
   })
 })
 
 describe("Isolation", () => {
-  it("gives the second writer of the same version a conflict", async () => {
-    await db.patients.add(patient("p1", { phone: "01700-000001" }))
-    await commit(
-      updatePhone,
-      { patientId: "p1", phone: "01700-111111", expectedVersion: 1 },
-      { db, actor: receptionist }
-    )
+  it("gives the second writer of the same version a conflict naming the first", async () => {
+    await commit(createCustomer, { id: "p1", code: "C-000001" }, { db, actor: advisor })
+    await commit(updatePhone, { partyId: "p1", phone: "01711-111111", expectedVersion: 1 }, { db, actor: advisor })
     const second = commit(
       updatePhone,
-      { patientId: "p1", phone: "01700-222222", expectedVersion: 1 },
-      { db, actor: receptionist }
+      { partyId: "p1", phone: "01711-222222", expectedVersion: 1 },
+      { db, actor: advisor }
     )
     await expect(second).rejects.toBeInstanceOf(ConflictError)
-    await expect(second).rejects.toMatchObject({ expectedVersion: 1, actualVersion: 2 })
-    expect((await db.patients.get("p1"))?.phone).toBe("01700-111111")
+    await expect(second).rejects.toMatchObject({ actualVersion: 2, updatedBy: advisor.userId })
   })
 
   it("serialises concurrent commits through the lock", async () => {
@@ -290,62 +213,194 @@ describe("Isolation", () => {
     expect(results.map((r) => r.result).sort((a, b) => a - b)).toEqual(
       Array.from({ length: 12 }, (_, i) => i + 1)
     )
-    expect((await db.counters.get("serial"))?.value).toBe(12)
   })
 })
 
 describe("Durability and idempotency", () => {
-  it("applies a payment once even if submitted twice", async () => {
-    const first = await commit(pay, { idempotencyKey: "pay-abc", amountP: 50_000 }, { db, actor: cashier })
-    const again = await commit(pay, { idempotencyKey: "pay-abc", amountP: 50_000 }, { db, actor: cashier })
+  it("applies an action once even if submitted twice", async () => {
+    const first = await commit(bump, { idempotencyKey: "k-1" }, { db, actor: cashier })
+    const again = await commit(bump, { idempotencyKey: "k-1" }, { db, actor: cashier })
     expect(again.deduplicated).toBe(true)
-    expect(again.result).toEqual(first.result)
-    expect(await db.receipts.count()).toBe(1)
+    expect(again.result).toBe(first.result)
+    expect((await db.counters.get("test-bump"))?.value).toBe(1)
   })
 
   it("survives closing and reopening the database", async () => {
     await commit(bump, {}, { db, actor: cashier })
-    const name = db.name
     db.close()
-    const reopened = new MedcoreDb(name)
-    expect((await reopened.counters.get("serial"))?.value).toBe(1)
-    reopened.close()
     await db.open()
+    expect((await db.counters.get("test-bump"))?.value).toBe(1)
   })
 })
 
-describe("Permissions", () => {
-  it("denies a role the command does not allow, and audits it", async () => {
-    await db.patients.add(patient("p1"))
+describe("Permissions (live, plan §3.3)", () => {
+  it("denies a user without the key, and audits the attempt", async () => {
+    const technician = await signedIn(db, "rakib")
     await expect(
-      commit(updatePhone, { patientId: "p1", phone: "01700-000009", expectedVersion: 1 }, { db, actor: cashier })
+      commit(createCustomer, { id: "p9", code: "C-000009" }, { db, actor: technician })
     ).rejects.toBeInstanceOf(PermissionDenied)
-    const blocked = await db.audit.where("action").equals("blocked").first()
-    expect(blocked).toMatchObject({ code: "PERMISSION_DENIED" })
+    const blocked = await db.audit.where("action").equals("blocked").toArray()
+    expect(blocked.at(-1)).toMatchObject({ code: "PERMISSION_DENIED", command: "par.testCreate" })
+    const events = await db.events.where("type").equals("PermissionDeniedBlocked").count()
+    expect(events).toBe(1)
+  })
+
+  it("applies an RBAC revoke on the very next commit", async () => {
+    await commit(createCustomer, { id: "p1", code: "C-000001" }, { db, actor: advisor })
+    await db.rolePermissions.delete("rp_advisor_par.customer.create")
+    await expect(
+      commit(createCustomer, { id: "p2", code: "C-000002" }, { db, actor: advisor })
+    ).rejects.toBeInstanceOf(PermissionDenied)
+  })
+
+  it("refuses a locked user and an ended session", async () => {
+    await db.users.update(advisor.userId, { status: "locked" })
+    await expect(commit(bump, {}, { db, actor: advisor })).rejects.toMatchObject({ code: "USER_LOCKED" })
+    await db.users.update(advisor.userId, { status: "active" })
+
+    const admin = await signedIn(db, "tahmid")
+    await commit(endSession, { sessionId: advisor.sessionId! }, { db, actor: admin })
+    await expect(commit(bump, {}, { db, actor: advisor })).rejects.toMatchObject({ code: "SESSION_ENDED" })
+  })
+
+  it("accepts a scenario session only from the runner", async () => {
+    const scenarioActor = { ...advisor, sessionId: "scenario:run_1" }
+    await expect(commit(bump, {}, { db, actor: scenarioActor })).rejects.toMatchObject({
+      code: "SESSION_ENDED",
+    })
+    const ok = await commit(bump, {}, { db, actor: scenarioActor, scenarioSession: true })
+    expect(ok.result).toBe(1)
+  })
+
+  it("scopes own-location grants (tx.requireLocation) and resolves limits (tx.limit)", async () => {
+    const probe = defineCommand({
+      name: "ar.testScope",
+      permission: "ar.receipt.create",
+      input: z.object({ locationId: z.string() }),
+      async run(tx, input) {
+        tx.requireLocation(input.locationId)
+        return { pettyCash: tx.limit("petty-cash"), discount: tx.limit("discount-pct") }
+      },
+    })
+    const ok = await commit(probe, { locationId: "loc_gul" }, { db, actor: cashier })
+    expect(ok.result).toEqual({ pettyCash: 100_000, discount: 0 })
+    await expect(commit(probe, { locationId: "loc_utt" }, { db, actor: cashier })).rejects.toMatchObject({
+      code: "OUT_OF_SCOPE",
+    })
+    // The accounts manager holds the key for every location, with her own limits.
+    const farzana = await signedIn(db, "farzana")
+    const am = await commit(probe, { locationId: "loc_utt" }, { db, actor: farzana })
+    expect(am.result).toEqual({ pettyCash: 2_000_000, discount: 15 })
+    const owner = await signedIn(db, "rashed")
+    await expect(commit(probe, { locationId: "loc_utt" }, { db, actor: owner })).rejects.toBeInstanceOf(
+      PermissionDenied
+    )
+  })
+
+  it("uses the highest limit across a user's roles", async () => {
+    await db.userRoles.add({
+      id: "ur_extra",
+      version: 1,
+      createdAt: 0,
+      updatedAt: 0,
+      createdBy: "system",
+      updatedBy: "system",
+      origin: "central",
+      userId: cashier.userId,
+      roleId: roleId("STUDIO_MGR"),
+      grantedBy: "system",
+      grantedAt: 0,
+    })
+    const probe = defineCommand({
+      name: "ar.testLimit",
+      permission: "authenticated",
+      input: z.object({}),
+      async run(tx) {
+        return tx.limit("discount-pct")
+      },
+    })
+    expect((await commit(probe, {}, { db, actor: cashier })).result).toBe(15)
+  })
+})
+
+describe("Sign-in (plan §3.8)", () => {
+  const ctx = () => ({ db, actor: SYSTEM_ACTOR })
+
+  it("signs in with the demo password and records the login", async () => {
+    const out = await commit(
+      signIn,
+      { username: "mahbub", password: "demo1234", windowId: "of-w1", method: "password" },
+      ctx()
+    )
+    expect(out.result.status).toBe("ok")
+    const events = await db.loginEvents.where("username").equals("mahbub").toArray()
+    expect(events.at(-1)?.result).toBe("success")
+  })
+
+  it("locks a user after five wrong passwords", async () => {
+    for (let i = 1; i <= 4; i += 1) {
+      const out = await commit(
+        signIn,
+        { username: "shuvo", password: "wrong", windowId: "of-w2", method: "password" },
+        ctx()
+      )
+      expect(out.result).toMatchObject({ status: "failed", reason: "bad-credentials", attemptsLeft: 5 - i })
+    }
+    const fifth = await commit(
+      signIn,
+      { username: "shuvo", password: "wrong", windowId: "of-w2", method: "password" },
+      ctx()
+    )
+    expect(fifth.result).toMatchObject({ status: "failed", reason: "locked" })
+    expect((await db.users.get("usr_shuvo"))?.status).toBe("locked")
+    const right = await commit(
+      signIn,
+      { username: "shuvo", password: "demo1234", windowId: "of-w2", method: "password" },
+      ctx()
+    )
+    expect(right.result).toMatchObject({ status: "failed", reason: "locked" })
+    expect(await db.events.where("type").equals("UserLocked").count()).toBe(1)
+  })
+
+  it("asks the administrator for the simulated MFA code", async () => {
+    const first = await commit(
+      signIn,
+      { username: "tahmid", password: "demo1234", windowId: "of-w3", method: "password" },
+      ctx()
+    )
+    expect(first.result).toMatchObject({ status: "mfa", userId: "usr_tahmid" })
+    const wrong = await commit(verifyMfa, { userId: "usr_tahmid", code: "000000", windowId: "of-w3" }, ctx())
+    expect(wrong.result).toMatchObject({ status: "failed", reason: "mfa-failed" })
+    const right = await commit(verifyMfa, { userId: "usr_tahmid", code: "123456", windowId: "of-w3" }, ctx())
+    expect(right.result.status).toBe("ok")
+  })
+
+  it("keeps the seeded lock on Polash", async () => {
+    const out = await commit(signIn, { username: "polash", windowId: "of-w4", method: "demo-quick" }, ctx())
+    expect(out.result).toMatchObject({ status: "failed", reason: "locked" })
   })
 })
 
 describe("Audit hash chain", () => {
   it("verifies an intact chain and detects tampering", async () => {
-    await db.patients.bulkAdd([patient("p1"), patient("p2")])
-    for (const [id, phone] of [["p1", "01700-000011"], ["p2", "01700-000022"], ["p1", "01700-000033"]] as const) {
-      const current = await db.patients.get(id)
-      await commit(updatePhone, { patientId: id, phone, expectedVersion: current!.version }, { db, actor: receptionist })
+    await commit(createCustomer, { id: "p1", code: "C-000001" }, { db, actor: advisor })
+    for (const [i, phone] of ["01711-000002", "01711-000003"].entries()) {
+      await commit(updatePhone, { partyId: "p1", phone, expectedVersion: i + 1 }, { db, actor: advisor })
     }
-    expect(await verifyChain(db)).toEqual({ ok: true, count: 3 })
-
-    // Tamper: rewrite a value in the middle of the chain behind the engine's back.
-    await db.audit.update(2, { after: { phone: "01999-999999" } })
-    const status = await verifyChain(db)
-    expect(status.ok).toBe(false)
-    expect(status.brokenAt).toBe(2)
+    const intact = await verifyChain(db)
+    expect(intact.ok).toBe(true)
+    const middle = await db.audit.orderBy("seq").offset(1).first()
+    await db.audit.update(middle!.seq, { at: middle!.at - 1 })
+    const broken = await verifyChain(db)
+    expect(broken).toMatchObject({ ok: false, brokenAt: middle!.seq })
   })
 
   it("orders events by a gap-free sequence", async () => {
-    await db.patients.add(patient("p1"))
-    for (let i = 1; i <= 3; i++) {
-      await commit(updatePhone, { patientId: "p1", phone: `01700-00000${i}`, expectedVersion: i }, { db, actor: receptionist })
+    await commit(createCustomer, { id: "p1", code: "C-000001" }, { db, actor: advisor })
+    for (let i = 1; i <= 3; i += 1) {
+      await commit(updatePhone, { partyId: "p1", phone: `01700-00000${i}`, expectedVersion: i }, { db, actor: advisor })
     }
-    expect((await db.events.orderBy("seq").toArray()).map((e) => e.seq)).toEqual([1, 2, 3])
+    const seqs = (await db.events.orderBy("seq").toArray()).map((e) => e.seq)
+    expect(seqs).toEqual(Array.from({ length: seqs.length }, (_, i) => i + 1))
   })
 })

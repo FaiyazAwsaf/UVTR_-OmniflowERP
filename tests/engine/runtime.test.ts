@@ -20,8 +20,8 @@ beforeEach(async () => {
 afterEach(() => applyClockOffset(0))
 
 describe("demo clock", () => {
-  it("starts at clinic time after a reset", () => {
-    expect(dhakaTime(now()) >= "11:30" && dhakaTime(now()) < "11:35").toBe(true)
+  it("starts at opening time (10:30 Dhaka) after a reset", () => {
+    expect(dhakaTime(now()) >= "10:30" && dhakaTime(now()) < "10:35").toBe(true)
   })
 
   it("fast-forwards for every reader and records the change", async () => {
@@ -42,7 +42,7 @@ describe("sweeper", () => {
   it("runs jobs as the System actor, isolating failures", async () => {
     const mark = defineCommand({
       name: "test.sweepMark",
-      roles: [],
+      permission: "system",
       input: z.object({}),
       async run(tx) {
         return tx.nextNumber("swept")

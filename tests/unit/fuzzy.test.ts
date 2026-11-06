@@ -7,7 +7,6 @@ import {
   normalizeName,
   scoreDuplicate,
 } from "@/core/search/fuzzy"
-import { nameSearchKeys } from "@/core/seed/generators/search-keys"
 
 describe("name normalisation", () => {
   it("collapses common Bangladeshi spelling variants", () => {
@@ -20,25 +19,31 @@ describe("name normalisation", () => {
     expect(normalizeName("মোঃ রফিকুল ইসলাম")[0]).toBe(normalizeName("মোহাম্মদ রফিকুল ইসলাম")[0])
   })
 
-  it("is the same function the seed indexes with", () => {
-    expect(nameSearchKeys("Md. Rafiqul Islam", "মোঃ রফিকুল ইসলাম")).toEqual(
-      nameKeys("Md. Rafiqul Islam", "মোঃ রফিকুল ইসলাম")
-    )
+  it("builds search keys from both scripts", () => {
+    const keys = nameKeys("Md. Rafiqul Islam", "মোঃ রফিকুল ইসলাম")
+    expect(keys.length).toBeGreaterThan(2)
+    expect(new Set(keys).size).toBe(keys.length)
   })
 })
 
-describe("duplicate scoring", () => {
-  const existing = { nameEn: "Md. Rafiqul Islam", dob: "1978-03-12", phone: "01819-000001" }
+describe("party duplicate scoring (plan §6.2)", () => {
+  const existing = { nameEn: "Md. Rafiqul Islam", phone: "01819-000001" }
 
-  it("flags a spelling variant with the same date of birth", () => {
+  it("flags a spelling variant with the same phone", () => {
     expect(nameSimilarity("Mohammad Rafiqul Islam", existing.nameEn)).toBe(1)
-    const { score, reasons } = scoreDuplicate({ nameEn: "Mohammad Rafiqul Islam", dob: "1978-03-12" }, existing)
+    const { score, reasons } = scoreDuplicate(
+      { nameEn: "Mohammad Rafiqul Islam", phone: "01819000001" },
+      existing
+    )
     expect(score).toBeGreaterThanOrEqual(DUPLICATE_THRESHOLD)
-    expect(reasons).toEqual(["name", "dob"])
+    expect(reasons).toEqual(["name", "phone"])
   })
 
-  it("treats an exact NID as certain and a different person as no match", () => {
+  it("treats an exact NID or BIN as certain and a different party as no match", () => {
     expect(scoreDuplicate({ nameEn: "X", nid: "123" }, { ...existing, nid: "123" }).score).toBe(1)
-    expect(scoreDuplicate({ nameEn: "Salma Khatun", dob: "1990-01-01" }, existing).score).toBeLessThan(DUPLICATE_THRESHOLD)
+    expect(scoreDuplicate({ nameEn: "Y", bin: "000111-0101" }, { ...existing, bin: "000111-0101" }).score).toBe(1)
+    expect(scoreDuplicate({ nameEn: "Salma Khatun", phone: "01711-999999" }, existing).score).toBeLessThan(
+      DUPLICATE_THRESHOLD
+    )
   })
 })

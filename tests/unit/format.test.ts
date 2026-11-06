@@ -2,8 +2,8 @@ import { afterEach, describe, expect, it } from "vitest"
 
 import { applyClockOffset, now } from "@/core/clock/clock"
 import { addDaysISO, ageOn, atDhaka, dhakaDate, dhakaTime } from "@/core/clock/dates"
-import { canAccess } from "@/core/rbac/routes"
-import { formatDmy, formatMoney, formatRelative, formatUhid } from "@/lib/i18n/format"
+import { permissionForRoute, routeAllowed } from "@/core/security/routes"
+import { formatDmy, formatMoney, formatRelative } from "@/lib/i18n/format"
 
 afterEach(() => applyClockOffset(0))
 
@@ -37,21 +37,26 @@ describe("dates", () => {
     expect(formatRelative(tenMinutesAgo, "bn")).toBe("৩০ মিনিট আগে")
   })
 
-  it("keeps identifiers in Latin digits", () => {
-    expect(formatUhid("10000000424")).toBe("1000-0000-42-4")
-  })
 })
 
-describe("route access", () => {
-  it("lets each role into its own area only", () => {
-    expect(canAccess("pharmacist", "/pharmacy/dispense/x")).toBe(true)
-    expect(canAccess("cashier", "/pharmacy")).toBe(false)
-    expect(canAccess("doctor", "/library/brand/b1")).toBe(true)
-    expect(canAccess("patient", "/library")).toBe(false)
-    expect(canAccess("patient", "/app/reports")).toBe(true)
-    expect(canAccess(null, "/display/B1")).toBe(true)
-    expect(canAccess(null, "/doctor")).toBe(false)
-    expect(canAccess("ceo", "/patient-360/p1")).toBe(true)
+describe("route guard (plan §3.8)", () => {
+  it("maps routes to keys, most specific first", () => {
+    expect(permissionForRoute("/sac/audit")).toBe("sac.audit.view")
+    expect(permissionForRoute("/sac/users/u1")).toBe("sac.app.view")
+    expect(permissionForRoute("/ar/receipts/new")).toBe("ar.app.view")
+    expect(permissionForRoute("/dashboard")).toBe("dashboard.app.view")
+    expect(permissionForRoute("/approvals")).toBe("authenticated")
+    expect(permissionForRoute("/")).toBeNull()
+    expect(permissionForRoute("/wall")).toBeNull()
+    expect(permissionForRoute("/arx")).toBeNull()
+  })
+
+  it("lets a user open only the apps they hold", () => {
+    const auditor = new Set(["sac.audit.view", "fa.app.view"])
+    expect(routeAllowed("/sac/audit", (k) => auditor.has(k))).toBe(true)
+    expect(routeAllowed("/sac", (k) => auditor.has(k))).toBe(false)
+    expect(routeAllowed("/fa/journals/j1", (k) => auditor.has(k))).toBe(true)
+    expect(routeAllowed("/home", () => false)).toBe(true)
   })
 })
 
