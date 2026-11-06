@@ -99,7 +99,17 @@ export function ageOn(dob: ISODate, iso: ISODate): number {
 
 /** Fiscal year tag used in invoice numbers ("2627" = FY 2026-27). */
 export function fyTagOf(iso: ISODate): string {
+  return fiscalYearTag(iso)
+}
+
+/** Last day of the month containing `iso`. */
+export function lastOfMonth(iso: ISODate): ISODate {
   const [y, m] = parts(iso)
-  // Local-time Date on purpose: fiscalYearTag reads getFullYear/getMonth.
-  return fiscalYearTag(new Date(y, m - 1, 15))
+  return fromUtcDay(Date.UTC(y, m, 0))
+}
+
+/** First day of the month `n` months after the one containing `iso` (n may be negative). */
+export function addMonthsISO(iso: ISODate, n: number): ISODate {
+  const [y, m] = parts(iso)
+  return fromUtcDay(Date.UTC(y, m - 1 + n, 1))
 }

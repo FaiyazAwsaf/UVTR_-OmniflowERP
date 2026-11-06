@@ -2,18 +2,14 @@
 
 import * as React from "react"
 
-import { now } from "@/core/clock/clock"
-import { ageOn, dhakaDate } from "@/core/clock/dates"
 import type { Sex } from "@/core/db/schema"
-import type { Role } from "@/core/rbac/types"
-import type { PersonaSeed } from "@/core/seed/content/personas"
 import { createRng } from "@/lib/mock/rng"
 import { cn } from "@/lib/utils"
 import { useLocale } from "@/lib/i18n/provider"
 
 /*
- * Deterministic, generated portrait avatars (plan §7.1: synthetic people, no
- * real photos). The same seed always draws the same face, in every window.
+ * Deterministic, generated portrait avatars (synthetic people, no real
+ * photos). The same seed always draws the same face, in every window.
  */
 
 const BACKGROUNDS = [
@@ -56,12 +52,13 @@ type Look = {
   stethoscope: boolean
 }
 
-const COAT_ROLES: Role[] = ["doctor", "pathologist", "pharmacist", "labtech"]
+/** Role codes that wear a work coat on their avatar (studio floor staff). */
+const COAT_ROLES: string[] = ["TECHNICIAN"]
 
 function lookFor(
   seed: string,
   sex: Sex | undefined,
-  opts: { age?: number; role?: Role }
+  opts: { age?: number; role?: string }
 ): Look {
   const rng = createRng(`avatar:${seed}`)
   const older = (opts.age ?? 0) >= 58
@@ -90,7 +87,7 @@ function lookFor(
     beard: sex === "M" && rng.bool(older ? 0.55 : 0.3),
     glasses: rng.bool(older ? 0.5 : 0.18),
     coat: !!opts.role && COAT_ROLES.includes(opts.role),
-    stethoscope: opts.role === "doctor",
+    stethoscope: false,
   }
 }
 
@@ -99,8 +96,8 @@ export type GeneratedAvatarProps = {
   sex?: Sex
   /** Years; 58 and over greys the hair */
   age?: number
-  /** Staff role: clinical roles wear a white coat, doctors a stethoscope */
-  role?: Role
+  /** Role code: technicians wear a work coat */
+  role?: string
   /** Pixel size at 100% scale (rendered in rem, so it follows the UI scale) */
   size?: number
   /** Accessible name */
@@ -274,60 +271,49 @@ export function GeneratedAvatar({
   )
 }
 
-/** A persona's avatar (staff seed, sex and role from the persona). */
-export function PersonaAvatar({
-  persona,
+/** A user's avatar (seeded from the user, coat for technicians). */
+export function UserAvatar({
+  user,
+  role,
   size = 40,
   className,
 }: {
-  persona: PersonaSeed
+  user: { avatarSeed: string; sex?: Sex; nameEn: string; nameBn: string }
+  /** Role code, if known */
+  role?: string
   size?: number
   className?: string
 }) {
   const { locale } = useLocale()
-  const name =
-    persona.staff?.[locale === "bn" ? "nameBn" : "nameEn"] ??
-    persona.patientName?.[locale] ??
-    persona.id
   return (
     <GeneratedAvatar
-      seed={persona.staff?.id ?? persona.patientId ?? persona.id}
-      sex={persona.staff?.sex ?? (persona.role === "patient" ? "M" : undefined)}
-      role={persona.role === "patient" ? undefined : persona.role}
+      seed={user.avatarSeed}
+      sex={user.sex}
+      role={role}
       size={size}
-      title={name}
+      title={locale === "bn" ? user.nameBn : user.nameEn}
       className={className}
     />
   )
 }
 
-/** A patient's avatar (the patient's `photoSeed`; hair greys with age). */
-export function PatientAvatar({
-  patient,
+/** A party's avatar (individual customers; companies show a monogram instead). */
+export function PartyAvatar({
+  party,
   size = 40,
   className,
 }: {
-  patient: {
-    photoSeed?: string
-    id?: string
-    sex?: Sex
-    dob?: string
-    nameEn?: string
-    nameBn?: string
-  }
+  party: { avatarSeed: string; nameEn: string; nameBn: string; sex?: Sex }
   size?: number
   className?: string
 }) {
   const { locale } = useLocale()
-  const age = patient.dob ? ageOn(patient.dob, dhakaDate(now())) : undefined
-  const name = locale === "bn" ? (patient.nameBn ?? patient.nameEn) : patient.nameEn
   return (
     <GeneratedAvatar
-      seed={patient.photoSeed ?? patient.id ?? name ?? "patient"}
-      sex={patient.sex}
-      age={age}
+      seed={party.avatarSeed}
+      sex={party.sex}
       size={size}
-      title={name}
+      title={locale === "bn" ? party.nameBn : party.nameEn}
       className={className}
     />
   )

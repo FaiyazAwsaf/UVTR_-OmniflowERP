@@ -12,13 +12,13 @@ import { applyClockOffset, getClockOffset } from "./clock"
 
 const recordClockChange = defineCommand({
   name: "demo.clockChanged",
-  roles: "any",
+  permission: "system",
   input: z.object({ minutes: z.number(), reset: z.boolean() }),
   async run(tx, input) {
-    if (input.reset) tx.emit("ClockReset", { branchId: null })
+    if (input.reset) tx.emit("ClockReset", { locationId: null })
     else
       tx.emit("ClockAdvanced", {
-        branchId: null,
+        locationId: null,
         params: { minutes: input.minutes },
       })
   },

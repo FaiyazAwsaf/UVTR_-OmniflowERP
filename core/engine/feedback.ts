@@ -13,7 +13,7 @@ import {
 /**
  * The engine's user-facing outcome for a failed command. The shell renders
  * it: conflicts as "Record changed, reload", rule violations as the rule's
- * message, denials as "This action is for <role>".
+ * message, denials as "You need <permission>".
  */
 export type EngineFeedback =
   | { kind: "conflict"; error: ConflictError; command: string }
@@ -21,7 +21,7 @@ export type EngineFeedback =
   | { kind: "denied"; error: PermissionDenied; command: string }
   | { kind: "validation"; error: ValidationError; command: string }
   | { kind: "not-found"; error: NotFoundError; command: string }
-  | { kind: "no-persona"; command: string }
+  | { kind: "no-user"; command: string }
   | { kind: "unexpected"; message: string; command: string }
 
 type FeedbackState = {

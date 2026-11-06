@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useLiveQuery } from "dexie-react-hooks"
-import { ArrowLeft, UserRound } from "lucide-react"
+import { ArrowLeft } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { useDb } from "@/core/db/DbProvider"
@@ -17,11 +17,10 @@ import {
 } from "@/modules/demo/components/audit/diff"
 import {
   actorName,
-  branchLabel,
   consumerLabel,
   eventDef,
   eventLabel,
-  roleLabel,
+  locationLabel,
   SEVERITY_DOT,
 } from "@/modules/demo/components/labels"
 
@@ -63,15 +62,7 @@ function Pairs({
 }
 
 /** One event in full: payload, links, commit and the audit rows it wrote. */
-export function EventDetail({
-  seq,
-  onBack,
-  onOnlyPatient,
-}: {
-  seq: number
-  onBack: () => void
-  onOnlyPatient: (patientId: string) => void
-}) {
+export function EventDetail({ seq, onBack }: { seq: number; onBack: () => void }) {
   const { t, tk, num, locale, dateTime, relative } = useLocale()
   const db = useDb()
   const event = useLiveQuery(
@@ -139,9 +130,11 @@ export function EventDetail({
           {actorName(event.actor, locale, tk)}
           <span className="text-muted-foreground">
             {" · "}
-            {roleLabel(event.actor?.role, tk)}
+            {locationLabel(event.locationId, locale)}
             {" · "}
-            {branchLabel(event.branchId, locale)}
+            <span lang="en" className="font-mono uppercase">
+              {event.app}
+            </span>
           </span>
         </Field>
         <Field label={t("demo.stream.details.consumers")}>
@@ -177,20 +170,6 @@ export function EventDetail({
         <Field label={t("demo.stream.details.seq")}>
           <span className="font-mono text-[0.6875rem]">{event.seq}</span>
         </Field>
-        <Field label={t("demo.stream.details.origin")}>
-          <span className="font-mono text-[0.6875rem]">{event.origin}</span>
-          {event.originAt ? (
-            <span className="block text-muted-foreground">
-              {t("demo.stream.details.originAt")}: {dateTime(event.originAt)}
-            </span>
-          ) : null}
-          {event.replayedAt ? (
-            <span className="block text-info">
-              {t("demo.stream.details.replayedAt")}:{" "}
-              {dateTime(event.replayedAt)}
-            </span>
-          ) : null}
-        </Field>
       </dl>
 
       <section className="flex flex-col gap-2">
@@ -208,17 +187,6 @@ export function EventDetail({
         )}
       </section>
 
-      {event.patientId ? (
-        <Button
-          variant="outline"
-          size="sm"
-          className="self-start"
-          onClick={() => onOnlyPatient(event.patientId!)}
-        >
-          <UserRound />
-          {t("demo.stream.details.onlyPatient")}
-        </Button>
-      ) : null}
     </div>
   )
 }

@@ -18,7 +18,6 @@ import {
   formatPercent,
   formatRelative,
   formatTime,
-  formatUhid,
   localizeDigits,
 } from "./format"
 
@@ -49,8 +48,6 @@ type LocaleContextValue = {
   money: (poisha: number) => string
   /** DD-MM-YYYY in Dhaka */
   dmy: (value: Date | string | number) => string
-  /** Grouped UHID, always Latin digits */
-  uhid: (value: string) => string
 }
 
 const LocaleContext = React.createContext<LocaleContextValue | null>(null)
@@ -91,7 +88,6 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
       digits: (v) => localizeDigits(v, locale),
       money: (p) => formatMoney(p, locale),
       dmy: (v) => formatDmy(v, locale),
-      uhid: (v) => formatUhid(v),
     }
   }, [locale, setLocale])
 

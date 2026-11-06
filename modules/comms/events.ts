@@ -1,4 +1,4 @@
 import type { EventCatalog } from "@/core/events/types"
 
-/** Domain events emitted by this module (plan §3.4). */
+/** Comms emits no domain events (SMS rows are visible in the outbox). */
 export const commsEvents: EventCatalog = {}

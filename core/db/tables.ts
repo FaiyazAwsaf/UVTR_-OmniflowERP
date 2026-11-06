@@ -1,104 +1,105 @@
 /**
- * Table registry: every IndexedDB table, its Dexie index definition, and the
- * row type it stores. The engine, the edge snapshot and the seed all iterate
- * this list, so a table exists everywhere once it is declared here.
+ * Table registry: every IndexedDB table, its Dexie index definition, the row
+ * type it stores, and its engine rules (immutability, audit). The engine and
+ * the seed iterate this list, so a table exists everywhere once declared here.
  *
  * Dexie index syntax: the first entry is the primary key; `&x` unique,
- * `*x` multi-entry, `[a+b]` compound.
+ * `*x` multi-entry, `[a+b]` compound, `a.b` a nested key path.
  */
 
 import type * as S from "./schema"
 
 export interface TableRows {
-  /* 5.1 Organisation */
-  companies: S.CompanyRow
-  branches: S.BranchRow
-  departments: S.DepartmentRow
-  rooms: S.RoomRow
-  staff: S.StaffRow
-  personas: S.PersonaRow
-  specialties: S.SpecialtyRow
-  doctors: S.DoctorRow
-  feeShareContracts: S.FeeShareContractRow
-  /* 5.2 Identity */
-  patients: S.PatientRow
-  households: S.HouseholdRow
-  familyLinks: S.FamilyLinkRow
-  duplicateDecisions: S.DuplicateDecisionRow
-  reviewQueue: S.ReviewItemRow
-  /* 5.3 Scheduling */
+  /* 5.1 Organisation and settings */
+  locations: S.LocationRow
+  bays: S.BayRow
+  costCentres: S.CostCentreRow
+  settings: S.SettingRow
+  fiscalYears: S.FiscalYearRow
+  periods: S.PeriodRow
+  /* 5.2 Security and approvals */
+  users: S.UserRow
+  roles: S.RoleRow
+  rolePermissions: S.RolePermissionRow
+  userRoles: S.UserRoleRow
+  approvalLimits: S.ApprovalLimitRow
+  sodRules: S.SodRuleRow
   sessions: S.SessionRow
-  appointments: S.AppointmentRow
-  queueTokens: S.QueueTokenRow
-  /* 5.4 Clinical */
-  encounters: S.EncounterRow
-  notes: S.NoteRow
-  scribeDrafts: S.ScribeDraftRow
-  prescriptions: S.PrescriptionRow
-  rxLines: S.RxLineRow
-  pharmacyQueue: S.PharmacyQueueRow
-  labOrders: S.LabOrderRow
-  labOrderItems: S.LabOrderItemRow
-  imagingOrders: S.ImagingOrderRow
-  imagingReports: S.ImagingReportRow
-  inboxItems: S.InboxItemRow
-  /* 5.5 Lab */
-  labTests: S.LabTestRow
-  specimens: S.SpecimenRow
-  results: S.ResultRow
-  labReports: S.LabReportRow
-  criticalCalls: S.CriticalCallRow
-  /* 5.6 Medicines and stock */
-  pharmaCompanies: S.PharmaCompanyRow
-  drugClasses: S.DrugClassRow
-  generics: S.GenericRow
-  brands: S.BrandRow
-  offers: S.OfferRow
-  batches: S.BatchRow
-  stockLevels: S.StockLevelRow
-  reorderLevels: S.ReorderLevelRow
-  stockMovements: S.StockMovementRow
-  dispenses: S.DispenseRow
-  controlledRegister: S.ControlledRegisterRow
-  substitutionRequests: S.SubstitutionRequestRow
-  transfers: S.TransferRow
-  transferLines: S.TransferLineRow
-  /* 5.7 Billing, finance, corporate, procurement */
-  basketLines: S.BasketLineRow
-  invoices: S.InvoiceRow
-  invoiceLines: S.InvoiceLineRow
-  payments: S.PaymentRow
-  receipts: S.ReceiptRow
-  refunds: S.RefundRow
-  creditNotes: S.CreditNoteRow
+  loginEvents: S.LoginEventRow
   approvals: S.ApprovalRow
-  shifts: S.ShiftRow
-  feeShareAccruals: S.FeeShareAccrualRow
-  mfsSettlements: S.MfsSettlementRow
-  corporateClients: S.CorporateClientRow
-  corporateContracts: S.CorporateContractRow
-  corporateEmployees: S.CorporateEmployeeRow
-  vendors: S.VendorRow
-  purchaseRequests: S.PurchaseRequestRow
+  /* 5.3 Parties */
+  parties: S.PartyRow
+  vehicles: S.VehicleRow
+  /* 5.4 Products and services */
+  uoms: S.UomRow
+  itemCategories: S.ItemCategoryRow
+  items: S.ItemRow
+  reorderRules: S.ReorderRuleRow
+  services: S.ServiceRow
+  serviceVariants: S.ServiceVariantRow
+  serviceRecipes: S.ServiceRecipeRow
+  packages: S.PackageRow
+  addOns: S.AddOnRow
+  priceLists: S.PriceListRow
+  priceListLines: S.PriceListLineRow
+  promotions: S.PromotionRow
+  /* 5.5 Sales */
+  quotations: S.QuotationRow
+  quotationLines: S.QuotationLineRow
+  salesOrders: S.SalesOrderRow
+  salesOrderLines: S.SalesOrderLineRow
+  jobTasks: S.JobTaskRow
+  jobConsumptions: S.JobConsumptionRow
+  qcChecks: S.QcCheckRow
+  deliveries: S.DeliveryRow
+  deliveryLines: S.DeliveryLineRow
+  salesInvoices: S.SalesInvoiceRow
+  salesInvoiceLines: S.SalesInvoiceLineRow
+  creditNotes: S.CreditNoteRow
+  /* 5.6 Receivables, payables, cash and bank */
+  receipts: S.ReceiptRow
+  customerRefunds: S.CustomerRefundRow
+  vendorBills: S.VendorBillRow
+  vendorBillLines: S.VendorBillLineRow
+  vendorPayments: S.VendorPaymentRow
+  debitNotes: S.DebitNoteRow
+  cashBankAccounts: S.CashBankAccountRow
+  fundTransfers: S.FundTransferRow
+  settlements: S.SettlementRow
+  cheques: S.ChequeRow
+  bankStatements: S.BankStatementRow
+  pettyCashVouchers: S.PettyCashVoucherRow
+  /* 5.7 Accounting and tax */
+  accounts: S.AccountRow
+  journals: S.JournalRow
+  journalLines: S.JournalLineRow
+  recurringJournals: S.RecurringJournalRow
+  vatReturns: S.VatReturnRow
+  taxDeposits: S.TaxDepositRow
+  /* 5.8 Purchasing and inventory */
+  purchaseRequisitions: S.PurchaseRequisitionRow
   prLines: S.PrLineRow
   purchaseOrders: S.PurchaseOrderRow
   poLines: S.PoLineRow
   grns: S.GrnRow
   grnLines: S.GrnLineRow
-  vendorInvoices: S.VendorInvoiceRow
-  threeWayMatches: S.ThreeWayMatchRow
-  payables: S.PayableRow
-  accountingExports: S.AccountingExportRow
-  /* 5.8 Inpatient */
-  wards: S.WardRow
-  beds: S.BedRow
-  admissions: S.AdmissionRow
-  deposits: S.DepositRow
-  /* 5.9 Communication and demo */
-  sms: S.SmsRow
+  purchaseReturns: S.PurchaseReturnRow
+  batches: S.BatchRow
+  stockBalances: S.StockBalanceRow
+  stockValues: S.StockValueRow
+  stockMoves: S.StockMoveRow
+  transfers: S.TransferRow
+  transferLines: S.TransferLineRow
+  stockAdjustments: S.StockAdjustmentRow
+  stockCounts: S.StockCountRow
+  /* 5.9 Reporting */
+  reportDefinitions: S.ReportDefinitionRow
+  reportRuns: S.ReportRunRow
+  reportSchedules: S.ReportScheduleRow
+  /* 5.10 Communication and demo */
   notifications: S.NotificationRow
-  syncExceptions: S.SyncExceptionRow
-  dailyStats: S.DailyStatRow
+  sms: S.SmsRow
+  emails: S.EmailRow
   scenarioRuns: S.ScenarioRunRow
 }
 
@@ -110,253 +111,382 @@ export type TableSpec = {
   /** Dexie index definition; the primary key is always `id` */
   indexes: string
   /**
-   * Field holding the patient id, so audit rows and events can be filtered
-   * by patient. "id" for the patients table itself.
+   * INV-06: once the committed row's `status` is in this set (or always, for
+   * tables without a status), only `mutableFields` may change and the row may
+   * not be deleted.
    */
-  patientField?: string
-  /** Rows may be removed (everything else is only ever updated). */
+  immutableAfter?: readonly string[] | "always"
+  /** Fields that may still change on an immutable row */
+  mutableFields?: readonly string[]
+  /** Rows of this table may be deleted (buffered `tx.remove`) */
   deletable?: boolean
-  /**
-   * Numeric fields merged as deltas during offline replay (stock and similar
-   * counters), rather than last-writer-wins.
-   */
-  deltaFields?: string[]
+  /** false: platform table written by commits without audit rows (sessions) */
+  audited?: boolean
+  /** Field holding the readable document number (recorded on audit rows) */
+  docNoField?: string
 }
 
+const POSTED = ["posted", "partially-paid", "paid", "credited", "reversed"] as const
+
 export const TABLE_SPECS: { [T in TableName]: TableSpec } = {
-  /* 5.1 Organisation */
-  companies: { indexes: "id, code" },
-  branches: { indexes: "id, code, companyId" },
-  departments: { indexes: "id, branchId, kind" },
-  rooms: { indexes: "id, branchId, departmentId, kind" },
-  staff: { indexes: "id, role, branchId" },
-  personas: { indexes: "id, staffId, role, branchId" },
-  specialties: { indexes: "id, code" },
-  doctors: { indexes: "id, staffId, specialtyId, kind, *branchIds" },
-  feeShareContracts: { indexes: "id, doctorId" },
+  /* 5.1 */
+  locations: { indexes: "id, &code" },
+  bays: { indexes: "id, locationId, code" },
+  costCentres: { indexes: "id, &code, locationId" },
+  settings: { indexes: "id" },
+  fiscalYears: { indexes: "id, &code, status" },
+  periods: { indexes: "id, &code, month, fiscalYearId, status, startsOn" },
 
-  /* 5.2 Identity */
-  patients: {
-    indexes:
-      "id, &uhid, provisionalUhid, *aliases, nid, brn, phone, householdId, identityStatus, *nameSearchKeys, guardianPatientId, corporateEmployeeId, registeredAtBranch",
-    patientField: "id",
-  },
-  households: { indexes: "id, &phone, headPatientId" },
-  familyLinks: {
-    indexes: "id, ownerPatientId, memberPatientId, status",
-    patientField: "memberPatientId",
-  },
-  duplicateDecisions: { indexes: "id, *candidateIds, newPatientId" },
-  reviewQueue: { indexes: "id, kind, status, branchId, *patientIds" },
-
-  /* 5.3 Scheduling */
+  /* 5.2 */
+  users: { indexes: "id, &username, status, homeLocationId" },
+  roles: { indexes: "id, &code" },
+  rolePermissions: { indexes: "id, roleId, permission, [roleId+permission]", deletable: true },
+  userRoles: { indexes: "id, userId, roleId, [userId+roleId]", deletable: true },
+  approvalLimits: { indexes: "id, roleId, kind, [roleId+kind]" },
+  sodRules: { indexes: "id, &code" },
   sessions: {
-    indexes:
-      "id, doctorId, branchId, date, status, [branchId+date], [doctorId+date]",
+    indexes: "id, userId, windowId, endedAt, startedAt",
+    audited: false,
   },
-  appointments: {
-    indexes:
-      "id, sessionId, patientId, doctorId, branchId, date, status, [sessionId+status], [branchId+date]",
-    patientField: "patientId",
-  },
-  queueTokens: {
-    indexes:
-      "id, sessionId, appointmentId, patientId, branchId, status, [sessionId+status]",
-    patientField: "patientId",
+  loginEvents: { indexes: "id, username, userId, at, result" },
+  approvals: {
+    indexes: "id, kind, docType, docId, status, requestedBy, locationId, requestedAt, *routedTo",
+    immutableAfter: ["approved", "rejected", "cancelled"],
+    mutableFields: [],
+    docNoField: "docNo",
   },
 
-  /* 5.4 Clinical */
-  encounters: {
-    indexes: "id, appointmentId, patientId, doctorId, branchId, status",
-    patientField: "patientId",
+  /* 5.3 */
+  parties: {
+    indexes: "id, &code, segment, phone, status, isCustomer, isVendor, nameEn, bin, nid",
+    docNoField: "code",
   },
-  notes: {
-    indexes: "id, encounterId, patientId, doctorId, status",
-    patientField: "patientId",
+  vehicles: { indexes: "id, partyId, &regNo, vehicleClass", docNoField: "regNo" },
+
+  /* 5.4 */
+  uoms: { indexes: "id, code" },
+  itemCategories: { indexes: "id, &code" },
+  items: { indexes: "id, &sku, categoryId, kind, status, barcode", docNoField: "sku" },
+  reorderRules: { indexes: "id, itemId, locationId, [itemId+locationId]" },
+  services: { indexes: "id, &code, category, sortOrder", docNoField: "code" },
+  serviceVariants: { indexes: "id, serviceId, [serviceId+vehicleClass]" },
+  serviceRecipes: {
+    indexes: "id, serviceId, itemId, [serviceId+vehicleClass]",
+    deletable: true,
   },
-  scribeDrafts: { indexes: "id, encounterId" },
-  prescriptions: {
-    indexes: "id, rxNo, encounterId, patientId, doctorId, branchId, status",
-    patientField: "patientId",
+  packages: { indexes: "id, &code" },
+  addOns: { indexes: "id, &code" },
+  priceLists: { indexes: "id, code, kind, status" },
+  priceListLines: {
+    indexes: "id, priceListId, targetId, [priceListId+targetId]",
+    deletable: true,
   },
-  rxLines: {
-    indexes: "id, rxId, patientId, branchId, brandId, genericId, status",
-    patientField: "patientId",
+  promotions: { indexes: "id, &code, active" },
+
+  /* 5.5 */
+  quotations: {
+    indexes: "id, &quoteNo, locationId, partyId, vehicleId, status, advisorId",
+    immutableAfter: ["accepted", "rejected", "expired"],
+    mutableFields: ["status", "orderId"],
+    docNoField: "quoteNo",
   },
-  pharmacyQueue: {
-    indexes: "id, rxId, patientId, branchId, status, [branchId+status]",
-    patientField: "patientId",
-  },
-  labOrders: {
-    indexes: "id, orderNo, encounterId, patientId, branchId, status",
-    patientField: "patientId",
-  },
-  labOrderItems: {
+  quotationLines: { indexes: "id, quotationId", deletable: true },
+  salesOrders: {
     indexes:
-      "id, labOrderId, patientId, branchId, testId, specimenId, status, reportId, [branchId+status]",
-    patientField: "patientId",
+      "id, &orderNo, locationId, partyId, vehicleId, status, bookedOn, scheduledAt, bayId, [locationId+status], advisorId",
+    docNoField: "orderNo",
   },
-  imagingOrders: {
-    indexes: "id, orderNo, encounterId, patientId, branchId, status",
-    patientField: "patientId",
+  salesOrderLines: { indexes: "id, orderId, refId, status" },
+  jobTasks: {
+    indexes:
+      "id, orderId, orderLineId, technicianId, bayId, status, plannedStart, locationId, [technicianId+status]",
   },
-  imagingReports: {
-    indexes: "id, imagingOrderId, patientId, status",
-    patientField: "patientId",
+  jobConsumptions: {
+    indexes: "id, orderId, taskId, itemId, locationId, at",
+    immutableAfter: "always",
+    mutableFields: [],
   },
-  inboxItems: {
-    indexes: "id, doctorId, patientId, kind, status, [doctorId+status]",
-    patientField: "patientId",
+  qcChecks: { indexes: "id, orderId, at", immutableAfter: "always", mutableFields: [] },
+  deliveries: {
+    indexes: "id, &deliveryNo, orderId, locationId, deliveredAt, kind",
+    immutableAfter: "always",
+    mutableFields: ["journalId"],
+    docNoField: "deliveryNo",
+  },
+  deliveryLines: { indexes: "id, deliveryId, orderLineId, itemId" },
+  salesInvoices: {
+    indexes:
+      "id, &invoiceNo, locationId, partyId, date, status, kind, dueDate, *orderIds, [partyId+status]",
+    immutableAfter: POSTED,
+    mutableFields: ["paidP", "reservedP", "creditedP", "status", "printCount"],
+    docNoField: "invoiceNo",
+  },
+  salesInvoiceLines: {
+    indexes:
+      "id, invoiceId, orderLineId, serviceId, itemId, vehicleId, date, locationId, partyId",
+    immutableAfter: "always",
+    mutableFields: [],
+  },
+  creditNotes: {
+    indexes: "id, &creditNoteNo, invoiceId, partyId, locationId, date, status",
+    immutableAfter: ["posted", "rejected"],
+    mutableFields: [],
+    docNoField: "creditNoteNo",
   },
 
-  /* 5.5 Lab */
-  labTests: { indexes: "id, code, section, kind" },
-  specimens: {
+  /* 5.6 */
+  receipts: {
     indexes:
-      "id, &accessionNo, barcode, patientId, branchId, labOrderId, status, [branchId+status]",
-    patientField: "patientId",
+      "id, &receiptNo, locationId, partyId, date, method, status, orderId, chequeId, cashBankAccountId",
+    immutableAfter: ["posted", "timed-out", "bounced"],
+    mutableFields: [],
+    docNoField: "receiptNo",
   },
-  results: {
-    indexes: "id, labOrderItemId, patientId, testId, status",
-    patientField: "patientId",
+  customerRefunds: {
+    indexes: "id, &refundNo, partyId, locationId, date",
+    immutableAfter: "always",
+    mutableFields: [],
+    docNoField: "refundNo",
   },
-  labReports: {
-    indexes: "id, reportNo, patientId, branchId, labOrderId, status",
-    patientField: "patientId",
+  vendorBills: {
+    indexes: "id, &billNo, partyId, date, dueDate, status, kind, poId, *grnIds, [partyId+vendorRef]",
+    immutableAfter: ["posted", "partially-paid", "paid"],
+    mutableFields: ["paidP", "debitedP", "status"],
+    docNoField: "billNo",
   },
-  criticalCalls: {
-    indexes: "id, resultId, patientId, branchId, status",
-    patientField: "patientId",
+  vendorBillLines: { indexes: "id, billId, poLineId, grnLineId, itemId" },
+  vendorPayments: {
+    indexes: "id, &paymentNo, partyId, date, status, method",
+    immutableAfter: ["posted", "rejected"],
+    mutableFields: [],
+    docNoField: "paymentNo",
+  },
+  debitNotes: {
+    indexes: "id, &debitNoteNo, billId, partyId, date",
+    immutableAfter: "always",
+    mutableFields: [],
+    docNoField: "debitNoteNo",
+  },
+  cashBankAccounts: { indexes: "id, &code, kind, accountTag, locationId" },
+  fundTransfers: {
+    indexes: "id, &transferNo, fromAccountId, toAccountId, date",
+    immutableAfter: "always",
+    mutableFields: [],
+    docNoField: "transferNo",
+  },
+  settlements: {
+    indexes: "id, &settlementNo, clearingAccountId, bankAccountId, date",
+    immutableAfter: "always",
+    mutableFields: [],
+    docNoField: "settlementNo",
+  },
+  cheques: {
+    indexes:
+      "id, direction, chequeNo, partyId, status, chequeDate, receiptId, paymentId, [cashBankAccountId+chequeNo]",
+    docNoField: "chequeNo",
+  },
+  bankStatements: { indexes: "id, cashBankAccountId, fromDate, toDate, status" },
+  pettyCashVouchers: {
+    indexes: "id, &voucherNo, locationId, date, status, cashBankAccountId",
+    immutableAfter: ["posted", "rejected"],
+    mutableFields: [],
+    docNoField: "voucherNo",
   },
 
-  /* 5.6 Medicines and stock */
-  pharmaCompanies: { indexes: "id, name" },
-  drugClasses: { indexes: "id, name, parentId" },
-  generics: { indexes: "id, name, classId, allergyClass" },
-  brands: {
-    indexes: "id, name, genericId, companyId, category, *searchKeys",
-  },
-  offers: { indexes: "id, brandId, branchId" },
-  batches: { indexes: "id, brandId, batchNo, expiry, status" },
-  stockLevels: {
+  /* 5.7 */
+  accounts: { indexes: "id, &code, type, parentId, tag", docNoField: "code" },
+  journals: {
     indexes:
-      "id, branchId, brandId, batchId, [branchId+brandId], [branchId+batchId]",
-    deltaFields: ["qty", "quarantinedQty", "inTransitIn", "inTransitOut"],
+      "id, journalNo, voucherType, date, periodId, status, source.docId, recurringId, preparedBy, rule",
+    immutableAfter: ["posted", "reversed", "discarded"],
+    mutableFields: ["status", "reversedById"],
+    docNoField: "journalNo",
   },
-  reorderLevels: { indexes: "id, branchId, brandId, [branchId+brandId]" },
-  stockMovements: {
-    indexes: "id, branchId, brandId, batchId, type, at",
+  journalLines: {
+    indexes:
+      "id, journalId, accountId, partyId, date, periodId, locationId, itemId, [accountId+date], reconciledStatementLineId",
+    immutableAfter: "always",
+    mutableFields: ["reconciledStatementLineId"],
   },
-  dispenses: {
-    indexes: "id, rxId, rxLineId, patientId, branchId, brandId, at",
-    patientField: "patientId",
+  recurringJournals: { indexes: "id, &code, kind" },
+  vatReturns: {
+    indexes: "id, periodId, &month",
+    immutableAfter: "always",
+    mutableFields: [],
   },
-  controlledRegister: { indexes: "id, dispenseId, branchId, brandId, at" },
-  substitutionRequests: {
-    indexes: "id, rxId, rxLineId, patientId, doctorId, branchId, status",
-    patientField: "patientId",
+  taxDeposits: {
+    indexes: "id, &depositNo, forMonth, kind, date",
+    immutableAfter: "always",
+    mutableFields: [],
+    docNoField: "depositNo",
+  },
+
+  /* 5.8 */
+  purchaseRequisitions: {
+    indexes: "id, &prNo, locationId, status, requestedBy, date",
+    docNoField: "prNo",
+  },
+  prLines: { indexes: "id, prId, itemId", deletable: true },
+  purchaseOrders: {
+    indexes: "id, &poNo, vendorId, locationId, prId, status, orderDate",
+    docNoField: "poNo",
+  },
+  poLines: { indexes: "id, poId, itemId" },
+  grns: {
+    indexes: "id, &grnNo, poId, vendorId, locationId, date",
+    immutableAfter: "always",
+    mutableFields: [],
+    docNoField: "grnNo",
+  },
+  grnLines: {
+    indexes: "id, grnId, poLineId, itemId, quarantineStatus, batchId",
+    immutableAfter: "always",
+    mutableFields: ["qtyAccepted", "qtyReturned", "qtyBilled", "quarantineStatus", "batchId"],
+  },
+  purchaseReturns: {
+    indexes: "id, &returnNo, vendorId, grnId, locationId, date",
+    immutableAfter: "always",
+    mutableFields: [],
+    docNoField: "returnNo",
+  },
+  batches: { indexes: "id, itemId, batchNo, expiry, status, [itemId+batchNo]" },
+  stockBalances: {
+    indexes: "id, itemId, locationId, batchId, [itemId+locationId]",
+  },
+  stockValues: { indexes: "id, itemId, locationId, [itemId+locationId]" },
+  stockMoves: {
+    indexes:
+      "id, itemId, locationId, [itemId+locationId], type, at, date, ref.docId, journalId, batchId",
+    immutableAfter: "always",
+    mutableFields: ["journalId"],
   },
   transfers: {
-    indexes: "id, transferNo, fromBranchId, toBranchId, status",
+    indexes: "id, &transferNo, fromLocationId, toLocationId, status, requestedAt",
+    docNoField: "transferNo",
   },
-  transferLines: { indexes: "id, transferId, brandId" },
-
-  /* 5.7 Billing, finance, corporate, procurement */
-  basketLines: {
-    indexes:
-      "id, patientId, branchId, sourceType, sourceId, status, [patientId+status]",
-    patientField: "patientId",
+  transferLines: { indexes: "id, transferId, itemId" },
+  stockAdjustments: {
+    indexes: "id, &adjustmentNo, locationId, status, date",
+    immutableAfter: ["posted", "rejected"],
+    mutableFields: [],
+    docNoField: "adjustmentNo",
   },
-  invoices: {
-    indexes:
-      "id, &invoiceNo, patientId, companyId, branchId, date, status, shiftId",
-    patientField: "patientId",
-  },
-  invoiceLines: {
-    indexes: "id, invoiceId, basketLineId, sourceId, doctorId, status",
-  },
-  payments: {
-    indexes:
-      "id, invoiceId, patientId, branchId, shiftId, tender, status, idempotencyKey",
-    patientField: "patientId",
-  },
-  receipts: {
-    indexes: "id, receiptNo, invoiceId, patientId, branchId",
-    patientField: "patientId",
-  },
-  refunds: { indexes: "id, refundNo, invoiceId, paymentId, status" },
-  creditNotes: { indexes: "id, creditNoteNo, invoiceId" },
-  approvals: { indexes: "id, kind, status, approverId, requestedBy" },
-  shifts: {
-    indexes: "id, cashierId, branchId, date, status, [branchId+status]",
-  },
-  feeShareAccruals: {
-    indexes:
-      "id, doctorId, invoiceId, invoiceLineId, month, [doctorId+month]",
-  },
-  mfsSettlements: { indexes: "id, provider, date, status" },
-  corporateClients: { indexes: "id, code" },
-  corporateContracts: { indexes: "id, clientId, status" },
-  corporateEmployees: {
-    indexes: "id, clientId, contractId, patientId, status",
-    patientField: "patientId",
-  },
-  vendors: { indexes: "id, code" },
-  purchaseRequests: { indexes: "id, prNo, branchId, status" },
-  prLines: { indexes: "id, prId, brandId" },
-  purchaseOrders: {
-    indexes: "id, &poNo, prId, vendorId, branchId, status",
-  },
-  poLines: { indexes: "id, poId, brandId" },
-  grns: { indexes: "id, grnNo, poId, branchId, status" },
-  grnLines: { indexes: "id, grnId, poLineId, brandId" },
-  vendorInvoices: { indexes: "id, vendorInvoiceNo, vendorId, poId, status" },
-  threeWayMatches: { indexes: "id, poId, vendorInvoiceId, status" },
-  payables: { indexes: "id, vendorId, vendorInvoiceId, poId, status" },
-  accountingExports: { indexes: "id, date, companyId" },
-
-  /* 5.8 Inpatient */
-  wards: { indexes: "id, branchId" },
-  beds: { indexes: "id, wardId, branchId, status" },
-  admissions: {
-    indexes: "id, admissionNo, patientId, branchId, bedId, status",
-    patientField: "patientId",
-  },
-  deposits: {
-    indexes: "id, admissionId, patientId",
-    patientField: "patientId",
+  stockCounts: {
+    indexes: "id, &countNo, locationId, status, date",
+    immutableAfter: ["posted", "cancelled"],
+    mutableFields: [],
+    docNoField: "countNo",
   },
 
-  /* 5.9 Communication and demo */
-  sms: {
-    indexes: "id, patientId, branchId, status, queuedAt",
-    patientField: "patientId",
-  },
-  notifications: {
-    indexes: "id, patientId, read, at",
-    patientField: "patientId",
-  },
-  syncExceptions: { indexes: "id, kind, branchId, status" },
-  dailyStats: { indexes: "id, branchId, date, dept, [branchId+date]" },
+  /* 5.9 */
+  reportDefinitions: { indexes: "id, code, app, isSystem, ownerId", deletable: true },
+  reportRuns: { indexes: "id, definitionId, runBy, at" },
+  reportSchedules: { indexes: "id, definitionId, active, nextDueAt", deletable: true },
+
+  /* 5.10 */
+  notifications: { indexes: "id, userId, read, at, [userId+read]" },
+  sms: { indexes: "id, partyId, status, queuedAt" },
+  emails: { indexes: "id, status, at" },
   scenarioRuns: { indexes: "id, scenarioId, at" },
 }
 
 export const TABLE_NAMES = Object.keys(TABLE_SPECS) as TableName[]
 
-/** Engine-owned tables, present in every data database. */
+/** Engine-owned tables, present in the central database. */
 export const PLATFORM_STORES = {
-  events: "seq, id, type, at, branchId, patientId, commitId, command",
-  audit: "seq, commitId, entity, entityId, patientId, at, action",
+  events: "seq, id, type, at, locationId, app, commitId, command, actor.userId",
+  audit: "seq, commitId, entity, entityId, at, action, app, actor.userId, docNo",
   counters: "id",
   idempotency: "key, commitId, at",
-  appliedCommits: "commitId, appliedAt",
-} as const
-
-/** Present only in branch edge databases (plan §3.7). */
-export const EDGE_ONLY_STORES = {
-  outbox: "seq, commitId, at",
 } as const
 
 export function isTableName(name: string): name is TableName {
   return name in TABLE_SPECS
 }
+
+/** Short id prefixes, so ids read well in the audit log and event stream. */
+export const ID_PREFIX: Partial<Record<TableName, string>> = {
+  locations: "loc",
+  bays: "bay",
+  costCentres: "cc",
+  fiscalYears: "fy",
+  periods: "per",
+  users: "usr",
+  roles: "role",
+  rolePermissions: "rp",
+  userRoles: "ur",
+  approvalLimits: "lim",
+  sodRules: "sod",
+  sessions: "ses",
+  loginEvents: "lgn",
+  approvals: "apv",
+  parties: "pty",
+  vehicles: "veh",
+  itemCategories: "cat",
+  items: "itm",
+  reorderRules: "rr",
+  services: "svc",
+  serviceVariants: "svv",
+  serviceRecipes: "rcp",
+  packages: "pkg",
+  addOns: "add",
+  priceLists: "pl",
+  priceListLines: "pll",
+  promotions: "prm",
+  quotations: "qt",
+  quotationLines: "qtl",
+  salesOrders: "so",
+  salesOrderLines: "sol",
+  jobTasks: "tsk",
+  jobConsumptions: "jcn",
+  qcChecks: "qc",
+  deliveries: "dn",
+  deliveryLines: "dnl",
+  salesInvoices: "inv",
+  salesInvoiceLines: "invl",
+  creditNotes: "crn",
+  receipts: "mr",
+  customerRefunds: "rf",
+  vendorBills: "bl",
+  vendorBillLines: "bll",
+  vendorPayments: "vp",
+  debitNotes: "dbn",
+  cashBankAccounts: "cba",
+  fundTransfers: "ct",
+  settlements: "set",
+  cheques: "chq",
+  bankStatements: "bst",
+  pettyCashVouchers: "pcv",
+  accounts: "acc",
+  journals: "jnl",
+  journalLines: "jl",
+  recurringJournals: "rec",
+  vatReturns: "vat",
+  taxDeposits: "txd",
+  purchaseRequisitions: "pr",
+  prLines: "prl",
+  purchaseOrders: "po",
+  poLines: "pol",
+  grns: "grn",
+  grnLines: "grnl",
+  purchaseReturns: "prn",
+  batches: "bat",
+  stockMoves: "mov",
+  transfers: "trf",
+  transferLines: "trfl",
+  stockAdjustments: "adj",
+  stockCounts: "cnt",
+  reportDefinitions: "rpt",
+  reportRuns: "run",
+  reportSchedules: "sch",
+  notifications: "ntf",
+  sms: "sms",
+  emails: "eml",
+  scenarioRuns: "scn",
+}
+
+/** Deterministic ids for the stock tables (one row per key). */
+export const stockValueId = (itemId: string, locationId: string) =>
+  `sv:${itemId}:${locationId}`
+export const stockBalanceId = (itemId: string, locationId: string, batchId?: string) =>
+  `sb:${itemId}:${locationId}:${batchId ?? "-"}`

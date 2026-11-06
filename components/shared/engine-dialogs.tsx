@@ -6,7 +6,6 @@ import { useLiveQuery } from "dexie-react-hooks"
 import { Ban, RefreshCw, ShieldX, UserRoundX } from "lucide-react"
 
 import { ruleMessage } from "@/components/shared/rule-message"
-import { roleLabel, rolesList } from "@/components/shared/roles"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -17,24 +16,22 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useDb } from "@/core/db/DbProvider"
-import { usePersona } from "@/core/session/persona"
-import { PERSONAS } from "@/core/seed/content/personas"
+import { PERMISSION_BY_KEY } from "@/core/security/registry"
+import { usePermissions } from "@/core/security/useCan"
+import { userName } from "@/core/security/users"
 import { cn } from "@/lib/utils"
 import { useLocale } from "@/lib/i18n/provider"
 
-/** A staff member's name in the window's language (personas first, then the staff table). */
-function useStaffName(staffId: string): string {
+/** A user's name in the window's language (live from the users table). */
+function useUserName(userId: string): string {
   const { t, locale } = useLocale()
   const db = useDb()
-  const persona = PERSONAS.find((p) => p.staff?.id === staffId)
   const row = useLiveQuery(
-    () => (persona || staffId === "system" ? undefined : db.staff.get(staffId)),
-    [db, staffId, persona]
+    () => (userId === "system" || userId === "demo-setup" ? undefined : db.users.get(userId)),
+    [db, userId]
   )
-  if (staffId === "system") return t("shell.feedback.system")
-  if (persona?.staff)
-    return locale === "bn" ? persona.staff.nameBn : persona.staff.nameEn
-  if (row) return locale === "bn" ? row.nameBn : row.nameEn
+  if (userId === "system" || userId === "demo-setup") return t("shell.feedback.system")
+  if (row) return userName(row, locale)
   return t("shell.feedback.someone")
 }
 
@@ -70,7 +67,7 @@ export type ConflictInfo = {
 }
 
 /**
- * Optimistic-concurrency conflict (plan §3.3, scenario S16): "Record changed by
+ * Optimistic-concurrency conflict (plan §3.3, scenario E15): "Record changed by
  * <name> at <time> (v3 to v4). Reload to see the latest." Screens read through
  * live queries, so "Reload" only has to dismiss the dialog.
  */
@@ -85,7 +82,7 @@ export function ConflictDialog({
   onReload: () => void
 }) {
   const { t, num, time } = useLocale()
-  const name = useStaffName(conflict.updatedBy)
+  const name = useUserName(conflict.updatedBy)
   return (
     <Dialog
       open={open}
@@ -144,12 +141,12 @@ export function RuleViolationDialog({
   command?: string
   onClose: () => void
 }) {
-  const { t, tk, num, money, dmy, uhid, locale } = useLocale()
+  const { t, tk, num, money, dmy, locale } = useLocale()
   const params = violation.params ?? {}
   const message = ruleMessage(
     violation.code,
     params,
-    { locale, tk, num: (value) => num(value), money, dmy, uhid },
+    { locale, tk, num: (value) => num(value), money, dmy },
     command
   )
   const rule = typeof params.rule === "string" ? params.rule : undefined
@@ -191,32 +188,29 @@ export function RuleViolationDialog({
 }
 
 /**
- * The window's role may not run a command: "This action is for <roles>."
- * `roles` comes from the command definition when the engine provides it.
+ * The signed-in user lacks a command's permission: "You need the permission
+ * <label>. An administrator can grant it in RBAC." Always audited.
  */
 export function DeniedDialog({
   open,
-  roles,
-  actorRole,
+  permissions,
   onClose,
 }: {
   open: boolean
-  roles?: readonly string[] | "any"
-  actorRole: string
+  /** The key(s) the command needs */
+  permissions?: readonly string[]
   onClose: () => void
 }) {
   const { t, tk, locale } = useLocale()
-  const persona = usePersona()
-  const personaName = persona?.staff
-    ? locale === "bn"
-      ? persona.staff.nameBn
-      : persona.staff.nameEn
-    : (persona?.patientName?.[locale] ?? "")
+  const { user } = usePermissions()
+  const labels = (permissions ?? [])
+    .map((key) => {
+      const def = PERMISSION_BY_KEY.get(key)
+      return def ? tk(def.labelKey) : key
+    })
+    .join(" / ")
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => (!next ? onClose() : undefined)}
-    >
+    <Dialog open={open} onOpenChange={(next) => (!next ? onClose() : undefined)}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-3">
@@ -226,22 +220,13 @@ export function DeniedDialog({
             <DialogTitle>{t("shell.feedback.deniedTitle")}</DialogTitle>
           </div>
           <DialogDescription className="pt-1 text-sm leading-relaxed text-foreground/90">
-            {Array.isArray(roles) && roles.length
-              ? t("shell.feedback.deniedBody", {
-                  roles: rolesList(roles, tk, locale),
-                })
+            {labels
+              ? t("shell.feedback.deniedBody", { permission: labels })
               : t("shell.feedback.deniedUnknown")}{" "}
-            {personaName
-              ? t("shell.feedback.signedInAs", {
-                  persona: personaName,
-                  role: roleLabel(actorRole, tk),
-                })
-              : null}
+            {user ? t("shell.feedback.signedInAs", { user: userName(user, locale) }) : null}
           </DialogDescription>
         </DialogHeader>
-        <p className="text-xs text-muted-foreground">
-          {t("shell.feedback.audited")}
-        </p>
+        <p className="text-xs text-muted-foreground">{t("shell.feedback.audited")}</p>
         <DialogFooter>
           <Button onClick={onClose} autoFocus>
             {t("shell.feedback.ok")}
@@ -252,8 +237,8 @@ export function DeniedDialog({
   )
 }
 
-/** A command ran before the window picked a persona. */
-export function NoPersonaDialog({
+/** A command ran before anyone signed in to the window. */
+export function NoUserDialog({
   open,
   onClose,
 }: {
@@ -272,10 +257,10 @@ export function NoPersonaDialog({
             <DialogIcon tone="warning">
               <UserRoundX />
             </DialogIcon>
-            <DialogTitle>{t("shell.feedback.noPersonaTitle")}</DialogTitle>
+            <DialogTitle>{t("shell.feedback.noUserTitle")}</DialogTitle>
           </div>
           <DialogDescription className="pt-1 text-sm leading-relaxed text-foreground/90">
-            {t("shell.feedback.noPersonaBody")}
+            {t("shell.feedback.noUserBody")}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
@@ -287,7 +272,7 @@ export function NoPersonaDialog({
             render={<Link href="/" />}
             onClick={onClose}
           >
-            {t("shell.persona.openLauncher")}
+            {t("shell.userMenu.openLauncher")}
           </Button>
         </DialogFooter>
       </DialogContent>

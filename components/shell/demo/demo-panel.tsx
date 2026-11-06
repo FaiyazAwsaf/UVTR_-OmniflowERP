@@ -1,6 +1,6 @@
 "use client"
 
-import { FlaskConical, SlidersHorizontal } from "lucide-react"
+import { SlidersHorizontal } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -12,40 +12,34 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useDbInfo } from "@/core/db/DbProvider"
 import { useLocale } from "@/lib/i18n/provider"
-import { EngineCheck } from "@/modules/demo/components/engine-check"
 import { useSeedStatus } from "@/modules/demo/components/seed-status"
 
 import { DRAWER_CLASS, INHERIT_FONT } from "./event-stream"
 import { ClockSection } from "./panel-clock"
 import { DataSection } from "./panel-data"
-import { NetworkSection } from "./panel-network"
 import { ScenariosSection } from "./panel-scenarios"
-import { SectionTitle } from "./section-title"
 import { useDemoUi, type PanelTab } from "./store"
 
 const TABS: { value: PanelTab; key: `demo.panel.tabs.${PanelTab}` }[] = [
-  { value: "controls", key: "demo.panel.tabs.controls" },
-  { value: "scenarios", key: "demo.panel.tabs.scenarios" },
-  { value: "engine", key: "demo.panel.tabs.engine" },
+  { value: "clock", key: "demo.panel.tabs.clock" },
   { value: "data", key: "demo.panel.tabs.data" },
+  { value: "scenarios", key: "demo.panel.tabs.scenarios" },
 ]
 
 /**
- * Top-bar button for the demo panel: clock, branch network, scenario
- * launchers, the engine check and demo data (plan §13, WS-Shell). A dot
- * marks the button while a branch is offline or the seed is stale.
+ * Top-bar button for the demo panel: Clock, Data (reset, seed status, tamper
+ * test) and Scenarios (plan §9). A dot marks the button while
+ * the seed is stale.
  */
 export function DemoPanelTrigger() {
   const { t } = useLocale()
-  const { network } = useDbInfo()
   const { stale } = useSeedStatus()
   const open = useDemoUi((s) => s.panelOpen)
   const setOpen = useDemoUi((s) => s.setPanelOpen)
   const tab = useDemoUi((s) => s.panelTab)
   const setTab = useDemoUi((s) => s.setPanelTab)
-  const attention = stale || network.some((n) => n.status !== "online")
+  const attention = stale
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -96,26 +90,14 @@ export function DemoPanelTrigger() {
               </TabsTrigger>
             ))}
           </TabsList>
-          <TabsContent value="controls" className="min-h-0 overflow-y-auto p-4">
-            <div className="flex flex-col gap-5">
-              <ClockSection />
-              <NetworkSection />
-            </div>
+          <TabsContent value="clock" className="min-h-0 overflow-y-auto p-4">
+            <ClockSection />
           </TabsContent>
           <TabsContent
             value="scenarios"
             className="min-h-0 overflow-y-auto p-4"
           >
             <ScenariosSection />
-          </TabsContent>
-          <TabsContent value="engine" className="min-h-0 overflow-y-auto p-4">
-            <div className="flex flex-col gap-3">
-              <SectionTitle
-                icon={FlaskConical}
-                title={t("demo.engine.title")}
-              />
-              <EngineCheck />
-            </div>
           </TabsContent>
           <TabsContent value="data" className="min-h-0 overflow-y-auto p-4">
             <DataSection />

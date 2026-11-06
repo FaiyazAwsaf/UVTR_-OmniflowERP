@@ -1,0 +1,40 @@
+/** FA strings, English. Every key also lives in bn.ts. */
+export const faEn = {
+  fa: {
+    name: "Core Accounting",
+    description: "Chart of accounts, vouchers, ledgers and period close",
+    pages: {
+      home: "Accounting home",
+      accounts: "Chart of accounts",
+      journals: "Vouchers",
+      journalNew: "New journal voucher",
+      journal: "Voucher",
+      ledger: "Ledger",
+      periods: "Periods",
+      recurring: "Recurring journals",
+      settings: "Settings",
+    },
+    perm: {
+      app_view: "Open Core Accounting",
+      export: "Export accounting lists",
+      account_edit: "Edit the chart of accounts",
+      journal_create: "Prepare journal vouchers",
+      journal_approve: "Approve journal vouchers",
+      journal_reverse: "Reverse vouchers",
+      period_close: "Close periods",
+      period_reopen: "Reopen periods",
+      recurring_run: "Post recurring journals",
+      settings_configure: "Configure posting map, cost centres and tax",
+    },
+    events: {
+      JournalPosted: "Voucher {no} posted",
+      JournalSubmitted: "Voucher {no} submitted for approval",
+      JournalApproved: "Voucher {no} approved",
+      JournalReversed: "Voucher {no} reversed",
+      JournalDiscarded: "Voucher {no} discarded",
+      PeriodClosed: "Period {period} closed",
+      PeriodReopened: "Period {period} reopened",
+      RecurringPosted: "Recurring journals posted for {period}",
+    },
+  },
+}

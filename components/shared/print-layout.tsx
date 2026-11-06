@@ -2,8 +2,8 @@
 
 import * as React from "react"
 
-import { HospitalLogo } from "@/components/shared/hospital-brand"
-import { branches, hospital, type BranchCode } from "@/config/brand.config"
+import { TenantMark } from "@/components/shared/tenant-mark"
+import { locations, printHeader, tenant, type LocationCode } from "@/config/brand.config"
 import { cn } from "@/lib/utils"
 import { useLocale } from "@/lib/i18n/provider"
 
@@ -31,9 +31,9 @@ const PAPER_TOKENS = {
   "--muted-foreground": "#555555",
   "--border": "#c9c9c9",
   "--hairline": "#e0e0e0",
-  "--primary": hospital.colors.primary,
-  "--primary-foreground": hospital.colors.primaryForeground,
-  "--link": hospital.colors.primary,
+  "--primary": "#111111",
+  "--primary-foreground": "#ffffff",
+  "--link": "#111111",
 } as React.CSSProperties
 
 function printCss(page: string) {
@@ -47,10 +47,11 @@ function printCss(page: string) {
 }
 
 /**
- * White paper with black text and the hospital brand header, for the printed
- * Rx, lab report, pharmacy label, receipt and GRN. On screen it previews the
- * sheet; printing shows only the sheet at its page size. The Bangla face is
- * the embedded Noto Sans Bengali, so Bangla lines print correctly (HAZ-13).
+ * White paper with black text and the tenant header (name, address, BIN from
+ * config/brand.config.ts), for every printed document: Mushak forms,
+ * quotation, job card, challan, gate pass, receipt, PO, GRN, vouchers. On
+ * screen it previews the sheet; printing shows only the sheet at its page
+ * size. The Bangla face is the embedded Noto Sans Bengali (ui_guidelines §6).
  */
 export function PrintLayout({
   children,
@@ -58,7 +59,7 @@ export function PrintLayout({
   title,
   docNo,
   meta,
-  branch,
+  location,
   showBrand = true,
   footer,
   demoFooter = true,
@@ -66,24 +67,24 @@ export function PrintLayout({
 }: {
   children: React.ReactNode
   size?: PaperSize
-  /** Document type, e.g. "Prescription" */
+  /** Document type, e.g. "Tax invoice (Mushak 6.3)" */
   title?: React.ReactNode
   /** Document number, shown in mono (Latin digits) */
   docNo?: string
-  /** Extra right-hand header lines (date, doctor, and so on) */
+  /** Extra right-hand header lines (date, party, and so on) */
   meta?: React.ReactNode
-  /** Branch for the address line; the group helpline otherwise */
-  branch?: BranchCode
-  /** Hospital header (off for small labels) */
+  /** Location for the address line; the registered address otherwise */
+  location?: LocationCode
+  /** Tenant header (off for small labels) */
   showBrand?: boolean
   footer?: React.ReactNode
-  /** "Demo data: not for clinical use" (plan §11) */
+  /** "Simplified layout for demonstration" (accounting_rules.md §4.4) */
   demoFooter?: boolean
   className?: string
 }) {
-  const { t, locale } = useLocale()
+  const { locale } = useLocale()
   const paper = PAPER[size]
-  const branchRow = branch ? branches.find((b) => b.code === branch) : undefined
+  const locationRow = location ? locations.find((l) => l.code === location) : undefined
   const small = size === "label" || size === "receipt"
 
   return (
@@ -109,23 +110,26 @@ export function PrintLayout({
             "flex items-start justify-between gap-4 border-b-2 pb-3",
             small ? "mb-2" : "mb-5"
           )}
-          style={{ borderColor: hospital.colors.primary }}
+          style={{ borderColor: "#111" }}
         >
           <div className="flex min-w-0 items-center gap-3">
-            <HospitalLogo size={small ? 24 : 40} />
+            <TenantMark size={small ? 24 : 40} />
             <div className="min-w-0">
               <div className={cn("leading-tight font-bold", small ? "text-xs" : "text-lg")}>
-                {hospital.name.en}
+                {tenant.legalName.en}
               </div>
               {!small ? (
                 <div className="text-[0.8125rem] leading-tight font-medium">
-                  {hospital.name.bn}
+                  {tenant.legalName.bn}
                 </div>
               ) : null}
               <div className="mt-0.5 text-[0.6875rem] text-[#555]">
-                {branchRow
-                  ? `${branchRow.address[locale]} · ${branchRow.phone}`
-                  : `${hospital.website} · ${hospital.helpline}`}
+                {locationRow
+                  ? `${locationRow.address[locale]} · ${locationRow.phone}`
+                  : `${tenant.registeredAddress[locale]} · ${tenant.helpline}`}
+              </div>
+              <div lang="en" className="text-[0.6875rem] text-[#555]">
+                BIN {tenant.bin}
               </div>
             </div>
           </div>
@@ -152,7 +156,9 @@ export function PrintLayout({
       {footer || demoFooter ? (
         <footer className="mt-4 flex items-end justify-between gap-4 border-t border-[#e0e0e0] pt-2 text-[0.625rem] text-[#555]">
           <div className="min-w-0">{footer}</div>
-          {demoFooter ? <div className="shrink-0 italic">{t("common.demoData")}</div> : null}
+          {demoFooter ? (
+            <div className="shrink-0 italic">{printHeader.demoNote[locale]}</div>
+          ) : null}
         </footer>
       ) : null}
     </div>

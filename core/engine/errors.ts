@@ -2,7 +2,8 @@ import type { Id, Ms } from "@/core/db/schema"
 
 /**
  * Engine errors. `useCommand` turns each into the right dialog: conflicts
- * offer "reload", rule violations explain the rule, denials name the role.
+ * offer "reload", rule violations explain the rule, denials name the
+ * permission and point to RBAC.
  */
 
 /** Optimistic concurrency failure: someone committed a newer version first. */
@@ -16,9 +17,7 @@ export class ConflictError extends Error {
     readonly updatedBy: Id,
     readonly updatedAt: Ms
   ) {
-    super(
-      `Record ${table}/${id} changed (v${expectedVersion} to v${actualVersion})`
-    )
+    super(`Record ${table}/${id} changed (v${expectedVersion} to v${actualVersion})`)
   }
 }
 
@@ -26,26 +25,26 @@ export class ConflictError extends Error {
 export class RuleViolation extends Error {
   readonly kind = "rule" as const
   constructor(
-    /** Stable code, e.g. "NID_EXISTS", "STOCK_NEGATIVE"; also an i18n key suffix */
+    /** Stable code, e.g. "PERIOD_CLOSED", "STOCK_NEGATIVE"; also an i18n key suffix */
     readonly code: string,
     readonly params: Record<string, string | number> = {},
-    /** Record the blocked attempt in the audit log (PRD: attempts audited) */
+    /** Record the blocked attempt in the audit log */
     readonly audit: boolean = false
   ) {
     super(`Rule violation: ${code}`)
   }
 }
 
-/** The acting role may not run this command. Always audited. */
+/** The acting user lacks the command's permission. Always audited. */
 export class PermissionDenied extends Error {
   readonly kind = "denied" as const
   constructor(
     readonly command: string,
-    readonly role: string,
-    /** Roles that may run the command, for "This action is for <roles>" */
-    readonly roles: readonly string[] | "any" = []
+    readonly userId: string,
+    /** The key(s) the command needs, for "You need <permission>" */
+    readonly permissions: readonly string[]
   ) {
-    super(`Role ${role} may not run ${command}`)
+    super(`User ${userId} may not run ${command}`)
   }
 }
 

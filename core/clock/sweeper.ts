@@ -1,4 +1,4 @@
-import type { MedcoreDb } from "@/core/db/database"
+import type { OmniflowDb } from "@/core/db/database"
 import { commit } from "@/core/engine/commit"
 import { SYSTEM_ACTOR } from "@/core/engine/types"
 
@@ -8,7 +8,7 @@ import type { SweepJob } from "./types"
 
 /** Run every job once against each database. Job failures are isolated. */
 export async function sweepOnce(
-  dbs: MedcoreDb[],
+  dbs: OmniflowDb[],
   jobs: SweepJob[] = SWEEP_JOBS
 ): Promise<void> {
   for (const db of dbs) {
@@ -35,7 +35,7 @@ export async function sweepOnce(
  * demo-clock change. Never overlaps itself.
  */
 export function startSweeper(
-  getDbs: () => Promise<MedcoreDb[]>,
+  getDbs: () => Promise<OmniflowDb[]>,
   intervalMs = 2000
 ): () => void {
   let running = false

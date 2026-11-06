@@ -13,11 +13,7 @@ import {
   Sun,
 } from "lucide-react"
 
-import { PersonaAvatar } from "@/components/shared/avatars"
-import { roleLabel } from "@/components/shared/roles"
-import { personaName } from "@/components/shell/greeting"
-import { groupNav, navForRole } from "@/components/shell/nav"
-import { personasByRole, useSwitchPersona } from "@/components/shell/persona-switcher"
+import { groupLabelKey, groupNav, navFor } from "@/components/shell/nav"
 import { stepUiScale } from "@/components/shell/ui-scale"
 import { useWindowTheme } from "@/components/theme-provider"
 import {
@@ -30,7 +26,7 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from "@/components/ui/command"
-import type { PersonaSeed } from "@/core/seed/content/personas"
+import { usePermissions } from "@/core/security/useCan"
 import { useModKey } from "@/hooks/use-mod-key"
 import { LOCALE_META, LOCALES } from "@/lib/i18n/config"
 import { useLocale } from "@/lib/i18n/provider"
@@ -60,19 +56,19 @@ export function useShellHotkeys() {
 }
 
 /**
- * The command palette (base behaviour, new look): jump to any of this role's
- * screens, switch persona, switch language, change theme and display size.
+ * The command palette: jump to any app or screen this user may open, switch
+ * language, change theme and display size. WS-Shell adds the global search
+ * (parties, vehicles, document numbers).
  */
-export function CommandPalette({ persona }: { persona: PersonaSeed }) {
+export function CommandPalette() {
   const router = useRouter()
   const { t, tk, locale, setLocale } = useLocale()
+  const { can } = usePermissions()
   const open = useUi((state) => state.commandOpen)
   const setOpen = useUi((state) => state.setCommandOpen)
   const { theme, setTheme } = useWindowTheme()
-  const switchTo = useSwitchPersona()
   const mod = useModKey()
-  const groups = React.useMemo(() => groupNav(navForRole(persona.role)), [persona.role])
-  const personas = React.useMemo(() => personasByRole(), [])
+  const groups = React.useMemo(() => groupNav(navFor((key) => can(key))), [can])
 
   const run = (action: () => void) => {
     setOpen(false)
@@ -93,13 +89,13 @@ export function CommandPalette({ persona }: { persona: PersonaSeed }) {
 
         {groups.map((group) => (
           <CommandGroup
-            key={group.groupKey}
-            heading={`${t("shell.palette.goTo")} · ${tk(group.groupKey)}`}
+            key={group.group}
+            heading={`${t("shell.palette.goTo")} · ${tk(groupLabelKey(group.group))}`}
           >
             {group.items.map((item) => (
               <CommandItem
                 key={item.href}
-                value={`${tk(item.labelKey)} ${item.href} ${tk(item.groupKey)}`}
+                value={`${tk(item.labelKey)} ${item.app ?? ""} ${item.href}`}
                 onSelect={() => run(() => router.push(item.href))}
               >
                 <item.icon />
@@ -173,34 +169,6 @@ export function CommandPalette({ persona }: { persona: PersonaSeed }) {
           </CommandItem>
         </CommandGroup>
 
-        <CommandSeparator />
-        {personas.map((group) => (
-          <CommandGroup
-            key={group.role}
-            heading={`${t("shell.palette.personas")} · ${roleLabel(group.role, tk)}`}
-          >
-            {group.personas.map((option) => (
-              <CommandItem
-                key={option.id}
-                value={`persona ${option.staff?.nameEn ?? option.patientName?.en ?? ""} ${option.staff?.nameBn ?? option.patientName?.bn ?? ""} ${roleLabel(option.role, tk)} ${option.branchId ?? "HQ"}`}
-                onSelect={() => run(() => switchTo(option))}
-                data-checked={option.id === persona.id}
-              >
-                <PersonaAvatar persona={option} size={24} />
-                <span className="truncate">{personaName(option, locale)}</span>
-                <span className="truncate text-xs text-muted-foreground">
-                  {option.staff?.designation[locale]}
-                </span>
-                <span
-                  translate="no"
-                  className="ml-auto shrink-0 font-mono text-xs text-muted-foreground"
-                >
-                  {option.branchId ?? "HQ"}
-                </span>
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        ))}
       </CommandList>
     </CommandDialog>
   )

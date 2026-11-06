@@ -35,7 +35,7 @@ export function CueCard() {
   const step = Math.min(Math.max(cue.step, 0), Math.max(total - 1, 0))
   const title = tk(scenario.titleKey)
   const params = cue.params ?? {}
-  // Numbers read in the window's numerals; strings (names, UHIDs, Rx and
+  // Numbers read in the window's numerals; strings (names, document numbers and
   // accession numbers) are shown as the setup gave them.
   const shown = Object.fromEntries(
     Object.entries(params).map(([key, value]) => [

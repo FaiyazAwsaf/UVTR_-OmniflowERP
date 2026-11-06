@@ -1,65 +1,59 @@
 import type { EventCatalog } from "@/core/events/types"
 
-/** Platform and demo-control events (engine, clock, offline sync). */
+/** Platform events: engine refusals, approvals and the demo controls (plan §3.10). */
 export const demoEvents: EventCatalog = {
   RuleViolationBlocked: {
     module: "engine",
     labelKey: "demo.events.ruleViolationBlocked",
-    consumers: ["demo.consumers.audit"],
+    consumers: ["consumers.audit"],
     severity: "warning",
+  },
+  PermissionDeniedBlocked: {
+    module: "engine",
+    labelKey: "demo.events.permissionDeniedBlocked",
+    consumers: ["consumers.audit", "consumers.security"],
+    severity: "warning",
+  },
+  ConflictDetected: {
+    module: "engine",
+    labelKey: "demo.events.conflictDetected",
+    consumers: ["consumers.audit"],
+    severity: "warning",
+  },
+  ApprovalRequested: {
+    module: "core",
+    labelKey: "demo.events.approvalRequested",
+    consumers: ["consumers.approverInbox", "consumers.audit"],
+    severity: "warning",
+  },
+  ApprovalDecided: {
+    module: "core",
+    labelKey: "demo.events.approvalDecided",
+    consumers: ["consumers.approverInbox", "consumers.audit"],
+    severity: "success",
   },
   DemoReset: {
     module: "demo",
     labelKey: "demo.events.demoReset",
-    consumers: ["demo.consumers.allWindows"],
+    consumers: ["consumers.allWindows"],
     severity: "info",
   },
   ClockAdvanced: {
     module: "demo",
     labelKey: "demo.events.clockAdvanced",
-    consumers: ["demo.consumers.allWindows", "demo.consumers.timers"],
+    consumers: ["consumers.allWindows", "consumers.timers"],
     severity: "info",
   },
   ClockReset: {
     module: "demo",
     labelKey: "demo.events.clockReset",
-    consumers: ["demo.consumers.allWindows", "demo.consumers.timers"],
+    consumers: ["consumers.allWindows", "consumers.timers"],
     severity: "info",
-  },
-  BranchWentOffline: {
-    module: "sync",
-    labelKey: "demo.events.branchWentOffline",
-    consumers: ["demo.consumers.allBranches", "demo.consumers.dashboard"],
-    severity: "warning",
-  },
-  BranchReconnected: {
-    module: "sync",
-    labelKey: "demo.events.branchReconnected",
-    consumers: ["demo.consumers.allBranches", "demo.consumers.dashboard"],
-    severity: "success",
-  },
-  EdgeEventsReplayed: {
-    module: "sync",
-    labelKey: "demo.events.edgeEventsReplayed",
-    consumers: ["demo.consumers.central", "demo.consumers.audit"],
-    severity: "success",
-  },
-  IdentityConflictQueued: {
-    module: "sync",
-    labelKey: "demo.events.identityConflictQueued",
-    consumers: ["demo.consumers.dataSteward"],
-    severity: "warning",
   },
   ScenarioLaunched: {
     module: "demo",
     labelKey: "demo.events.scenarioLaunched",
-    consumers: ["demo.consumers.presenter", "demo.consumers.audit"],
-    severity: "info",
-  },
-  PatientContactUpdated: {
-    module: "demo",
-    labelKey: "demo.events.patientContactUpdated",
-    consumers: ["demo.consumers.registry", "demo.consumers.audit"],
+    consumers: ["consumers.presenter", "consumers.audit"],
     severity: "info",
   },
 }

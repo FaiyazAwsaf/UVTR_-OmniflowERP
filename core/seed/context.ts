@@ -22,7 +22,7 @@ import { dhakaAt, isoAddDays } from "./time"
 import type { SeedOptions } from "./types"
 
 /** Root seed string: every random stream derives from it. */
-export const SEED_KEY = "medcore-seed-v1"
+export const SEED_KEY = "omniflow-seed-v1"
 
 export type RowData<T extends TableName> = Omit<Row<T>, keyof BaseRow>
 
@@ -76,7 +76,7 @@ type NumberRequest = {
  * Document numbers are assigned after every generator has run, in time order
  * per counter key, so numbering reads chronologically even though history is
  * generated story by story. The counters table then continues from the last
- * number used (plan §7: the next purchase order is PO-1042).
+ * number used (seed_data.md §10: numbering continues from the history).
  */
 export class NumberPlan {
   private readonly bases = new Map<string, number>()
@@ -122,6 +122,8 @@ export class NumberPlan {
 export type SeedCtx = {
   now: Ms
   today: ISODate
+  /** "full" for the app and e2e, "small" for unit tests (seed_data.md §0) */
+  scale: "full" | "small"
   bag: SeedBag
   numbers: NumberPlan
   /** Independent deterministic stream per generator. */
@@ -139,6 +141,7 @@ export function createSeedCtx(opts: SeedOptions): SeedCtx {
   return {
     now: opts.now,
     today: opts.today,
+    scale: opts.scale ?? "full",
     bag: new SeedBag(),
     numbers: new NumberPlan(),
     rng: (stream) => createRng(`${SEED_KEY}:${stream}`),

@@ -1,5 +1,4 @@
 import { now } from "@/core/clock/clock"
-import { groupUhid } from "@/core/db/numbering"
 import type { Locale } from "./config"
 
 const INTL: Record<Locale, string> = {
@@ -251,7 +250,3 @@ export function formatDmy(date: Date | string | number, locale: Locale) {
   return localizeDigits(`${get("day")}-${get("month")}-${get("year")}`, locale)
 }
 
-/** UHID grouped for display. Identifiers always stay in Latin digits (D13). */
-export function formatUhid(uhid: string) {
-  return groupUhid(uhid)
-}

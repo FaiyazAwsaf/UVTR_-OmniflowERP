@@ -1,45 +1,47 @@
 import type { ScenarioDef } from "@/core/scenarios/types"
-import { identityScenarios } from "@/modules/identity/scenarios"
-import { schedulingScenarios } from "@/modules/scheduling/scenarios"
-import { queueScenarios } from "@/modules/queue/scenarios"
-import { consultationScenarios } from "@/modules/consultation/scenarios"
-import { prescribingScenarios } from "@/modules/prescribing/scenarios"
-import { ordersScenarios } from "@/modules/orders/scenarios"
-import { libraryScenarios } from "@/modules/medicine-library/scenarios"
-import { billingScenarios } from "@/modules/billing/scenarios"
-import { labScenarios } from "@/modules/lab/scenarios"
-import { imagingScenarios } from "@/modules/imaging/scenarios"
-import { pharmacyScenarios } from "@/modules/pharmacy/scenarios"
-import { inventoryScenarios } from "@/modules/inventory/scenarios"
-import { procurementScenarios } from "@/modules/procurement/scenarios"
-import { financeScenarios } from "@/modules/finance/scenarios"
-import { inpatientScenarios } from "@/modules/inpatient/scenarios"
-import { commsScenarios } from "@/modules/comms/scenarios"
-import { dashboardsScenarios } from "@/modules/dashboards/scenarios"
-import { patientAppScenarios } from "@/modules/patient-app/scenarios"
-import { conceptsScenarios } from "@/modules/concepts/scenarios"
+import { faScenarios } from "@/modules/fa/scenarios"
+import { apScenarios } from "@/modules/ap/scenarios"
+import { arScenarios } from "@/modules/ar/scenarios"
+import { cabScenarios } from "@/modules/cab/scenarios"
+import { parScenarios } from "@/modules/par/scenarios"
+import { frsScenarios } from "@/modules/frs/scenarios"
+import { stlScenarios } from "@/modules/stl/scenarios"
+import { siScenarios } from "@/modules/si/scenarios"
+import { pcScenarios } from "@/modules/pc/scenarios"
+import { sdScenarios } from "@/modules/sd/scenarios"
+import { ptlScenarios } from "@/modules/ptl/scenarios"
+import { pmScenarios } from "@/modules/pm/scenarios"
+import { grnScenarios } from "@/modules/grn/scenarios"
+import { stScenarios } from "@/modules/st/scenarios"
+import { icScenarios } from "@/modules/ic/scenarios"
+import { irtScenarios } from "@/modules/irt/scenarios"
+import { sacScenarios } from "@/modules/sac/scenarios"
+import { rbacScenarios } from "@/modules/rbac/scenarios"
+import { dashboardScenarios } from "@/modules/dashboard/scenarios"
 import { demoScenarios } from "@/modules/demo/scenarios"
+import { commsScenarios } from "@/modules/comms/scenarios"
 
-/** Every scenario launcher. Only the main agent edits this file. */
+/** Every scenario launcher (implementation_plan.md §10). Only the main agent edits this file. */
 export const SCENARIOS: ScenarioDef[] = [
-  ...identityScenarios,
-  ...schedulingScenarios,
-  ...queueScenarios,
-  ...consultationScenarios,
-  ...prescribingScenarios,
-  ...ordersScenarios,
-  ...libraryScenarios,
-  ...billingScenarios,
-  ...labScenarios,
-  ...imagingScenarios,
-  ...pharmacyScenarios,
-  ...inventoryScenarios,
-  ...procurementScenarios,
-  ...financeScenarios,
-  ...inpatientScenarios,
-  ...commsScenarios,
-  ...dashboardsScenarios,
-  ...patientAppScenarios,
-  ...conceptsScenarios,
+  ...faScenarios,
+  ...apScenarios,
+  ...arScenarios,
+  ...cabScenarios,
+  ...parScenarios,
+  ...frsScenarios,
+  ...stlScenarios,
+  ...siScenarios,
+  ...pcScenarios,
+  ...sdScenarios,
+  ...ptlScenarios,
+  ...pmScenarios,
+  ...grnScenarios,
+  ...stScenarios,
+  ...icScenarios,
+  ...irtScenarios,
+  ...sacScenarios,
+  ...rbacScenarios,
+  ...dashboardScenarios,
   ...demoScenarios,
+  ...commsScenarios,
 ]

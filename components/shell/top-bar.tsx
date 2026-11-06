@@ -7,23 +7,23 @@ import { ClockChip } from "@/components/shell/clock-chip"
 import { DemoPanelTrigger } from "@/components/shell/demo/demo-panel"
 import { EventStreamTrigger } from "@/components/shell/demo/event-stream"
 import { Greeting } from "@/components/shell/greeting"
-import { NetworkBadge } from "@/components/shell/network"
 import { NotificationsButton } from "@/components/shell/notifications"
-import { PersonaSwitcher } from "@/components/shell/persona-switcher"
 import { LanguageToggle, ThemeToggle } from "@/components/shell/toggles"
+import { UserMenu } from "@/components/shell/user-menu"
+import { TenantMark } from "@/components/shared/tenant-mark"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import type { PersonaSeed } from "@/core/seed/content/personas"
+import { tenant } from "@/config/brand.config"
+import type { UserRow } from "@/core/db/schema"
 import { cn } from "@/lib/utils"
 import { useLocale } from "@/lib/i18n/provider"
 
 /**
- * The global search field. A placeholder in this release: it takes input but
- * does not search yet (the command palette, Cmd/Ctrl+K, finds screens and
- * personas).
+ * The global search field. Phase 0 placeholder: WS-Shell wires it to the
+ * command palette search (parties, vehicles, document numbers).
  */
 export function GlobalSearch({ className }: { className?: string }) {
   const { t } = useLocale()
@@ -74,29 +74,33 @@ function SearchButton({ className }: { className?: string }) {
 }
 
 /**
- * The staff top bar (docs/ui_guidelines.md §3), left to right: greeting and
- * context line, search, demo clock, network, event stream, demo panel,
- * notifications, EN/বাং, theme, and the persona switcher. It adapts to its own
+ * The ERP top bar (ui_guidelines.md §3), left to right: greeting and context
+ * line, the tenant mark, search, demo clock, event stream, demo panel,
+ * approvals bell, EN/বাং, theme, and the user menu. It adapts to its own
  * width, so a 960x600 window keeps every control.
  */
-export function TopBar({ persona }: { persona: PersonaSeed }) {
+export function TopBar({ user }: { user: UserRow }) {
+  const { locale } = useLocale()
   return (
     <header
       data-slot="top-bar"
       className="@container/topbar relative z-20 flex h-[4.75rem] shrink-0 items-center gap-3 px-4 xl:px-6 print:hidden"
     >
-      <Greeting persona={persona} className="min-w-[8rem] flex-1" />
+      <Greeting user={user} className="min-w-[8rem] flex-1" />
+      <span className="hidden shrink-0 items-center gap-2 @min-[96rem]/topbar:flex">
+        <TenantMark size={28} />
+        <span className="text-sm font-semibold">{tenant.shortName[locale]}</span>
+      </span>
       <GlobalSearch className="hidden w-[20rem] shrink @min-[70rem]/topbar:flex @min-[96rem]/topbar:w-[26rem]" />
       <div className="flex shrink-0 items-center gap-1.5 @min-[60rem]/topbar:gap-2">
         <SearchButton className="@min-[70rem]/topbar:hidden" />
         <ClockChip />
-        <NetworkBadge />
         <EventStreamTrigger />
         <DemoPanelTrigger />
         <NotificationsButton />
         <LanguageToggle />
         <ThemeToggle />
-        <PersonaSwitcher persona={persona} />
+        <UserMenu user={user} />
       </div>
     </header>
   )

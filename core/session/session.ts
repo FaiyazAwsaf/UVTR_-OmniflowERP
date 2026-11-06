@@ -8,7 +8,12 @@ import type { WindowSession } from "./types"
 import { windowKey } from "./windowId"
 
 export const DEFAULT_SESSION: WindowSession = {
-  personaId: null,
+  userId: null,
+  sessionId: null,
+  locationId: null,
+  pendingQuickSignIn: null,
+  pendingRoute: null,
+  signedOutReason: null,
   lang: "en",
   theme: "dark",
   uiScale: 1,
@@ -18,7 +23,7 @@ export const DEFAULT_SESSION: WindowSession = {
 const listeners = new Set<() => void>()
 let cache: WindowSession | null = null
 
-const storageKey = () => `mc:session:${windowKey()}`
+const storageKey = () => `of:session:${windowKey()}`
 
 function read(): WindowSession {
   let session: WindowSession = DEFAULT_SESSION
@@ -32,21 +37,25 @@ function read(): WindowSession {
 }
 
 /**
- * `?persona=<id>&lang=bn&scale=0.9` sets this window's session (the launcher,
- * Demo Wall and scenario launchers use it). The params are then removed from
- * the address so a later reload keeps any change made in the window.
+ * `?user=<username>&lang=bn&scale=0.9` sets this window's session (the
+ * launcher, Demo Wall and scenario launchers use it). `user` asks the session
+ * gate for a quick demo sign-in. The params are then removed from the address
+ * so a later reload keeps any change made in the window.
  */
 function applyUrlOverrides(session: WindowSession): WindowSession {
   const url = new URL(window.location.href)
-  const persona = url.searchParams.get("persona")
+  const user = url.searchParams.get("user")
   const lang = url.searchParams.get("lang")
   const scale = url.searchParams.get("scale")
-  if (!persona && !lang && !scale) return session
+  if (!user && !lang && !scale) return session
   const next = { ...session }
-  if (persona) next.personaId = persona
+  if (user) {
+    next.pendingQuickSignIn = user
+    next.pendingRoute = null
+  }
   if (lang && (LOCALES as readonly string[]).includes(lang)) next.lang = lang as Locale
   if (scale && Number.isFinite(Number(scale))) next.uiScale = Number(scale)
-  for (const param of ["persona", "lang", "scale"]) url.searchParams.delete(param)
+  for (const param of ["user", "lang", "scale"]) url.searchParams.delete(param)
   window.history.replaceState(window.history.state, "", url.toString())
   write(next)
   return next
@@ -82,4 +91,28 @@ export function subscribeSession(listener: () => void): () => void {
 /** This window's session. Defaults during server render and hydration. */
 export function useSession(): WindowSession {
   return React.useSyncExternalStore(subscribeSession, getSession, () => DEFAULT_SESSION)
+}
+
+/** Record a successful sign-in in this window. */
+export function setSignedIn(signIn: {
+  userId: string
+  sessionId: string
+  locationId: string
+}): void {
+  updateSession({
+    ...signIn,
+    pendingQuickSignIn: null,
+    signedOutReason: null,
+  })
+}
+
+/** Clear this window's sign-in (sign-out, forced end, timeout). */
+export function setSignedOut(reason: WindowSession["signedOutReason"] = "sign-out"): void {
+  updateSession({
+    userId: null,
+    sessionId: null,
+    locationId: null,
+    cue: null,
+    signedOutReason: reason,
+  })
 }

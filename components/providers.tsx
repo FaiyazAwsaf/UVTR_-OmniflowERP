@@ -6,6 +6,7 @@ import { Toaster } from "sonner"
 import { ThemeProvider } from "@/components/theme-provider"
 import { ScenarioUrlLauncher } from "@/components/shell/demo/use-scenario-launcher"
 import { EngineFeedbackHost } from "@/components/shell/engine-feedback"
+import { SessionGate } from "@/components/shell/session-gate"
 import { UiScaleProvider } from "@/components/shell/ui-scale"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { EngineProvider } from "@/core/runtime/EngineProvider"
@@ -25,9 +26,10 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
         <EngineProvider>
           <TooltipProvider delay={200}>
             {children}
-            {/* Once per window: conflict, rule, denial and persona dialogs
+            {/* Once per window: conflict, rule, denial and sign-in dialogs
                 for every page (launcher, Demo Wall and demo panel included). */}
             <EngineFeedbackHost />
+            <SessionGate />
             <ScenarioUrlLauncher />
             <Toaster
               position="bottom-right"

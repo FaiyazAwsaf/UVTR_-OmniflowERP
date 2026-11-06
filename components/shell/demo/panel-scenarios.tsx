@@ -7,15 +7,14 @@ import { Button } from "@/components/ui/button"
 import { useDb } from "@/core/db/DbProvider"
 import { SCENARIOS } from "@/core/scenarios/registry"
 import type { ScenarioDef } from "@/core/scenarios/types"
-import { findPersona } from "@/core/seed/content/personas"
+import { findSeedUser, ROLE_DESIGNATION } from "@/core/security/seed-users"
 import { useLocale } from "@/lib/i18n/provider"
 import { cn } from "@/lib/utils"
-import { roleLabel } from "@/modules/demo/components/labels"
 
 import { SectionTitle } from "./section-title"
 import { useScenarioLauncher } from "./use-scenario-launcher"
 
-/** S1 < S2 < S4 < S4D < S10: by letter, then number, then suffix. */
+/** E1 < E2 < E10 < J1: by letter, then number, then suffix. */
 function launcherOrder(a: ScenarioDef, b: ScenarioDef): number {
   const parse = (id: string) => {
     const match = /^([A-Z]+)(\d+)(.*)$/.exec(id)
@@ -30,8 +29,8 @@ function launcherOrder(a: ScenarioDef, b: ScenarioDef): number {
 
 /**
  * Scenario launchers (plan §10): the main-journey jumps (J1 to J6) and the
- * exception scenarios (S1 to S16). Launching runs the setup, switches this
- * window to the scenario's persona, opens its screen and the cue card.
+ * exception scenarios (E1 to E16). Launching runs the setup, signs this
+ * window in as the scenario's user, opens its screen and the cue card.
  */
 export function ScenariosSection() {
   const { t, tk, time, locale } = useLocale()
@@ -47,15 +46,11 @@ export function ScenariosSection() {
     launcherOrder
   )
 
-  const personaLine = (scenario: ScenarioDef) => {
-    const persona = findPersona(scenario.persona)
-    if (!persona) return scenario.persona
-    const name = persona.staff
-      ? locale === "bn"
-        ? persona.staff.nameBn
-        : persona.staff.nameEn
-      : (persona.patientName?.[locale] ?? "")
-    return `${roleLabel(persona.role, tk)} · ${name}${persona.branchId ? ` (${persona.branchId})` : ""}`
+  const userLine = (scenario: ScenarioDef) => {
+    const user = findSeedUser(scenario.user)
+    if (!user) return scenario.user
+    const name = locale === "bn" ? user.nameBn : user.nameEn
+    return `${ROLE_DESIGNATION[user.role][locale]} · ${name} (${user.home})`
   }
 
   if (SCENARIOS.length === 0) {
@@ -143,7 +138,7 @@ export function ScenariosSection() {
                         </span>
                       ) : null}
                       <span className="mt-0.5 block text-[0.6875rem] text-muted-foreground">
-                        {personaLine(scenario)}
+                        {userLine(scenario)}
                         {lastRun
                           ? ` · ${t("demo.scenarios.lastRun", { time: time(lastRun) })}`
                           : ""}

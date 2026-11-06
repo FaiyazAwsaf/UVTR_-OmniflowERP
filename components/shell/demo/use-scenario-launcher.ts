@@ -20,9 +20,9 @@ export type LaunchState = {
 
 /**
  * Launches a scenario in this window (plan §10): runs its setup through the
- * engine, switches the window to the scenario's persona, opens the cue card
- * and goes to the scenario's screen. A refused setup shows the engine's
- * usual dialog and stays on the current screen.
+ * engine, signs the window in as the scenario's user (quick demo sign-in),
+ * opens the cue card and goes to the scenario's screen. A refused setup shows
+ * the engine's usual dialog and stays on the current screen.
  */
 export function useScenarioLauncher() {
   const router = useRouter()
@@ -39,14 +39,17 @@ export function useScenarioLauncher() {
       setState({ running: scenario.id, failed: null })
       try {
         const { outcome, route } = await runScenario(scenario)
-        updateSession({
-          ...(getSession().personaId === scenario.persona
-            ? {}
-            : { personaId: scenario.persona }),
-          cue: { scenarioId: scenario.id, step: 0, params: outcome.params },
-        })
+        const cue = { scenarioId: scenario.id, step: 0, params: outcome.params }
+        const session = getSession()
+        const signedInAsUser = session.userId === `usr_${scenario.user}` && !!session.sessionId
         useDemoUi.getState().setPanelOpen(false)
-        router.push(route)
+        if (signedInAsUser) {
+          updateSession({ cue })
+          router.push(route)
+        } else {
+          // The session gate signs the window in, then opens the route.
+          updateSession({ cue, pendingQuickSignIn: scenario.user, pendingRoute: route })
+        }
         setState({ running: null, failed: null })
         return true
       } catch (error) {
@@ -73,7 +76,7 @@ export function useScenarioLauncher() {
 }
 
 /**
- * `?launch=S3` on any page launches that scenario once the engine is ready
+ * `?launch=E3` on any page launches that scenario once the engine is ready
  * (for bookmarks, the 4-window opener and browser tests). The param is
  * removed from the address first so a reload does not launch it again.
  */

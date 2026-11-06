@@ -1,47 +1,52 @@
 import { coreBn } from "./core/bn"
-import { identityBn } from "@/modules/identity/i18n/bn"
-import { schedulingBn } from "@/modules/scheduling/i18n/bn"
-import { queueBn } from "@/modules/queue/i18n/bn"
-import { consultationBn } from "@/modules/consultation/i18n/bn"
-import { prescribingBn } from "@/modules/prescribing/i18n/bn"
-import { ordersBn } from "@/modules/orders/i18n/bn"
-import { libraryBn } from "@/modules/medicine-library/i18n/bn"
-import { billingBn } from "@/modules/billing/i18n/bn"
-import { labBn } from "@/modules/lab/i18n/bn"
-import { imagingBn } from "@/modules/imaging/i18n/bn"
-import { pharmacyBn } from "@/modules/pharmacy/i18n/bn"
-import { inventoryBn } from "@/modules/inventory/i18n/bn"
-import { procurementBn } from "@/modules/procurement/i18n/bn"
-import { financeBn } from "@/modules/finance/i18n/bn"
-import { inpatientBn } from "@/modules/inpatient/i18n/bn"
-import { commsBn } from "@/modules/comms/i18n/bn"
-import { dashboardsBn } from "@/modules/dashboards/i18n/bn"
-import { patientAppBn } from "@/modules/patient-app/i18n/bn"
-import { conceptsBn } from "@/modules/concepts/i18n/bn"
+import { faBn } from "@/modules/fa/i18n/bn"
+import { apBn } from "@/modules/ap/i18n/bn"
+import { arBn } from "@/modules/ar/i18n/bn"
+import { cabBn } from "@/modules/cab/i18n/bn"
+import { parBn } from "@/modules/par/i18n/bn"
+import { frsBn } from "@/modules/frs/i18n/bn"
+import { stlBn } from "@/modules/stl/i18n/bn"
+import { siBn } from "@/modules/si/i18n/bn"
+import { pcBn } from "@/modules/pc/i18n/bn"
+import { sdBn } from "@/modules/sd/i18n/bn"
+import { ptlBn } from "@/modules/ptl/i18n/bn"
+import { pmBn } from "@/modules/pm/i18n/bn"
+import { grnBn } from "@/modules/grn/i18n/bn"
+import { stBn } from "@/modules/st/i18n/bn"
+import { icBn } from "@/modules/ic/i18n/bn"
+import { irtBn } from "@/modules/irt/i18n/bn"
+import { sacBn } from "@/modules/sac/i18n/bn"
+import { rbacBn } from "@/modules/rbac/i18n/bn"
+import { dashboardBn } from "@/modules/dashboard/i18n/bn"
 import { demoBn } from "@/modules/demo/i18n/bn"
+import { commsBn } from "@/modules/comms/i18n/bn"
 import type { Dictionary } from "./en"
 
-/** The Bangla dictionary. It must match the English shape exactly. */
+/**
+ * The Bangla dictionary, composed from namespaces: the shared core plus
+ * one namespace per module (implementation_plan.md §3.15). It must match the English shape exactly.
+ */
 export const bn: Dictionary = {
   ...coreBn,
-  ...identityBn,
-  ...schedulingBn,
-  ...queueBn,
-  ...consultationBn,
-  ...prescribingBn,
-  ...ordersBn,
-  ...libraryBn,
-  ...billingBn,
-  ...labBn,
-  ...imagingBn,
-  ...pharmacyBn,
-  ...inventoryBn,
-  ...procurementBn,
-  ...financeBn,
-  ...inpatientBn,
-  ...commsBn,
-  ...dashboardsBn,
-  ...patientAppBn,
-  ...conceptsBn,
+  ...faBn,
+  ...apBn,
+  ...arBn,
+  ...cabBn,
+  ...parBn,
+  ...frsBn,
+  ...stlBn,
+  ...siBn,
+  ...pcBn,
+  ...sdBn,
+  ...ptlBn,
+  ...pmBn,
+  ...grnBn,
+  ...stBn,
+  ...icBn,
+  ...irtBn,
+  ...sacBn,
+  ...rbacBn,
+  ...dashboardBn,
   ...demoBn,
+  ...commsBn,
 }

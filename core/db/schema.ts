@@ -1,25 +1,22 @@
 /**
- * UVTR_MedCore data model (docs/implementation_plan.md §5). Frozen after Phase 1:
- * workstreams read and write these shapes but never change them. Ask the main
- * agent for a change; it updates the plan first.
+ * UVTR_OmniflowERP data model (docs/implementation_plan.md §5). Frozen after
+ * Phase 1: workstreams read and write these shapes but never change them. Ask
+ * the main agent for a change; it updates the plan first.
  *
  * Conventions
- * - Money is integer poisha (৳1 = 100), fields end in `P`.
+ * - Money is integer poisha (৳1 = 100), fields end in `P`. Never floats.
  * - Moments are epoch milliseconds on the demo clock (`Ms`), from `now()`.
  * - Calendar days are `ISODate` strings (YYYY-MM-DD, Dhaka time).
- * - Readable document numbers (UHID, Rx, invoice, PO) are separate from `id`.
+ * - Readable document numbers (INV-GUL-2627-000123) are separate from `id`.
+ * - Stock quantities are in the item's base unit (ml, g, pc, roll).
  */
 
-import type {
-  Bilingual,
-  BranchCode,
-  CompanyCode,
-  BranchService,
-} from "@/config/brand.config"
-import type { Role } from "@/core/rbac/types"
+import type { Bilingual, LocationCode, LocationKind, BayKind } from "@/config/brand.config"
+import type { TaxSettings, VatCategory, VendorTaxCategory } from "@/config/rules.config"
+import type { ApprovalKind, Scope } from "@/core/security/types"
 import type { Locale } from "@/lib/i18n/config"
 
-export type { Bilingual, BranchCode, CompanyCode, BranchService, Locale, Role }
+export type { Bilingual, LocationCode, Locale, VatCategory, VendorTaxCategory, ApprovalKind, Scope }
 
 /* ================================================================== *
  * Primitives and the base row
@@ -28,7 +25,7 @@ export type { Bilingual, BranchCode, CompanyCode, BranchService, Locale, Role }
 export type Id = string
 /** Epoch milliseconds on the demo clock. */
 export type Ms = number
-/** Calendar day, YYYY-MM-DD. */
+/** Calendar day, YYYY-MM-DD (Dhaka). */
 export type ISODate = string
 /** Clock time of day, HH:MM (24h). */
 export type HHMM = string
@@ -36,8 +33,8 @@ export type HHMM = string
 export type Poisha = number
 export type Sex = "M" | "F"
 
-/** Where a row was written: the central store, or a branch edge store while offline. */
-export type Origin = "central" | `edge:${BranchCode}`
+/** Where a row was written. One central store (D4: no offline partition). */
+export type Origin = "central"
 
 /** Fields every domain row carries. The engine sets them; commands never do. */
 export type BaseRow = {
@@ -46,1536 +43,1610 @@ export type BaseRow = {
   version: number
   createdAt: Ms
   updatedAt: Ms
-  /** Staff id, or "system" for seed and sweeper writes. */
+  /** User id, or "system" for seed and sweeper writes. */
   createdBy: Id
   updatedBy: Id
   origin: Origin
-  /** Original event time when the row arrived by offline replay. */
-  originAt?: Ms
 }
 
 /** The engine-managed fields, stripped from insert inputs. */
 export type BaseField = keyof BaseRow
 
-/** Links from one record to others. Used by events, inbox items, movements. */
+/** Links from one record to others (§5.10). Used by events, notifications, links. */
 export type RefKey =
-  | "patientId"
-  | "appointmentId"
-  | "encounterId"
-  | "rxId"
-  | "rxLineId"
-  | "labOrderId"
-  | "labItemId"
-  | "specimenId"
-  | "resultId"
-  | "reportId"
-  | "imagingOrderId"
+  | "partyId"
+  | "vehicleId"
+  | "quotationId"
+  | "orderId"
+  | "taskId"
+  | "deliveryId"
   | "invoiceId"
-  | "paymentId"
+  | "creditNoteId"
+  | "receiptId"
   | "refundId"
-  | "transferId"
-  | "substitutionId"
+  | "billId"
+  | "paymentId"
+  | "debitNoteId"
+  | "chequeId"
+  | "statementId"
+  | "bankStatementLineId"
+  | "fundTransferId"
+  | "settlementId"
+  | "pettyCashVoucherId"
+  | "journalId"
+  | "periodId"
+  | "vatReturnId"
+  | "taxDepositId"
   | "prId"
   | "poId"
   | "grnId"
-  | "shiftId"
-  | "admissionId"
-  | "sessionId"
-  | "tokenId"
-  | "dispenseId"
+  | "purchaseReturnId"
+  | "transferId"
+  | "adjustmentId"
+  | "countId"
+  | "itemId"
+  | "batchId"
+  | "locationId"
+  | "serviceId"
+  | "priceListId"
+  | "userId"
+  | "roleId"
   | "approvalId"
-  | "reviewId"
-  | "vendorInvoiceId"
-  | "matchId"
-  | "payableId"
-  | "bedId"
-  | "depositId"
-  | "settlementId"
-  | "creditNoteId"
-  | "corporateClientId"
-  | "exportId"
+  | "sessionId"
+  | "reportId"
 export type Refs = Partial<Record<RefKey, Id>>
 
-export type ServiceType =
-  | "consultation"
-  | "follow-up"
-  | "lab"
-  | "imaging"
-  | "lab-reporting"
-  | "imaging-reporting"
-  | "procedure"
-  | "medicine"
-  | "bed"
-  | "inpatient-visit"
-  | "other"
+/** A link from a voucher or stock move back to its source document. */
+export type DocRef = { docType: string; docId: Id; docNo: string }
 
 /* ================================================================== *
- * 5.1 Organisation
+ * Shared vocabularies
  * ================================================================== */
 
-export type CompanyRow = BaseRow & {
-  /** id equals code */
-  code: CompanyCode
-  name: Bilingual
-  tin: string
-  invoicePrefix: string
-}
+/** HB hatchback, SD sedan, SUV, LSUV large SUV or pickup, MPV microbus (seed_data §3). */
+export type VehicleClass = "HB" | "SD" | "SUV" | "LSUV" | "MPV"
+export const VEHICLE_CLASSES: VehicleClass[] = ["HB", "SD", "SUV", "LSUV", "MPV"]
 
-export type BranchRow = BaseRow & {
-  /** id equals code */
-  code: BranchCode
-  companyId: CompanyCode
-  name: Bilingual
-  kind: "hospital" | "diagnostic"
-  services: BranchService[]
+/** System tags of the chart of accounts (accounting_rules.md §2). */
+export type AccountTag =
+  | "CASH_TILL_GUL"
+  | "CASH_TILL_UTT"
+  | "PETTY_HQ"
+  | "PETTY_GUL"
+  | "PETTY_UTT"
+  | "BANK_MAIN"
+  | "BANK_COLLECTION"
+  | "MFS_BKASH"
+  | "MFS_NAGAD"
+  | "CARD_CLEARING"
+  | "AR_CONTROL"
+  | "INV_CHEMICAL"
+  | "INV_CONSUMABLE"
+  | "INV_RETAIL"
+  | "INV_TRANSIT"
+  | "ADV_VENDOR"
+  | "DEPOSIT_RENT"
+  | "PREPAID"
+  | "VAT_CURRENT"
+  | "AIT_PAID"
+  | "EQUIPMENT"
+  | "ACC_DEP_EQUIPMENT"
+  | "FURNITURE"
+  | "ACC_DEP_FURNITURE"
+  | "VEHICLE"
+  | "ACC_DEP_VEHICLE"
+  | "FITOUT"
+  | "ACC_DEP_FITOUT"
+  | "AP_CONTROL"
+  | "GRNI"
+  | "CUSTOMER_ADVANCE"
+  | "VAT_OUTPUT"
+  | "VDS_PAYABLE"
+  | "AIT_PAYABLE"
+  | "SALARY_PAYABLE"
+  | "ACCRUED_EXP"
+  | "TERM_LOAN"
+  | "SHARE_CAPITAL"
+  | "RETAINED_EARNINGS"
+  | "REV_WASH"
+  | "REV_INTERIOR"
+  | "REV_PAINT"
+  | "REV_PROTECTION"
+  | "REV_GLASS_WHEEL"
+  | "REV_RESTORATION"
+  | "REV_PRODUCTS"
+  | "DISCOUNTS"
+  | "OTHER_INCOME"
+  | "INTEREST_INCOME"
+  | "CONSUMABLES_USED"
+  | "COGS"
+  | "INV_LOSS"
+  | "PPV"
+  | "SALARIES"
+  | "INCENTIVES"
+  | "RENT"
+  | "UTILITIES"
+  | "TELECOM"
+  | "REPAIRS"
+  | "MARKETING"
+  | "BANK_CHARGES"
+  | "MERCHANT_FEES"
+  | "DEPRECIATION"
+  | "OFFICE"
+  | "SECURITY"
+  | "CONVEYANCE"
+  | "PROFESSIONAL"
+  | "WELFARE"
+  | "INTEREST_EXPENSE"
+
+export type InventoryTag = "INV_CHEMICAL" | "INV_CONSUMABLE" | "INV_RETAIL"
+export type RevenueTag =
+  | "REV_WASH"
+  | "REV_INTERIOR"
+  | "REV_PAINT"
+  | "REV_PROTECTION"
+  | "REV_GLASS_WHEEL"
+  | "REV_RESTORATION"
+  | "REV_PRODUCTS"
+/** Expense tags a bill line, petty cash voucher or internal use may debit. */
+export type ExpenseTag =
+  | "SALARIES"
+  | "INCENTIVES"
+  | "RENT"
+  | "UTILITIES"
+  | "TELECOM"
+  | "REPAIRS"
+  | "MARKETING"
+  | "BANK_CHARGES"
+  | "MERCHANT_FEES"
+  | "OFFICE"
+  | "SECURITY"
+  | "CONVEYANCE"
+  | "PROFESSIONAL"
+  | "WELFARE"
+  | "CONSUMABLES_USED"
+  | "INTEREST_EXPENSE"
+  | "ACCRUED_EXP"
+  | "PREPAID"
+  | "ADV_VENDOR"
+
+export type VoucherType = "OB" | "SM" | "SV" | "RV" | "PV" | "PJ" | "IV" | "CV" | "JV" | "YC"
+
+export type ReceiptMethod = "cash" | "card" | "bkash" | "nagad" | "bank-transfer" | "cheque"
+export type PayMethod = "bank-transfer" | "cheque" | "cash" | "bkash"
+
+/* ================================================================== *
+ * 5.1 Organisation and settings
+ * ================================================================== */
+
+export type LocationRow = BaseRow & {
+  code: LocationCode
+  nameEn: string
+  nameBn: string
+  kind: LocationKind
   address: Bilingual
   phone: string
-}
-
-export type DepartmentKind =
-  | "opd"
-  | "lab"
-  | "imaging"
-  | "pharmacy"
-  | "ward"
-  | "billing"
-  | "store"
-  | "reception"
-  | "admin"
-
-export type DepartmentRow = BaseRow & {
-  branchId: BranchCode
-  code: string
-  name: Bilingual
-  kind: DepartmentKind
-}
-
-export type RoomRow = BaseRow & {
-  branchId: BranchCode
-  departmentId: Id
-  /** Short label shown on the display board, e.g. "3" or "C-2" */
-  code: string
-  name: Bilingual
-  kind: "consult" | "collection" | "lab" | "imaging" | "ward" | "counter"
-}
-
-/**
- * Known authority strings: `discount:<maxPct>`, `approve:variance`,
- * `approve:refund`, `approve:cancel-after-collection`, `approve:pr:<maxTaka>`,
- * `merge:patients`, `override:payment-gate`, `sign:reports`,
- * `dispense:controlled`, `price:publish`.
- */
-export type Authority = string
-
-export type StaffRow = BaseRow & {
-  nameEn: string
-  nameBn: string
-  sex: Sex
-  role: Role
-  /** null for network-level staff (HQ) */
-  branchId: BranchCode | null
-  designation: Bilingual
-  /** BMDC number for doctors, Pharmacy Council number for pharmacists */
-  regNo?: string
-  regBody?: "BMDC" | "PCB"
-  authorities: Authority[]
-  avatarSeed: string
-  phone?: string
-}
-
-export type PersonaRow = BaseRow & {
-  /** Set for staff personas */
-  staffId?: Id
-  /** Set for the patient-app persona */
-  patientId?: Id
-  role: Role
-  branchId: BranchCode | null
-  /** The persona picked by default for its role on the launcher */
-  isDefault: boolean
-  /** One line describing what this persona demonstrates */
-  blurb: Bilingual
-  order: number
-}
-
-export type SpecialtyRow = BaseRow & {
-  code: string
-  name: Bilingual
-  /** lucide icon name */
-  icon: string
-  /** Hospital-approved symptom phrases for the health-concern navigator (T2) */
-  navigatorSymptoms: Bilingual[]
-}
-
-export type DoctorRow = BaseRow & {
-  staffId: Id
-  specialtyId: Id
-  kind: "consultant" | "medical-officer" | "pathologist" | "radiologist"
-  bmdcNo: string
-  bmdcVerified: boolean
-  qualifications: string
-  experienceYears: number
-  languages: Locale[]
-  consultFeeP: Poisha
-  followUpFeeP: Poisha
-  branchIds: BranchCode[]
-  bio: Bilingual
-  isDutyDoctor: boolean
-}
-
-export type FeeShareRule = {
-  serviceType: ServiceType
-  basis: "pct-net" | "pct-gross" | "fixed"
-  /** Percentage for pct bases, poisha for fixed */
-  value: number
-  trigger: "billing" | "collection"
-}
-
-export type FeeShareContractRow = BaseRow & {
-  doctorId: Id
-  contractVersion: number
-  effectiveFrom: ISODate
-  rules: FeeShareRule[]
-  whtPct: number
-  discountBearer: "hospital" | "consultant" | "pro-rata"
-}
-
-/* ================================================================== *
- * 5.2 Identity and household
- * ================================================================== */
-
-export type Relation =
-  | "self"
-  | "spouse"
-  | "son"
-  | "daughter"
-  | "father"
-  | "mother"
-  | "brother"
-  | "sister"
-  | "grandchild"
-  | "grandparent"
-  | "other"
-
-export type Allergy = {
-  substance: string
-  /** Drug allergy class used by the Rx allergy alert, e.g. "penicillins" */
-  allergyClass?: string
-  reaction: string
-  severity: "mild" | "moderate" | "severe"
-}
-
-export type CurrentMed = {
-  genericId?: Id
-  brandId?: Id
-  name: string
-  dose: string
-  since?: ISODate
-}
-
-export type Problem = {
-  icd10: string
-  label: string
-  since?: ISODate
-  status: "active" | "resolved"
-}
-
-export type ConsentPurpose =
-  | "treatment"
-  | "sms"
-  | "app"
-  | "telemedicine"
-  | "corporate-sharing"
-  | "research"
-
-export type Consent = {
-  purpose: ConsentPurpose
-  granted: boolean
-  at: Ms
-  /** Set when a guardian consented for a minor */
-  byPatientId?: Id
-}
-
-export type PatientRow = BaseRow & {
-  /** 10 digits plus a Luhn check digit, or a provisional P-Bx-###### while offline */
-  uhid: string
-  provisionalUhid?: string
-  /** Former UHIDs (provisional ones, merged records); all remain searchable */
-  aliases: string[]
-  identityStatus: "active" | "under-review" | "merged"
-  mergedInto?: Id
-  nameEn: string
-  nameBn: string
-  /** Normalised tokens for Bangla-tolerant, spelling-variant search */
-  nameSearchKeys: string[]
-  dob: ISODate
-  dobEstimated?: boolean
-  sex: Sex
-  bloodGroup?: string
-  address?: string
-  phone?: string
-  phoneVerified: boolean
-  /** Phone of an attendant for patients without their own; no app access */
-  attendantPhone?: string
-  nid?: string
-  brn?: string
-  passport?: string
-  householdId?: Id
-  relationToHead?: Relation
-  guardianPatientId?: Id
-  guardianRelation?: Relation
-  allergies: Allergy[]
-  currentMeds: CurrentMed[]
-  problems: Problem[]
-  corporateEmployeeId?: Id
-  photoSeed: string
-  consents: Consent[]
-  unidentified?: boolean
-  /** Why NID or phone is missing, when they are */
-  registrationNote?: string
-  registeredAtBranch: BranchCode
-}
-
-export type HouseholdRow = BaseRow & {
-  phone: string
-  memberIds: Id[]
-  headPatientId: Id
-}
-
-export type FamilyLinkRow = BaseRow & {
-  ownerPatientId: Id
-  memberPatientId: Id
-  kind: "guardian" | "proxy"
-  status: "requested" | "granted" | "revoked"
-  grantedAt?: Ms
-  revokedAt?: Ms
-  otpVerifiedAt?: Ms
-}
-
-export type DuplicateDecisionRow = BaseRow & {
-  candidateIds: Id[]
-  newPatientId?: Id
-  score: number
-  decision: "same" | "different"
-  reason: string
-  decidedBy: Id
-  decidedAt: Ms
-}
-
-export type ReviewItemRow = BaseRow & {
-  kind: "sync-duplicate" | "identity-conflict"
-  branchId: BranchCode
-  patientIds: Id[]
-  /** Field-level differences for identity conflicts */
-  fields?: { field: string; edgeValue: unknown; centralValue: unknown }[]
-  status: "open" | "resolved"
-  resolution?: "same" | "different" | "kept-central" | "kept-edge"
-  reason?: string
-  resolvedBy?: Id
-  resolvedAt?: Ms
-  detail?: string
-}
-
-/* ================================================================== *
- * 5.3 Scheduling and queue
- * ================================================================== */
-
-export type VisitType = "first" | "follow-up" | "report"
-
-export type SessionRow = BaseRow & {
-  doctorId: Id
-  branchId: BranchCode
-  roomId: Id
-  date: ISODate
-  start: HHMM
-  end: HHMM
-  slotMin: number
-  capacity: number
-  walkInQuota: number
-  visitTypes: VisitType[]
-  feeP: Poisha
-  followUpFeeP: Poisha
-  status: "open" | "delayed" | "blocked" | "closed"
-  delayMin: number
-  delayReason?: string
-  /** Token prefix on the display board, e.g. "M" */
-  tokenPrefix: string
-}
-
-export type AppointmentRow = BaseRow & {
-  sessionId: Id
-  patientId: Id
-  doctorId: Id
-  branchId: BranchCode
-  date: ISODate
-  slotStart: HHMM
-  source: "app" | "call" | "counter" | "walk-in"
-  visitType: VisitType
-  status:
-    | "booked"
-    | "checked-in"
-    | "in-consult"
-    | "done"
-    | "no-show"
-    | "cancelled"
-    | "rebooked"
-  bookedBy: Id
-  feeBasketLineId?: Id
-  tokenId?: Id
-  checkedInAt?: Ms
-  delayChoice?: "wait" | "rebook" | "transfer" | "refund"
-  rebookedToId?: Id
-  /** Payload encoded in the check-in QR */
-  qrCode: string
-}
-
-export type QueueTokenRow = BaseRow & {
-  sessionId: Id
-  appointmentId: Id
-  patientId: Id
-  branchId: BranchCode
-  roomId: Id
-  number: number
-  /** Shown on the board, e.g. "M-14"; never a name */
-  label: string
-  kind: "booked" | "walk-in"
-  status: "waiting" | "called" | "skipped" | "recalled" | "in-consult" | "done"
-  issuedAt: Ms
-  calledAt?: Ms
-  /** Queue order after the 2:1 interleave */
-  position: number
-}
-
-/* ================================================================== *
- * 5.4 Clinical
- * ================================================================== */
-
-export type Vitals = {
-  bpSys?: number
-  bpDia?: number
-  pulse?: number
-  tempC?: number
-  spo2?: number
-  weightKg?: number
-  heightCm?: number
-  rbs?: number
-  recordedAt: Ms
-  recordedBy: Id
-}
-
-export type EncounterRow = BaseRow & {
-  appointmentId?: Id
-  patientId: Id
-  doctorId: Id
-  branchId: BranchCode
-  mode: "in-person" | "video"
-  type: VisitType
-  status: "open" | "signed" | "closed"
-  startedAt: Ms
-  endedAt?: Ms
-  vitals?: Vitals
-  templateId?: string
-}
-
-export type NoteSections = {
-  chiefComplaint: string
-  history: string
-  examination: string
-  assessment: string
-  plan: string
-}
-
-export type Diagnosis = { icd10: string; label: string; primary: boolean }
-
-export type NoteRow = BaseRow & {
-  encounterId: Id
-  patientId: Id
-  doctorId: Id
-  noteVersion: number
-  status: "draft" | "signed" | "amended"
-  templateId: string
-  lang: Locale
-  sections: NoteSections
-  diagnoses: Diagnosis[]
-  amendmentOfId?: Id
-  amendReason?: string
-  scribeDraftId?: Id
-  signedAt?: Ms
-}
-
-export type TranscriptLine = {
-  id: string
-  speaker: "doctor" | "patient" | "attendant"
-  lang: Locale
-  text: string
-  atSec: number
-}
-
-export type ScribeDraftRow = BaseRow & {
-  encounterId: Id
-  scriptId: string
-  transcript: TranscriptLine[]
-  /** Every draft line links back to transcript lines; never medicines or diagnoses */
-  draft: {
-    section: keyof NoteSections
-    lines: { text: string; transcriptLineIds: string[] }[]
-  }[]
-  status: "recording" | "drafted" | "accepted" | "discarded"
-}
-
-export type PrescriptionRow = BaseRow & {
-  /** Shared by every version of the same prescription, e.g. RX-B1-000123 */
-  rxNo: string
-  rxVersion: number
-  encounterId?: Id
-  patientId: Id
-  doctorId: Id
-  branchId: BranchCode
-  status: "draft" | "signed" | "superseded" | "replaced"
-  /** v2 points to v1 (edit before dispensing) */
-  supersedesId?: Id
-  /** A new Rx after dispensing points to the old one */
-  replacesId?: Id
-  mode: "in-person" | "video"
-  advice: string
-  followUpDate?: ISODate
-  /** Tests written on the Rx (the orders themselves live in labOrders) */
-  tests: string[]
-  vitalsSnapshot?: Vitals
-  signedAt?: Ms
-  /** Paper Rx back-entered after downtime */
-  transcribed?: boolean
-}
-
-export type MealTiming = "before" | "after" | "with" | "any"
-
-export type RxLineStatus =
-  | "open"
-  | "partial"
-  | "dispensed"
-  | "bought-elsewhere"
-  | "awaiting-prescriber"
-  | "cancelled"
-
-export type RxLineRow = BaseRow & {
-  rxId: Id
-  patientId: Id
-  branchId: BranchCode
-  lineNo: number
-  brandId?: Id
-  genericId?: Id
-  /** Set when the doctor typed a medicine not in the dictionary (flagged, not stock-checked) */
-  nonDictionaryName?: string
-  strength: string
-  form: string
-  /** e.g. "1+0+1" */
-  dosePattern: string
-  mealTiming: MealTiming
-  durationDays: number
-  qtyPrescribed: number
-  instructionsEn: string
-  instructionsBn: string
-  isAntibiotic: boolean
-  isControlled: boolean
-  paymentCleared: boolean
-  dispensedQty: number
-  status: RxLineStatus
-  balanceUntil?: Ms
-  substitutedFromLineId?: Id
-}
-
-export type PharmacyQueueRow = BaseRow & {
-  rxId: Id
-  rxNo: string
-  patientId: Id
-  branchId: BranchCode
-  status: "waiting" | "in-progress" | "partial" | "done" | "cancelled"
-  receivedAt: Ms
-}
-
-export type LabItemStatus =
-  | "ordered"
-  | "paid"
-  | "collected"
-  | "received"
-  | "resulted"
-  | "validated"
-  | "signed"
-  | "released"
-  | "cancelled"
-  | "rejected"
-
-export type LabOrderRow = BaseRow & {
-  orderNo: string
-  encounterId?: Id
-  patientId: Id
-  doctorId?: Id
-  branchId: BranchCode
-  priority: "routine" | "urgent"
-  status: "ordered" | "in-progress" | "completed" | "cancelled"
-  source: "doctor" | "counter" | "home-collection"
-}
-
-export type LabOrderItemRow = BaseRow & {
-  labOrderId: Id
-  patientId: Id
-  branchId: BranchCode
-  testId: Id
-  status: LabItemStatus
-  specimenId?: Id
-  basketLineId?: Id
-  invoiceLineId?: Id
-  paymentCleared: boolean
-  addOnOfItemId?: Id
-  isFreeRecollection?: boolean
-  recollectionOfItemId?: Id
-  cancelReason?: string
-  reportId?: Id
-}
-
-export type Modality = "xray" | "usg" | "ct" | "mri" | "ecg" | "echo"
-
-export type ImagingOrderRow = BaseRow & {
-  orderNo: string
-  encounterId?: Id
-  patientId: Id
-  doctorId?: Id
-  branchId: BranchCode
-  testId: Id
-  modality: Modality
-  bodyPart: string
-  indication: string
-  contrast: boolean
-  status: "ordered" | "paid" | "done" | "reported" | "released" | "cancelled"
-  basketLineId?: Id
-  paymentCleared: boolean
-  reportId?: Id
-}
-
-export type ImagingReportRow = BaseRow & {
-  imagingOrderId: Id
-  patientId: Id
-  reportVersion: number
-  status: "uploaded" | "released" | "superseded"
-  pdfName: string
-  pdfHash: string
-  radiologistId: Id
-  summary?: string
-  releasedAt?: Ms
-  supersedesId?: Id
-}
-
-export type InboxItemRow = BaseRow & {
-  doctorId: Id
-  patientId?: Id
-  kind:
-    | "result"
-    | "abnormal"
-    | "critical"
-    | "corrected"
-    | "substitution"
-    | "transfer"
-    | "add-on"
-    | "info"
-  refs: Refs
-  titleKey: string
-  params?: Record<string, string | number>
-  status: "unread" | "read" | "acknowledged" | "actioned"
-  ackAt?: Ms
-}
-
-/* ================================================================== *
- * 5.5 Lab and imaging
- * ================================================================== */
-
-export type RefRange = {
-  sex?: Sex
-  ageMinYears?: number
-  ageMaxYears?: number
-  low?: number
-  high?: number
-  /** For qualitative results, e.g. "Negative" */
-  text?: string
-}
-
-/** One measured value of a test. Single-value tests have exactly one. */
-export type Analyte = {
-  code: string
-  name: string
-  units?: string
-  decimals: number
-  ranges: RefRange[]
-  criticalLow?: number
-  criticalHigh?: number
-  qualitative?: boolean
-}
-
-export type LabSection =
-  | "haematology"
-  | "biochemistry"
-  | "immunology"
-  | "serology"
-  | "microbiology"
-  | "histopathology"
-  | "hormones"
-  | "urine"
-  | "imaging"
-  | "cardiology"
-
-export type Container =
-  | "EDTA"
-  | "plain"
-  | "fluoride"
-  | "citrate"
-  | "urine-cup"
-  | "stool-cup"
-  | "swab"
-  | "formalin"
-  | "none"
-
-export type LabTestRow = BaseRow & {
-  code: string
-  /** Clinical names stay English (D13); glossBn is an optional Bangla hint */
-  name: string
-  glossBn?: string
-  section: LabSection
-  kind: "lab" | "imaging"
-  modality?: Modality
-  specimen:
-    | "blood"
-    | "serum"
-    | "plasma"
-    | "urine"
-    | "stool"
-    | "swab"
-    | "tissue"
-    | "none"
-  container: Container
-  volumeMl: number
-  method?: string
-  tatHours: number
-  analytes: Analyte[]
-  /** Hours a collected specimen stays usable (add-on test rule) */
-  stabilityHours: number
-  sendOut: boolean
-  signatoryGroup: "pathology" | "microbiology" | "radiology" | "cardiology"
-  priceP: Poisha
-  template?: "micro" | "histo"
-}
-
-export type SpecimenRow = BaseRow & {
-  accessionNo: string
-  barcode: string
-  patientId: Id
-  branchId: BranchCode
-  labOrderId: Id
-  itemIds: Id[]
-  container: Container
-  status:
-    | "awaiting-collection"
-    | "collected"
-    | "received"
-    | "rejected"
-    | "consumed"
-    | "cancelled"
-  collectedAt?: Ms
-  collectedBy?: Id
-  receivedAt?: Ms
-  receivedBy?: Id
-  rejectReason?:
-    | "haemolysed"
-    | "clotted"
-    | "insufficient"
-    | "mislabelled"
-    | "wrong-container"
-    | "other"
-  volumeRemainingMl: number
-  labelPrintedAt?: Ms
-}
-
-export type ResultFlag = "N" | "L" | "H" | "LL" | "HH" | "A"
-
-export type ResultRow = BaseRow & {
-  labOrderItemId: Id
-  patientId: Id
-  testId: Id
-  analyteCode: string
-  value: number | null
-  text?: string
-  unit?: string
-  flag: ResultFlag
-  critical: boolean
-  source: "analyser" | "manual"
-  secondCheckBy?: Id
-  status: "pending" | "validated"
-  validatedBy?: Id
-  validatedAt?: Ms
-  deltaFlag?: boolean
-}
-
-export type LabReportRow = BaseRow & {
-  /** Shared by every version of the same report */
-  reportNo: string
-  reportVersion: number
-  patientId: Id
-  branchId: BranchCode
-  labOrderId: Id
-  itemIds: Id[]
-  status: "draft" | "signed" | "released" | "superseded"
-  signedBy?: Id
-  signedAt?: Ms
-  releasedAt?: Ms
-  heldForPayment?: boolean
-  correctionReason?: string
-  changeSummary?: string
-  supersedesId?: Id
-  /** SHA-256 of the signed content, shown by QR verification */
-  hash?: string
-}
-
-export type CriticalCallRow = BaseRow & {
-  resultId: Id
-  labOrderItemId: Id
-  patientId: Id
-  branchId: BranchCode
-  valueText: string
-  calledPerson: string
-  calledRole: "ordering-doctor" | "duty-doctor" | "ward"
-  calledAt: Ms
-  readBack: boolean
-  readBackText?: string
-  status: "open" | "acknowledged" | "escalated"
-  ackAt?: Ms
-  escalatedTo?: Id
-  escalatedAt?: Ms
-  auto?: boolean
-  loggedBy: Id
-}
-
-/* ================================================================== *
- * 5.6 Medicines, pharmacy and inventory
- * ================================================================== */
-
-export type PharmaCompanyRow = BaseRow & {
-  name: string
-  shortName: string
-  about?: string
-}
-
-export type DrugClassRow = BaseRow & {
-  name: string
-  parentId?: Id
-}
-
-export type GenericRow = BaseRow & {
-  name: string
-  classId: Id
-  glossBn?: string
-  indications: string
-  dosage: string
-  contraindications: string
-  sideEffects: string
-  pregnancyCategory: "A" | "B" | "C" | "D" | "X" | "N/A"
-  /** Always "licensed content, Release 2" style placeholder text */
-  interactionsNote: string
-  isAntibiotic: boolean
-  controlledClass?: "narcotic" | "psychotropic"
-  /** Allergy class that triggers the allergy alert, e.g. "penicillins" */
-  allergyClass?: string
-}
-
-export type DosageForm =
-  | "tablet"
-  | "capsule"
-  | "syrup"
-  | "suspension"
-  | "injection"
-  | "cream"
-  | "drops"
-  | "inhaler"
-  | "suppository"
-  | "sachet"
-
-export type PackSize = {
-  /** e.g. "10 x 10 strip" */
-  label: string
-  /** Total base units in the pack, e.g. 100 */
-  units: number
-  /** Units per strip when sold loose by strip, e.g. 10 */
-  stripSize?: number
-}
-
-export type BrandRow = BaseRow & {
-  name: string
-  genericId: Id
-  companyId: Id
-  strength: string
-  form: DosageForm
-  /** Mock DGDA registration number */
-  darNo: string
-  packSizes: PackSize[]
-  /** Per base unit (tablet, capsule, ml bottle) */
-  unitPriceP: Poisha
-  mrpP: Poisha
-  category: "otc" | "rx" | "controlled"
-  isAntibiotic: boolean
-  searchKeys: string[]
-  unitLabel: Bilingual
-}
-
-export type OfferRow = BaseRow & {
-  brandId: Id
-  /** undefined means all branches */
-  branchId?: BranchCode
-  text: Bilingual
-  setBy: Id
+  isStockLocation: boolean
+  costCentreId: Id
   active: boolean
 }
 
-export type BatchRow = BaseRow & {
-  brandId: Id
-  batchNo: string
-  expiry: ISODate
-  costP: Poisha
-  mrpP: Poisha
-  status: "ok" | "quarantine" | "expired"
-  vendorId?: Id
+export type BayRow = BaseRow & {
+  locationId: Id
+  code: string
+  nameEn: string
+  nameBn: string
+  kind: BayKind
+  active: boolean
 }
 
-export type StockLevelRow = BaseRow & {
-  branchId: BranchCode
-  brandId: Id
-  batchId: Id
-  /** On-hand, dispensable units (excludes quarantined) */
-  qty: number
-  quarantinedQty: number
-  inTransitIn: number
-  inTransitOut: number
-  asAt: Ms
+export type CostCentreRow = BaseRow & {
+  code: string
+  nameEn: string
+  nameBn: string
+  locationId?: Id
 }
 
-export type ReorderLevelRow = BaseRow & {
-  branchId: BranchCode
-  brandId: Id
-  reorderLevel: number
-  reorderQty: number
+export type SecurityPolicy = {
+  minLength: number
+  requireDigit: boolean
+  lockoutThreshold: number
+  idleTimeoutMin: number
+  passwordExpiryDays: number
+  /** Role codes that must use MFA */
+  mfaRequiredRoles: string[]
 }
 
-export type StockMovementRow = BaseRow & {
-  branchId: BranchCode
-  brandId: Id
-  batchId: Id
-  type:
-    | "opening"
-    | "grn"
-    | "dispense"
-    | "transfer-out"
-    | "transfer-in"
-    | "return"
-    | "adjust"
-    | "quarantine"
-    | "release"
-    | "write-off"
-  /** Signed: negative takes stock out */
-  qty: number
-  refs: Refs
-  reason?: string
-  at: Ms
+export type CompanySettings = {
+  /** Shown on prints; the identity itself lives in config/brand.config.ts */
+  printFooterEn: string
+  printFooterBn: string
 }
 
-export type DispenseRow = BaseRow & {
-  rxId?: Id
-  rxLineId?: Id
-  patientId?: Id
-  branchId: BranchCode
-  saleType: "rx" | "otc"
-  brandId: Id
-  batchId: Id
-  qty: number
-  unitPriceP: Poisha
-  pharmacistId: Id
-  pharmacyCouncilNo: string
-  labelPrinted: boolean
-  counselled: boolean
-  /** Units still owed on the Rx line after this dispense */
-  outstandingQty: number
-  invoiceLineId?: Id
-  at: Ms
+/** Typed values of the `settings` rows, keyed by row id. */
+export type SettingsValues = {
+  tax: TaxSettings
+  security: SecurityPolicy
+  /** System tag to account id (FA settings remap tags) */
+  postingAccounts: Record<AccountTag, Id>
+  company: CompanySettings
+}
+export type SettingKey = keyof SettingsValues
+
+/** One settings row; `id` is the key ("tax", "security", "postingAccounts", "company"). */
+export type SettingRow = BaseRow & { value: unknown }
+
+export type FiscalYearRow = BaseRow & {
+  /** "2627" for 01-07-2026 to 30-06-2027 */
+  code: string
+  startsOn: ISODate
+  endsOn: ISODate
+  status: "open" | "closed"
 }
 
-export type ControlledRegisterRow = BaseRow & {
-  dispenseId: Id
-  branchId: BranchCode
-  brandId: Id
-  qty: number
-  runningBalance: number
-  rxId: Id
-  witnessId?: Id
-  at: Ms
+export type CloseCheck = {
+  key: string
+  blocking: "yes" | "warning" | "info"
+  ok: boolean
+  count?: number
 }
 
-export type SubstitutionRequestRow = BaseRow & {
-  rxId: Id
-  rxLineId: Id
-  patientId: Id
-  doctorId: Id
-  branchId: BranchCode
-  proposedBrandId: Id
-  reason: string
-  requestedBy: Id
-  status: "pending" | "approved" | "rejected"
-  decidedBy?: Id
-  decidedAt?: Ms
-  decisionNote?: string
-  resultRxId?: Id
-}
-
-export type TransferRow = BaseRow & {
-  transferNo: string
-  fromBranchId: BranchCode
-  toBranchId: BranchCode
-  status: "requested" | "approved" | "dispatched" | "received" | "cancelled"
-  requestedFrom: "doctor-prompt" | "pharmacy" | "store"
-  requestedBy: Id
-  dispatchedAt?: Ms
-  receivedAt?: Ms
-  note?: string
-}
-
-export type TransferLineRow = BaseRow & {
-  transferId: Id
-  brandId: Id
-  batchId?: Id
-  qtyRequested: number
-  qtyDispatched: number
-  qtyReceived: number
-  discrepancy?: string
+export type PeriodRow = BaseRow & {
+  fiscalYearId: Id
+  /** "<fy>-<nn>", fiscal month number from July = 01: "2627-05" is November 2026 */
+  code: string
+  /** Calendar month, YYYY-MM */
+  month: string
+  startsOn: ISODate
+  endsOn: ISODate
+  status: "open" | "closed"
+  closedBy?: Id
+  closedAt?: Ms
+  closeChecklist?: CloseCheck[]
+  reopenReason?: string
 }
 
 /* ================================================================== *
- * 5.7 Billing, cash, finance and corporate
+ * 5.2 Security (SAC, RBAC) and approvals
  * ================================================================== */
 
-export type PayerType = "self" | "corporate"
-export type Tender =
-  "cash" | "card" | "bkash" | "nagad" | "deposit" | "corporate"
+export type UserStatus = "active" | "locked" | "disabled"
 
-export type BasketLineRow = BaseRow & {
-  patientId: Id
-  branchId: BranchCode
-  sourceType:
-    "consult" | "test" | "imaging" | "rx-line" | "bed" | "procedure" | "other"
-  sourceId: Id
-  serviceType: ServiceType
-  description: string
-  descriptionBn?: string
-  doctorId?: Id
-  qty: number
-  unitPriceP: Poisha
-  /** Medicine lines: the price may never exceed this (INV-05) */
-  mrpP?: Poisha
-  status: "open" | "invoiced" | "removed"
-  payerType: PayerType
-  corporateClientId?: Id
+export type UserRow = BaseRow & {
+  username: string
+  nameEn: string
+  nameBn: string
+  designationEn: string
+  designationBn: string
+  email: string
+  phone: string
+  employeeNo: string
+  homeLocationId: Id
+  locationIds: Id[]
+  status: UserStatus
+  /** sha256(username + ":" + password), simulated */
+  passwordHash: string
+  passwordSetAt: Ms
+  mustChangePassword: boolean
+  mfaEnabled: boolean
+  failedAttempts: number
+  lastLoginAt?: Ms
+  avatarSeed: string
+  sex: Sex
 }
 
-export type InvoiceRow = BaseRow & {
-  invoiceNo: string
-  companyId: CompanyCode
-  branchId: BranchCode
-  patientId: Id
-  date: ISODate
-  payerType: PayerType
-  corporateClientId?: Id
-  subtotalP: Poisha
-  discountP: Poisha
-  discountPct: number
-  discountApprovalId?: Id
-  taxP: Poisha
-  totalP: Poisha
-  /** Sum of confirmed payments */
-  paidP: Poisha
-  refundedP: Poisha
-  status: "unpaid" | "partial" | "paid" | "void" | "refunded"
-  offline?: boolean
-  shiftId?: Id
-  cashierId: Id
+export type RoleRow = BaseRow & {
+  code: string
+  nameEn: string
+  nameBn: string
+  descriptionEn: string
+  descriptionBn: string
+  isSystem: boolean
+  active: boolean
 }
 
-export type InvoiceLineRow = BaseRow & {
-  invoiceId: Id
-  basketLineId?: Id
-  sourceType: BasketLineRow["sourceType"]
-  sourceId: Id
-  serviceType: ServiceType
-  description: string
-  doctorId?: Id
-  qty: number
-  unitPriceP: Poisha
-  amountP: Poisha
-  discountP: Poisha
-  netP: Poisha
-  status: "active" | "cancelled" | "refunded"
+export type RolePermissionRow = BaseRow & {
+  roleId: Id
+  permission: string
+  scope: Scope
 }
 
-export type PaymentRow = BaseRow & {
-  invoiceId: Id
-  patientId: Id
-  branchId: BranchCode
-  tender: Tender
-  amountP: Poisha
-  status: "pending" | "confirmed" | "failed" | "timeout" | "refunded"
-  /** Terminal, MFS or cheque reference */
-  ref?: string
-  idempotencyKey: string
-  shiftId?: Id
-  manualRefFlag?: boolean
-  requestedAt: Ms
-  confirmedAt?: Ms
+export type UserRoleRow = BaseRow & {
+  userId: Id
+  roleId: Id
+  grantedBy: Id
+  grantedAt: Ms
 }
 
-export type ReceiptRow = BaseRow & {
-  receiptNo: string
-  invoiceId: Id
-  paymentIds: Id[]
-  patientId: Id
-  branchId: BranchCode
-  amountP: Poisha
+export type ApprovalLimitRow = BaseRow & {
+  roleId: Id
+  kind: ApprovalKind
+  /** Poisha, or percent for discount-pct; -1 = unlimited; credit-override 1 = yes */
+  value: number
+}
+
+export type SodRuleRow = BaseRow & {
+  code: string
+  permissionA: string
+  /** A key, or "*.approve" for any approve-column key */
+  permissionB: string
+  mode: "warn" | "block"
+  descriptionEn: string
+  descriptionBn: string
+  active: boolean
+}
+
+/** Platform table: written by commits but not audited (§5.2). */
+export type SessionRow = BaseRow & {
+  userId: Id
+  windowId: string
+  locationId: Id
+  startedAt: Ms
+  /** Wall-clock (not demo-clock) time of the last activity */
+  lastActivityRealAt: number
+  endedAt?: Ms
+  endedReason?: "sign-out" | "forced" | "timeout"
+  endedBy?: Id
+  method: "password" | "demo-quick"
+}
+
+export type LoginEventRow = BaseRow & {
+  username: string
+  userId?: Id
   at: Ms
+  result: "success" | "bad-password" | "locked" | "disabled" | "mfa-failed" | "unknown-user"
+  method: "password" | "demo-quick" | "mfa"
+  windowId: string
 }
 
-export type RefundRow = BaseRow & {
-  refundNo: string
-  invoiceId: Id
-  invoiceLineIds: Id[]
-  paymentId: Id
-  tender: Tender
-  amountP: Poisha
-  reason: string
-  approvalId?: Id
-  status: "pending" | "completed" | "failed"
-  completedAt?: Ms
-  creditNoteId?: Id
-}
-
-export type CreditNoteRow = BaseRow & {
-  creditNoteNo: string
-  invoiceId: Id
-  amountP: Poisha
-  reason: string
-  lines: { invoiceLineId: Id; amountP: Poisha }[]
-  /** Absent means a refund's credit note (billing); a corporate dispute reduces the company's share */
-  kind?: "refund" | "corporate-dispute"
-  corporateClientId?: Id
-  approvalId?: Id
-}
-
-export type ApprovalKind =
-  | "discount"
-  | "cancel-after-collection"
-  | "refund"
-  | "variance"
-  | "pr"
-  | "merge"
-  | "payment-override"
-  | "goodwill"
-  | "credit-note"
-  | "mismatch"
+export type ApprovalStatus = "pending" | "approved" | "rejected" | "cancelled"
 
 export type ApprovalRow = BaseRow & {
   kind: ApprovalKind
-  refs: Refs
-  requestedBy: Id
-  approverId?: Id
-  status: "pending" | "approved" | "rejected"
-  /** Inline supervisor overrides verify the simulated PIN */
-  pinVerified: boolean
-  reason: string
+  /** Table of the document (salesInvoices, vendorPayments, journals, ...) */
+  docType: string
+  docId: Id
+  docNo: string
+  locationId?: Id
   amountP?: Poisha
+  pct?: number
+  requestedBy: Id
+  requestedAt: Ms
+  /** The approve key a decider must hold (§3.7 table) */
+  approveKey: string
+  status: ApprovalStatus
+  decidedBy?: Id
   decidedAt?: Ms
+  /** The requester's reason (or the inline approver's) */
+  reason: string
+  /** Reason given with the decision */
+  decisionReason?: string
+  inline: boolean
+  pinVerified: boolean
+  /** Users who could decide when it was requested (notified); live routing still applies */
+  routedTo: Id[]
 }
 
-export type ShiftRow = BaseRow & {
-  cashierId: Id
-  branchId: BranchCode
-  date: ISODate
-  openedAt: Ms
-  floatP: Poisha
-  closedAt?: Ms
-  countedP?: Poisha
-  /** Denomination (as a string, e.g. "1000") to note count */
-  denominations?: Record<string, number>
-  /** Expected cash snapshot taken at close */
-  expectedP?: Poisha
-  varianceP?: Poisha
-  status: "open" | "closing" | "closed"
-  varianceApprovalId?: Id
+/* ================================================================== *
+ * 5.3 Parties (PAR)
+ * ================================================================== */
+
+export type PartySegment =
+  | "walk-in"
+  | "retail"
+  | "fleet"
+  | "dealer"
+  | "corporate"
+  | "supplier"
+  | "service-provider"
+  | "landlord"
+  | "utility"
+  | "professional"
+
+export type PartyAddress = { label: string; line: string; area: string; city: string }
+export type PartyContact = { name: string; designation: string; phone: string; email?: string }
+
+export type PartyRow = BaseRow & {
+  /** C-000123 customers, V-0045 vendors */
+  code: string
+  isCustomer: boolean
+  isVendor: boolean
+  type: "individual" | "company"
+  nameEn: string
+  nameBn: string
+  segment: PartySegment
+  phone: string
+  email?: string
+  addresses: PartyAddress[]
+  contacts: PartyContact[]
+  bin?: string
+  tin?: string
+  nid?: string
+  tradeLicense?: string
+  creditLimitP: Poisha
+  paymentTermsDays: number
+  priceListId?: Id
+  vendorTaxCategory?: VendorTaxCategory
+  deductsVds: boolean
+  deductsAit: boolean
+  status: "active" | "on-hold" | "blocked"
+  holdReason?: string
+  autoHoldAt?: Ms
+  smsConsent: boolean
+  avatarSeed: string
+  notes?: string
 }
 
-export type FeeShareAccrualRow = BaseRow & {
-  doctorId: Id
-  invoiceId: Id
-  invoiceLineId: Id
-  contractId: Id
-  contractVersion: number
-  serviceType: ServiceType
-  /** YYYY-MM */
-  month: string
-  patientUhid?: string
-  grossP: Poisha
+export type VehicleRow = BaseRow & {
+  partyId: Id
+  /** DHAKA METRO-GA 27-4419 (Latin, always on documents) */
+  regNo: string
+  regNoBn: string
+  make: string
+  model: string
+  year: number
+  colour: string
+  vehicleClass: VehicleClass
+  vin?: string
+  notes?: string
+  lastServiceAt?: Ms
+  active: boolean
+}
+
+/* ================================================================== *
+ * 5.4 Products and services (PM, PC)
+ * ================================================================== */
+
+export type UomRow = BaseRow & {
+  /** id equals code */
+  code: string
+  nameEn: string
+  nameBn: string
+  dimension: "volume" | "mass" | "count"
+}
+
+export type ItemCategoryRow = BaseRow & {
+  code: string
+  nameEn: string
+  nameBn: string
+  parentId?: Id
+  inventoryTag: InventoryTag
+  /** Expense tag a job's use of this category debits (CONSUMABLES_USED) or COGS for retail */
+  costTag: "CONSUMABLES_USED" | "COGS"
+}
+
+export type ItemKind = "chemical" | "consumable" | "retail"
+
+export type ItemRow = BaseRow & {
+  sku: string
+  nameEn: string
+  nameBn: string
+  categoryId: Id
+  kind: ItemKind
+  brand?: string
+  baseUom: string
+  purchaseUom: string
+  /** Base units per purchase unit (a 5 L can = 5,000 ml) */
+  purchaseFactor: number
+  salesUom?: string
+  /** Base units per sales unit */
+  salesFactor?: number
+  trackBatch: boolean
+  shelfLifeDays?: number
+  /** Per purchase unit */
+  standardCostP: Poisha
+  /** Per sales unit, VAT exclusive */
+  retailPriceP?: Poisha
+  vatCategory: VatCategory
+  barcode: string
+  status: "active" | "inactive"
+  imageSeed: string
+}
+
+export type ReorderRuleRow = BaseRow & {
+  itemId: Id
+  locationId: Id
+  /** Base units */
+  minQty: number
+  maxQty: number
+  reorderQty: number
+}
+
+export type ServiceCategory =
+  | "wash"
+  | "interior"
+  | "paint"
+  | "protection"
+  | "glass"
+  | "wheel"
+  | "engine"
+  | "restoration"
+
+export type ServiceRow = BaseRow & {
+  /** PRT-CC2 */
+  code: string
+  nameEn: string
+  nameBn: string
+  category: ServiceCategory
+  descriptionEn: string
+  descriptionBn: string
+  warrantyMonths?: number
+  vatCategory: VatCategory
+  revenueTag: RevenueTag
+  active: boolean
+  sortOrder: number
+}
+
+export type ServiceVariantRow = BaseRow & {
+  serviceId: Id
+  vehicleClass: VehicleClass
+  durationMin: number
+  /** Retail list price, VAT exclusive */
+  basePriceP: Poisha
+  active: boolean
+}
+
+export type ServiceRecipeRow = BaseRow & {
+  serviceId: Id
+  /** A class, or "*" for the sedan recipe scaled by the class factors */
+  vehicleClass: VehicleClass | "*"
+  itemId: Id
+  /** Base units */
+  qtyBase: number
+}
+
+export type PackageRow = BaseRow & {
+  code: string
+  nameEn: string
+  nameBn: string
+  serviceIds: Id[]
+  pricing:
+    | { kind: "bundle-pct"; pct: number }
+    | { kind: "fixed"; prices: Partial<Record<VehicleClass, Poisha>> }
+  active: boolean
+}
+
+export type AddOnRow = BaseRow & {
+  code: string
+  nameEn: string
+  nameBn: string
+  priceP: Poisha
+  durationMin: number
+  revenueTag: RevenueTag
+  appliesTo: ServiceCategory[]
+  active: boolean
+}
+
+export type PriceListRow = BaseRow & {
+  /** RETAIL / FLEET / DEALER / custom */
+  code: string
+  nameEn: string
+  nameBn: string
+  kind: "retail" | "fleet" | "dealer" | "custom"
+  validFrom: ISODate
+  validTo?: ISODate
+  status: "draft" | "published" | "archived"
+  basis: "override" | "discount-pct"
+  discountPct?: number
+  publishedBy?: Id
+  publishedAt?: Ms
+  /** For a draft revision: the list it will replace */
+  revisionOfId?: Id
+}
+
+export type PriceListLineRow = BaseRow & {
+  priceListId: Id
+  targetType: "service-variant" | "package" | "item"
+  targetId: Id
+  /** For packages with a fixed price per class */
+  vehicleClass?: VehicleClass
+  priceP: Poisha
+}
+
+export type PromotionRow = BaseRow & {
+  code: string
+  nameEn: string
+  nameBn: string
+  kind: "pct" | "amount"
+  /** Percent, or poisha for `amount` */
+  value: number
+  appliesTo: ServiceCategory[]
+  validFrom: ISODate
+  validTo: ISODate
+  minOrderP: Poisha
+  active: boolean
+  usedCount: number
+}
+
+/* ================================================================== *
+ * 5.5 Sales (STL, SI, SD)
+ * ================================================================== */
+
+export type SalesLineKind = "service" | "add-on" | "item"
+
+/** Shared priced-line shape (quotation, order and invoice lines). */
+export type PricedLine = {
+  kind: SalesLineKind
+  /** Service, add-on or item id */
+  refId: Id
+  packageId?: Id
+  vehicleClass?: VehicleClass
+  descriptionEn: string
+  descriptionBn: string
+  qty: number
+  unitPriceP: Poisha
   discountP: Poisha
+  vatRatePct: number
+  vatP: Poisha
+  /** qty × unit price − discount */
   netP: Poisha
-  basis: FeeShareRule["basis"]
-  shareP: Poisha
-  whtP: Poisha
-  reversalOfId?: Id
+  revenueTag: RevenueTag
+}
+
+export type QuotationRow = BaseRow & {
+  quoteNo: string
+  locationId: Id
+  partyId: Id
+  vehicleId?: Id
+  advisorId: Id
+  priceListId: Id
+  promotionId?: Id
+  discountPct: number
+  discountApprovalId?: Id
+  status: "draft" | "sent" | "accepted" | "rejected" | "expired"
+  validUntil: ISODate
+  inspectionNotes: string
+  subtotalP: Poisha
+  discountP: Poisha
+  vatP: Poisha
+  totalP: Poisha
+  orderId?: Id
+  sentAt?: Ms
+}
+
+export type QuotationLineRow = BaseRow & PricedLine & { quotationId: Id; lineNo: number }
+
+export type SalesOrderStatus =
+  | "booked"
+  | "in-progress"
+  | "qc"
+  | "ready"
+  | "delivered"
+  | "invoiced"
+  | "closed"
+  | "cancelled"
+
+export type SalesOrderRow = BaseRow & {
+  orderNo: string
+  kind: "service" | "product" | "b2b"
+  locationId: Id
+  partyId: Id
+  vehicleId?: Id
+  quotationId?: Id
+  advisorId: Id
+  priceListId: Id
+  promotionId?: Id
+  status: SalesOrderStatus
+  /** Calendar day of the booking (for lists and reports) */
+  bookedOn: ISODate
+  scheduledAt: Ms
+  bayId?: Id
+  promisedAt: Ms
+  discountPct: number
+  discountApprovalId?: Id
+  /** Deposits received */
+  advanceP: Poisha
+  odometerKm?: number
+  conditionNotes?: string
+  /** A complaint or note added after delivery (E12) */
+  complaintNote?: string
+  photoCount: number
+  cancelReason?: string
+  subtotalP: Poisha
+  discountP: Poisha
+  vatP: Poisha
+  totalP: Poisha
+  /** Status moments for the timeline and turnaround reports */
+  startedAt?: Ms
+  qcAt?: Ms
+  readyAt?: Ms
+  deliveredAt?: Ms
+  invoicedAt?: Ms
+  closedAt?: Ms
+  cancelledAt?: Ms
+}
+
+export type SalesOrderLineRow = BaseRow &
+  PricedLine & {
+    orderId: Id
+    lineNo: number
+    status: "open" | "done" | "cancelled"
+    qtyDelivered: number
+    qtyInvoiced: number
+  }
+
+export type JobTaskRow = BaseRow & {
+  orderId: Id
+  orderLineId: Id
+  locationId: Id
+  serviceId?: Id
+  technicianId: Id
+  bayId: Id
+  plannedStart: Ms
+  plannedMinutes: number
+  status: "queued" | "in-progress" | "done"
+  startedAt?: Ms
+  finishedAt?: Ms
+  minutes?: number
+}
+
+export type JobConsumptionRow = BaseRow & {
+  orderId: Id
+  orderLineId?: Id
+  taskId?: Id
+  itemId: Id
+  locationId: Id
+  /** Base units the recipe calls for (0 for extras and returns) */
+  standardQty: number
+  /** Base units actually used (negative for a return) */
+  actualQty: number
+  kind: "recipe" | "extra" | "return"
+  valueP: Poisha
+  stockMoveIds: Id[]
+  at: Ms
+  by: Id
+}
+
+export type QcItem = { key: string; ok: boolean; note?: string }
+
+export type QcCheckRow = BaseRow & {
+  orderId: Id
+  items: QcItem[]
+  result: "pass" | "fail"
+  checkedBy: Id
   at: Ms
 }
 
-export type MfsSettlementRow = BaseRow & {
-  provider: "bkash" | "nagad"
+export type DeliveryRow = BaseRow & {
+  deliveryNo: string
+  orderId: Id
+  kind: "vehicle-handover" | "goods"
+  locationId: Id
+  status: "delivered"
+  checklist: QcItem[]
+  signatureName?: string
+  signatureSvg?: string
+  signedAt?: Ms
+  gatePassNo?: string
+  deliveredBy: Id
+  deliveredAt: Ms
+  journalId?: Id
+}
+
+export type DeliveryLineRow = BaseRow & {
+  deliveryId: Id
+  orderLineId: Id
+  itemId: Id
+  qtyBase: number
+  batchId?: Id
+  stockMoveId: Id
+}
+
+export type SalesInvoiceStatus = "posted" | "partially-paid" | "paid" | "credited"
+
+export type SalesInvoiceRow = BaseRow & {
+  /** Mushak 6.3 serial, INV-GUL-2627-000123 */
+  invoiceNo: string
+  locationId: Id
+  partyId: Id
+  orderIds: Id[]
   date: ISODate
-  lines: {
-    ref: string
-    amountP: Poisha
-    at: Ms
-    matchedPaymentId?: Id
-    /** "auto" when matched on import by reference, otherwise the staff id who matched it */
-    matchedBy?: Id
-    /** Finance note on an unmatched line (e.g. "under investigation") */
-    note?: string
-  }[]
-  status: "pending-import" | "imported" | "reconciled"
-  importedAt?: Ms
-}
-
-export type CorporateClientRow = BaseRow & {
-  code: string
-  name: Bilingual
-  contactName: string
-  phone: string
-  creditLimitP: Poisha
-}
-
-export type CorporateContractRow = BaseRow & {
-  clientId: Id
-  validFrom: ISODate
-  validTo: ISODate
-  coveredServices: ServiceType[]
-  discountPct: number
-  coPayPct: number
-  annualLimitP: Poisha
-  status: "active" | "expired"
-}
-
-export type CorporateEmployeeRow = BaseRow & {
-  clientId: Id
-  contractId: Id
-  employeeNo: string
-  patientId?: Id
-  nameEn: string
-  relation: "employee" | "spouse" | "child" | "parent"
-  status: "active" | "left"
-  usedP: Poisha
-}
-
-/* ---------------- Procurement ---------------- */
-
-export type VendorRow = BaseRow & {
-  code: string
-  name: string
-  phone: string
-  kind: "manufacturer-depot" | "distributor" | "general"
-  paymentTermsDays: number
-}
-
-export type PurchaseRequestRow = BaseRow & {
-  prNo: string
-  branchId: BranchCode
-  requestedBy: Id
-  status: "draft" | "submitted" | "approved" | "rejected" | "ordered"
+  /** Moment of issue (Mushak 6.3 shows date and time) */
+  issuedAt: Ms
+  dueDate: ISODate
+  kind: "counter" | "credit" | "consolidated" | "opening"
+  buyerNameEn: string
+  buyerBin?: string
+  subtotalP: Poisha
+  discountP: Poisha
+  vatP: Poisha
   totalP: Poisha
-  /** Who must approve: the lowest tier covering the value whose approver is not the requester */
-  approvalTier: "store-manager" | "procurement-head" | "cfo"
+  advanceAppliedP: Poisha
+  paidP: Poisha
+  /** Held by pending receipts (cheque in hand, MFS waiting) */
+  reservedP: Poisha
+  creditedP: Poisha
+  status: SalesInvoiceStatus
+  creditOverrideApprovalId?: Id
+  journalId: Id
+  printCount: number
+  issuedBy: Id
+}
+
+export type SalesInvoiceLineRow = BaseRow & {
+  invoiceId: Id
+  lineNo: number
+  orderLineId?: Id
+  serviceId?: Id
+  itemId?: Id
+  /** add-on id when the line is an add-on */
+  addOnId?: Id
+  vehicleId?: Id
+  vehicleClass?: VehicleClass
+  descriptionEn: string
+  descriptionBn: string
+  qty: number
+  unitPriceP: Poisha
+  discountP: Poisha
+  vatRatePct: number
+  vatP: Poisha
+  netP: Poisha
+  revenueTag: RevenueTag
+  /** Denormalised for reports */
+  date: ISODate
+  locationId: Id
+  partyId: Id
+  advisorId?: Id
+}
+
+export type CreditNoteLine = {
+  invoiceLineId: Id
+  qty?: number
+  grossP: Poisha
+  discountP: Poisha
+  netP: Poisha
+  vatP: Poisha
+}
+
+export type CreditNoteRow = BaseRow & {
+  /** Mushak 6.7, CRN-2627-0031 */
+  creditNoteNo: string
+  invoiceId: Id
+  partyId: Id
+  locationId: Id
+  date: ISODate
+  reason: string
+  lines: CreditNoteLine[]
+  totalP: Poisha
+  restock: boolean
+  status: "pending-approval" | "posted" | "rejected"
   approvalId?: Id
-  submittedAt?: Ms
+  journalId?: Id
+  /** Part credited to the invoice's open amount / to customer advance (R11) */
+  toInvoiceP?: Poisha
+  toAdvanceP?: Poisha
+}
+
+/* ================================================================== *
+ * 5.6 Receivables, payables, cash and bank (AR, AP, CAB)
+ * ================================================================== */
+
+export type Allocation = { invoiceId: Id; amountP: Poisha }
+export type BillAllocation = { billId: Id; amountP: Poisha }
+
+export type ReceiptRow = BaseRow & {
+  receiptNo: string
+  locationId: Id
+  partyId: Id
+  date: ISODate
+  method: ReceiptMethod
+  cashBankAccountId: Id
+  amountP: Poisha
+  ref?: string
+  chequeId?: Id
+  status: "pending" | "posted" | "timed-out" | "bounced"
+  allocations: Allocation[]
+  /** Unallocated, held as customer advance */
+  advanceP: Poisha
+  vdsDeductedP: Poisha
+  aitDeductedP: Poisha
+  certificateNo?: string
+  /** A booking deposit for this order */
+  orderId?: Id
+  journalId?: Id
+  idempotencyKey: string
+  /** Moment the receipt was taken (MFS timeout counts from here) */
+  at: Ms
+  /** Cash tendered and change given (counter) */
+  tenderedP?: Poisha
+  changeP?: Poisha
+  takenBy: Id
+}
+
+export type CustomerRefundRow = BaseRow & {
+  refundNo: string
+  locationId: Id
+  partyId: Id
+  date: ISODate
+  method: "cash" | "bkash" | "nagad" | "bank-transfer"
+  cashBankAccountId: Id
+  amountP: Poisha
+  source: "deposit" | "credit-note" | "overpayment"
+  orderId?: Id
+  creditNoteId?: Id
+  reason: string
+  journalId: Id
+}
+
+export type MatchDiff = {
+  poLineId?: Id
+  itemId?: Id
+  field: "qty" | "price"
+  expected: number
+  actual: number
+  /** Price difference in percent */
+  diffPct?: number
+}
+
+export type VendorBillRow = BaseRow & {
+  billNo: string
+  /** The vendor's own invoice reference (unique per vendor, INV-12) */
+  vendorRef: string
+  partyId: Id
+  locationId: Id
+  date: ISODate
+  dueDate: ISODate
+  kind: "goods" | "expense" | "opening" | "summary"
+  poId?: Id
+  grnIds: Id[]
+  hasMushak63: boolean
+  subtotalP: Poisha
+  inputVatP: Poisha
+  totalP: Poisha
+  paidP: Poisha
+  /** Reduced by debit notes; open amount = total − paid − debited */
+  debitedP: Poisha
+  status: "on-hold" | "posted" | "partially-paid" | "paid"
+  matchStatus: "matched" | "mismatch" | "n-a"
+  matchDiffs: MatchDiff[]
+  holdApprovalId?: Id
+  journalId?: Id
+}
+
+export type VendorBillLineRow = BaseRow & {
+  billId: Id
+  lineNo: number
+  poLineId?: Id
+  grnLineId?: Id
+  itemId?: Id
+  expenseTag?: ExpenseTag
+  description: string
+  qty: number
+  unitPriceP: Poisha
+  vatRatePct: number
+  vatP: Poisha
+  netP: Poisha
+  costCentreId?: Id
+}
+
+export type VendorPaymentRow = BaseRow & {
+  paymentNo: string
+  partyId: Id
+  date: ISODate
+  method: PayMethod
+  cashBankAccountId: Id
+  grossP: Poisha
+  aitP: Poisha
+  vdsP: Poisha
+  netPaidP: Poisha
+  allocations: BillAllocation[]
+  chequeId?: Id
+  chequeNo?: string
+  aitCertificateNo?: string
+  /** Mushak 6.6 */
+  vdsCertificateNo?: string
+  status: "pending-approval" | "posted" | "rejected"
+  approvalId?: Id
+  journalId?: Id
+  preparedBy: Id
+}
+
+export type DebitNoteRow = BaseRow & {
+  /** Mushak 6.8, DBN-2627-0009 */
+  debitNoteNo: string
+  billId?: Id
+  partyId: Id
+  date: ISODate
+  reason: string
+  netP: Poisha
+  vatP: Poisha
+  totalP: Poisha
+  purchaseReturnId?: Id
+  journalId: Id
+}
+
+export type CashBankKind = "cash-till" | "petty-cash" | "bank" | "mfs" | "card-clearing"
+
+export type CashBankAccountRow = BaseRow & {
+  code: string
+  nameEn: string
+  nameBn: string
+  kind: CashBankKind
+  accountTag: AccountTag
+  locationId?: Id
+  bankName?: string
+  branchName?: string
+  accountNoMasked?: string
+  /** Till float */
+  floatP?: Poisha
+  /** Petty cash imprest */
+  imprestP?: Poisha
+  active: boolean
+}
+
+export type FundTransferRow = BaseRow & {
+  transferNo: string
+  kind: "deposit" | "withdrawal" | "transfer" | "top-up"
+  fromAccountId: Id
+  toAccountId: Id
+  amountP: Poisha
+  feesP: Poisha
+  date: ISODate
+  ref?: string
+  journalId: Id
+}
+
+export type SettlementRow = BaseRow & {
+  settlementNo: string
+  kind: "card" | "bkash" | "nagad"
+  clearingAccountId: Id
+  bankAccountId: Id
+  grossP: Poisha
+  feesP: Poisha
+  netP: Poisha
+  date: ISODate
+  ref: string
+  journalId: Id
+}
+
+export type ChequeStatus =
+  | "in-hand"
+  | "deposited"
+  | "cleared"
+  | "bounced"
+  | "issued"
+  | "presented"
+  | "cancelled"
+
+export type ChequeRow = BaseRow & {
+  direction: "received" | "issued"
+  chequeNo: string
+  bankName: string
+  /** Our account: deposited into (received) or drawn on (issued) */
+  cashBankAccountId: Id
+  partyId: Id
+  amountP: Poisha
+  chequeDate: ISODate
+  receivedOn?: ISODate
+  isPdc: boolean
+  status: ChequeStatus
+  receiptId?: Id
+  paymentId?: Id
+  dueNoticeAt?: Ms
+  history: { status: ChequeStatus; at: Ms; by: Id }[]
+}
+
+export type StatementLine = {
+  lineId: string
+  date: ISODate
+  description: string
+  ref: string
+  /** Signed: + money in, − money out */
+  amountP: Poisha
+  matchedJournalLineIds: Id[]
+  matchedBy?: "auto" | "manual" | "charge"
   note?: string
-  /** Suggested supplier (the brand's manufacturer depot by default) */
-  vendorId?: Id
-  decidedBy?: Id
-  decidedAt?: Ms
-  /** Approver's reason (required on rejection) */
-  decisionNote?: string
+}
+
+export type BankStatementRow = BaseRow & {
+  cashBankAccountId: Id
+  fromDate: ISODate
+  toDate: ISODate
+  fileName: string
+  importedAt: Ms
+  status: "imported" | "reconciled" | "superseded"
+  openingBalanceP: Poisha
+  closingBalanceP: Poisha
+  lines: StatementLine[]
+  reconciledAt?: Ms
+  reconciledBy?: Id
+}
+
+export type PettyCashVoucherRow = BaseRow & {
+  voucherNo: string
+  cashBankAccountId: Id
+  locationId: Id
+  date: ISODate
+  expenseTag: ExpenseTag
+  amountP: Poisha
+  payee: string
+  description: string
+  status: "pending-approval" | "posted" | "rejected"
+  approvalId?: Id
+  journalId?: Id
+  preparedBy: Id
+}
+
+/* ================================================================== *
+ * 5.7 Accounting and tax (FA, FRS)
+ * ================================================================== */
+
+export type AccountType = "asset" | "liability" | "equity" | "income" | "expense"
+
+export type AccountRow = BaseRow & {
+  code: string
+  nameEn: string
+  nameBn: string
+  type: AccountType
+  parentId?: Id
+  isGroup: boolean
+  normalSide: "debit" | "credit"
+  tag?: AccountTag
+  isControl: boolean
+  active: boolean
+}
+
+export type JournalStatus = "draft" | "pending-approval" | "posted" | "reversed" | "discarded"
+
+export type JournalSource = { app: string; docType: string; docId: Id; docNo: string }
+
+export type JournalRow = BaseRow & {
+  /** <TYPE>-<FY>-<6>: JV-2627-000417 (drafts get theirs at posting) */
+  journalNo: string
+  voucherType: VoucherType
+  date: ISODate
+  periodId: Id
+  source?: JournalSource
+  narration: string
+  status: JournalStatus
+  totalP: Poisha
+  /** Posting rule code that built the lines (R6, R24, ...) */
+  rule: string
+  approvalId?: Id
+  reversalOfId?: Id
+  reversedById?: Id
+  preparedBy: Id
+  postedBy?: Id
+  postedAt?: Ms
+  recurringId?: Id
+  /**
+   * Lines of a draft or pending-approval manual voucher. `journalLines` rows
+   * exist only for posted (and later reversed) journals, so the ledger never
+   * needs a status filter.
+   */
+  draftLines?: TemplateLine[]
+}
+
+export type JournalLineRow = BaseRow & {
+  journalId: Id
+  lineNo: number
+  accountId: Id
+  debitP: Poisha
+  creditP: Poisha
+  partyId?: Id
+  costCentreId?: Id
+  locationId?: Id
+  itemId?: Id
+  description?: string
+  /** Denormalised for reports */
+  date: ISODate
+  periodId: Id
+  voucherType: VoucherType
+  /** Set when the line is matched to a bank statement line */
+  reconciledStatementLineId?: string
+}
+
+/** A line of a manual voucher or recurring template, before posting. */
+export type TemplateLine = {
+  /** An account id or a system tag */
+  account: Id | AccountTag
+  debitP: Poisha
+  creditP: Poisha
+  partyId?: Id
+  costCentreId?: Id
+  locationId?: Id
+  description?: string
+}
+
+export type RecurringJournalRow = BaseRow & {
+  code: string
+  nameEn: string
+  nameBn: string
+  frequency: "monthly"
+  kind: "depreciation" | "salary-accrual" | "prepaid-amortisation" | "custom"
+  lines: TemplateLine[]
+  lastPostedPeriodId?: Id
+  active: boolean
+}
+
+export type VatReturnRow = BaseRow & {
+  periodId: Id
+  /** YYYY-MM the return is for */
+  month: string
+  outputVatP: Poisha
+  inputVatP: Poisha
+  vdsCreditP: Poisha
+  carryInP: Poisha
+  netPayableP: Poisha
+  carryForwardP: Poisha
+  status: "submitted"
+  nbrRef: string
+  submittedBy: Id
+  submittedAt: Ms
+  journalId: Id
+}
+
+export type TaxDepositRow = BaseRow & {
+  depositNo: string
+  /** YYYY-MM the tax is for (may precede the books for opening liabilities) */
+  forMonth: string
+  kind: "vat" | "vds" | "ait"
+  amountP: Poisha
+  cashBankAccountId: Id
+  challanRef: string
+  date: ISODate
+  journalId: Id
+}
+
+/* ================================================================== *
+ * 5.8 Purchasing and inventory (PTL, GRN, ST, IC)
+ * ================================================================== */
+
+export type PurchaseRequisitionRow = BaseRow & {
+  prNo: string
+  locationId: Id
+  requestedBy: Id
+  reason: "reorder" | "job-demand" | "manual"
+  status: "draft" | "pending-approval" | "approved" | "rejected" | "ordered"
+  totalP: Poisha
+  approvalId?: Id
+  note?: string
+  date: ISODate
 }
 
 export type PrLineRow = BaseRow & {
   prId: Id
-  brandId: Id
-  /** Packs when `pack` is set, otherwise base units */
+  itemId: Id
+  /** Purchase units */
   qty: number
-  /** Per pack when `pack` is set, otherwise per base unit */
   estUnitCostP: Poisha
-  lineTotalP: Poisha
-  /** Ordering pack (from the brand's pack sizes), e.g. a box of 10 x 10 strip = 100 tablets */
-  pack?: PackSize
+  suggestedVendorId?: Id
 }
 
 export type PurchaseOrderRow = BaseRow & {
   poNo: string
-  prId?: Id
   vendorId: Id
-  branchId: BranchCode
-  status: "issued" | "partial" | "received" | "closed" | "cancelled"
-  issuedAt: Ms
-  expectedAt?: Ms
+  /** Deliver to */
+  locationId: Id
+  prId?: Id
+  status: "draft" | "pending-approval" | "issued" | "partial" | "received" | "closed" | "cancelled"
+  orderDate: ISODate
+  expectedDate: ISODate
+  subtotalP: Poisha
+  vatP: Poisha
   totalP: Poisha
+  approvalId?: Id
+  sentAt?: Ms
+  buyerId: Id
+  cancelReason?: string
 }
 
 export type PoLineRow = BaseRow & {
   poId: Id
-  brandId: Id
-  /**
-   * Quantities and cost count packs when `pack` is set (stock moves in base
-   * units: packs x pack.units), otherwise base units. Pending = ordered minus
-   * accepted (received minus rejected).
-   */
-  qtyOrdered: number
+  lineNo: number
+  itemId: Id
+  /** Purchase units */
+  qty: number
+  /** Per purchase unit */
   unitCostP: Poisha
+  vatRatePct: number
   qtyReceived: number
   qtyRejected: number
-  pack?: PackSize
+  qtyReturned: number
+  qtyBilled: number
 }
 
 export type GrnRow = BaseRow & {
   grnNo: string
   poId: Id
-  branchId: BranchCode
+  vendorId: Id
+  locationId: Id
+  vendorChallanNo?: string
   receivedBy: Id
   receivedAt: Ms
-  status: "partial" | "complete"
+  date: ISODate
   note?: string
+  journalId?: Id
 }
+
+export type RejectReason = "damaged" | "short-expiry" | "wrong-item" | "other"
 
 export type GrnLineRow = BaseRow & {
   grnId: Id
   poLineId: Id
-  brandId: Id
-  batchNo: string
-  expiry: ISODate
+  itemId: Id
+  batchNo?: string
+  expiry?: ISODate
+  /** Purchase units */
   qtyReceived: number
   qtyAccepted: number
   qtyRejected: number
-  rejectReason?: "damaged" | "short-expiry" | "wrong-item" | "other"
+  qtyReturned: number
+  qtyBilled: number
+  rejectReason?: RejectReason
   quarantine: boolean
+  quarantineStatus?: "held" | "accepted" | "returned"
   batchId?: Id
+  /** Per purchase unit (PO cost) */
+  unitCostP: Poisha
 }
 
-export type VendorInvoiceRow = BaseRow & {
-  /** Our reference (VI-03301) */
-  vendorInvoiceNo: string
+export type PurchaseReturnLine = {
+  grnLineId: Id
+  itemId: Id
+  batchId?: Id
+  qtyBase: number
+  valueP: Poisha
+}
+
+export type PurchaseReturnRow = BaseRow & {
+  returnNo: string
   vendorId: Id
-  poId: Id
-  amountP: Poisha
-  /** Quantities and unit costs in the PO line's unit (packs when the line has one) */
-  lines: { poLineId: Id; qty: number; unitCostP: Poisha }[]
-  receivedAt: Ms
-  status: "received" | "matched" | "mismatch" | "payable" | "rejected"
-  /** The supplier's own invoice number */
-  vendorRef?: string
-  /** Date printed on the supplier's invoice */
-  invoiceDate?: ISODate
-}
-
-export type ThreeWayMatchRow = BaseRow & {
-  poId: Id
-  grnIds: Id[]
-  vendorInvoiceId: Id
-  status: "matched" | "mismatch" | "resolved"
-  diffs: {
-    poLineId: Id
-    field: "qty" | "price"
-    po: number
-    grn: number
-    invoice: number
-  }[]
-  resolvedBy?: Id
-  note?: string
-  /** How finance settled a mismatch */
-  resolution?: "pay-po-price" | "accept-invoice" | "reject-invoice"
-  resolvedAt?: Ms
-  approvalId?: Id
-}
-
-export type PayableRow = BaseRow & {
-  vendorId: Id
-  vendorInvoiceId: Id
-  poId: Id
-  amountP: Poisha
-  dueDate: ISODate
-  status: "open" | "scheduled" | "paid"
-  /** Payment run date when scheduled */
-  scheduledFor?: ISODate
-  paidAt?: Ms
-  /** Simulated bank transfer reference */
-  paymentRef?: string
-}
-
-export type AccountingExportRow = BaseRow & {
+  grnId?: Id
+  locationId: Id
   date: ISODate
-  companyId: CompanyCode
-  rows: number
-  totalDebitP: Poisha
-  totalCreditP: Poisha
-  fileName: string
-  exportedBy: Id
-}
-
-/* ================================================================== *
- * 5.8 Inpatient administration (billing and beds, not a clinical record)
- * ================================================================== */
-
-export type WardRow = BaseRow & {
-  branchId: BranchCode
-  code: string
-  name: Bilingual
-  kind: "general" | "semi-private" | "cabin" | "paediatric"
-  bedDayRateP: Poisha
-}
-
-export type BedRow = BaseRow & {
-  wardId: Id
-  branchId: BranchCode
-  code: string
-  status: "vacant" | "occupied" | "cleaning" | "reserved"
-  admissionId?: Id
-}
-
-export type AdmissionRow = BaseRow & {
-  admissionNo: string
-  patientId: Id
-  branchId: BranchCode
-  consultantId: Id
-  bedId: Id
-  admittedAt: Ms
-  dischargedAt?: Ms
-  status: "admitted" | "discharged"
   reason: string
-  corporateClientId?: Id
-  /**
-   * Set when the deposit left fell below rules.depositThresholdP and the alert
-   * was raised; cleared by a top-up that restores it, so each crossing alerts once.
-   */
-  depositAlertAt?: Ms
-  /** Bed transfers, oldest first: the interim bill charges each day at the ward it began in */
-  wardMoves?: {
-    at: Ms
-    fromBedId: Id
-    toBedId: Id
-    fromWardId: Id
-    toWardId: Id
-  }[]
+  lines: PurchaseReturnLine[]
+  billId?: Id
+  debitNoteId?: Id
+  journalId: Id
 }
 
-export type DepositRow = BaseRow & {
-  admissionId: Id
-  patientId: Id
-  branchId: BranchCode
-  amountP: Poisha
-  tender: Tender
-  paymentId?: Id
+export type BatchRow = BaseRow & {
+  itemId: Id
+  batchNo: string
+  expiry?: ISODate
+  receivedAt: Ms
+  grnLineId?: Id
+  status: "ok" | "quarantine" | "expired"
+  expiryAlertAt?: Ms
+}
+
+/** Quantities per item, location and batch (FEFO). id = sb:<item>:<location>:<batch|->. */
+export type StockBalanceRow = BaseRow & {
+  itemId: Id
+  locationId: Id
+  batchId?: Id
+  /** Usable base units (excludes quarantined) */
+  qtyBase: number
+  quarantinedQty: number
+  updatedAt: Ms
+}
+
+/** Authoritative value per item and location. id = sv:<item>:<location>. */
+export type StockValueRow = BaseRow & {
+  itemId: Id
+  locationId: Id
+  qtyBase: number
+  valueP: Poisha
+}
+
+export type StockMoveType =
+  | "opening"
+  | "grn"
+  | "issue-job"
+  | "sale-delivery"
+  | "transfer-out"
+  | "transfer-in"
+  | "adjust"
+  | "count-variance"
+  | "return-vendor"
+  | "return-customer"
+  | "internal-use"
+  | "quarantine"
+  | "quarantine-accept"
+  | "quarantine-return"
+
+export type StockMoveRow = BaseRow & {
+  itemId: Id
+  locationId: Id
+  batchId?: Id
+  type: StockMoveType
+  /** Signed base units */
+  qtyBase: number
+  /** Signed poisha */
+  valueP: Poisha
+  ref: DocRef
   at: Ms
-  /** The cashier's open shift: cash deposits count in that drawer's expected cash */
-  shiftId?: Id
-  cashierId?: Id
-  /** Money receipt (RC-B1-000123) */
-  receiptNo?: string
-  /** Card approval code or bKash / Nagad transaction id (simulated) */
-  ref?: string
+  date: ISODate
+  journalId?: Id
+}
+
+export type TransferRow = BaseRow & {
+  /** Mushak 6.5 challan, TRF-2627-0157 */
+  transferNo: string
+  fromLocationId: Id
+  toLocationId: Id
+  status: "requested" | "dispatched" | "received" | "cancelled"
+  requestedBy: Id
+  requestedAt: Ms
+  dispatchedBy?: Id
+  dispatchedAt?: Ms
+  receivedBy?: Id
+  receivedAt?: Ms
+  vehicleNo?: string
+  note?: string
+  dispatchJournalId?: Id
+  receiveJournalId?: Id
+}
+
+export type TransferLineRow = BaseRow & {
+  transferId: Id
+  itemId: Id
+  batchId?: Id
+  /** Base units */
+  qtyRequested: number
+  qtySent: number
+  qtyReceived: number
+  /** Per base unit at dispatch (display) */
+  unitCostP: number
+  /** The value that left the source */
+  valueP: Poisha
+  discrepancyNote?: string
+}
+
+export type AdjustmentLine = { itemId: Id; batchId?: Id; qtyBase: number; valueP: Poisha }
+
+export type StockAdjustmentRow = BaseRow & {
+  adjustmentNo: string
+  locationId: Id
+  date: ISODate
+  reason: "damage" | "expiry" | "loss" | "found" | "correction" | "internal-use"
+  expenseTag?: ExpenseTag
+  note?: string
+  lines: AdjustmentLine[]
+  status: "pending-approval" | "posted" | "rejected"
+  approvalId?: Id
+  journalId?: Id
+  preparedBy: Id
+}
+
+export type CountLine = {
+  itemId: Id
+  batchId?: Id
+  expectedQty: number
+  countedQty?: number
+  varianceQty: number
+  varianceValueP: Poisha
+}
+
+export type StockCountRow = BaseRow & {
+  countNo: string
+  locationId: Id
+  scope: "all" | Id[]
+  status: "open" | "counted" | "pending-approval" | "posted" | "cancelled"
+  snapshotAt: Ms
+  date: ISODate
+  lines: CountLine[]
+  approvalId?: Id
+  journalId?: Id
+  openedBy: Id
 }
 
 /* ================================================================== *
- * 5.9 Communication, platform and demo
+ * 5.9 Reporting (IRT)
  * ================================================================== */
+
+export type ReportFilter = {
+  field: string
+  op: "eq" | "neq" | "in" | "gte" | "lte" | "between" | "contains"
+  value: string | number | (string | number)[]
+}
+
+export type ReportDefinitionRow = BaseRow & {
+  /** IRT-01 .. IRT-33 for system reports */
+  code: string
+  nameEn: string
+  nameBn: string
+  suite: "fms" | "sdm" | "scm" | "csc"
+  app: string
+  /** A dataset code, or undefined when the report is an FRS screen */
+  dataset?: string
+  frsRoute?: string
+  columns: string[]
+  filters: ReportFilter[]
+  /** Relative date range applied by default (e.g. last 30 days) */
+  dateRange?: { field: string; lastDays?: number; preset?: "mtd" | "ytd" | "last-month" }
+  groupBy?: string[]
+  sort?: { field: string; dir: "asc" | "desc" }
+  totals: string[]
+  chart?: { kind: "bar" | "line" | "donut"; x: string; y: string; series?: string }
+  isSystem: boolean
+  ownerId?: Id
+  shared: boolean
+  descriptionEn?: string
+  descriptionBn?: string
+}
+
+export type ReportRunRow = BaseRow & {
+  definitionId: Id
+  runBy: Id
+  at: Ms
+  params: Record<string, unknown>
+  rowCount: number
+}
+
+export type ReportScheduleRow = BaseRow & {
+  definitionId: Id
+  frequency: "daily" | "weekly" | "monthly"
+  time: HHMM
+  recipients: string[]
+  format: "csv" | "pdf"
+  active: boolean
+  lastSentAt?: Ms
+  nextDueAt?: Ms
+  ownerId: Id
+}
+
+/* ================================================================== *
+ * 5.10 Communication, platform and demo
+ * ================================================================== */
+
+export type NotificationRow = BaseRow & {
+  userId: Id
+  kind: string
+  titleKey: string
+  params: Record<string, string | number>
+  refs: Refs
+  /** Route to open */
+  href?: string
+  read: boolean
+  at: Ms
+}
 
 export type SmsRow = BaseRow & {
   to: string
-  patientId?: Id
-  branchId?: BranchCode
+  partyId?: Id
+  locationId?: Id
   lang: Locale
   templateId: string
-  /** Never contains results, diagnoses or medicine names */
+  /** Document numbers, dates and amounts only (§11) */
   text: string
   parts: number
   encoding: "GSM" | "UCS-2"
   kind: "transactional" | "promotional"
-  status: "queued" | "sent" | "delivered" | "failed" | "held-offline"
+  status: "queued" | "sent" | "delivered" | "failed"
   queuedAt: Ms
   deliveredAt?: Ms
 }
 
-export type NotificationRow = BaseRow & {
-  patientId: Id
-  kind: string
-  /** Push text is always generic ("You have a new notification") */
-  titleKey: string
-  params?: Record<string, string | number>
-  refs: Refs
-  read: boolean
+export type EmailRow = BaseRow & {
+  to: string[]
+  subjectKey: string
+  params: Record<string, string | number>
+  /** Attachment names (not generated) */
+  attachments: string[]
+  status: "queued" | "sent"
   at: Ms
-  /** Held while the branch is offline; released on central confirmation */
-  held?: boolean
-}
-
-export type SyncExceptionRow = BaseRow & {
-  kind:
-    | "stock-negative"
-    | "version-conflict"
-    | "identity-conflict"
-    | "rule-violation"
-  branchId: BranchCode
-  table: string
-  rowId: Id
-  detail: string
-  status: "open" | "acknowledged"
-}
-
-export type DailyStatRow = BaseRow & {
-  branchId: BranchCode
-  date: ISODate
-  dept: "opd" | "lab" | "imaging" | "pharmacy" | "inpatient"
-  visits: number
-  newPatients: number
-  billedP: Poisha
-  collectedP: Poisha
-  outstandingP: Poisha
-  avgWaitMin: number
-  labTatMin: number
-  expensesP: Poisha
-  stockValueP: Poisha
-  /**
-   * The same day split by service, for the dashboard drill-down (branch to
-   * department to service). Keys: OPD specialty code, lab section, imaging
-   * modality, pharmacy sale category (rx / otc / controlled), inpatient ward kind.
-   */
-  services?: { key: string; visits: number; billedP: Poisha }[]
-  /** Set on today's baseline row: the figures cover the day only up to this moment */
-  asAt?: Ms
+  refs: Refs
 }
 
 export type ScenarioRunRow = BaseRow & {
   scenarioId: string
   at: Ms
-  personaId: Id
+  userId: Id
   refs: Refs
 }
 
 /* ---------------- Engine-owned (no BaseRow) ---------------- */
 
+/** Who committed, as recorded on events and audit rows. */
 export type ActorRef = {
-  staffId: Id
-  personaId?: Id
-  role: Role | "system"
-  branchId: BranchCode | null
+  userId: Id
+  username: string
   name: string
+  sessionId: string | null
+  locationId: Id | null
 }
 
 export type EventRow = {
@@ -1589,8 +1660,9 @@ export type EventRow = {
   /** Wall-clock time the commit happened */
   realAt: number
   actor: ActorRef
-  branchId: BranchCode | null
-  patientId?: Id
+  locationId: Id | null
+  /** Owning app of the event (from the catalog), for filters */
+  app: string
   refs: Refs
   summaryKey: string
   params: Record<string, string | number>
@@ -1598,8 +1670,6 @@ export type EventRow = {
   commitId: Id
   command: string
   origin: Origin
-  originAt?: Ms
-  replayedAt?: Ms
 }
 
 export type AuditAction = "insert" | "update" | "delete" | "blocked" | "system"
@@ -1608,13 +1678,16 @@ export type AuditRow = {
   seq: number
   commitId: Id
   command: string
+  /** App of the command (the prefix of its name) */
+  app: string
   at: Ms
   actor: ActorRef
   action: AuditAction
   /** Table name, or "command" for blocked attempts and system entries */
   entity: string
   entityId: Id
-  patientId?: Id
+  /** Document number when the row is a document */
+  docNo?: string
   /** Changed fields only, before and after */
   before?: Record<string, unknown>
   after?: Record<string, unknown>
@@ -1637,47 +1710,9 @@ export type IdempotencyRow = {
   at: Ms
 }
 
-export type AppliedCommitRow = { commitId: Id; appliedAt: Ms; origin: Origin }
-
-/** One change inside a commit, as recorded in the edge outbox. */
-export type ChangeOp =
-  | { kind: "insert"; table: string; row: BaseRow }
-  | {
-      kind: "update"
-      table: string
-      id: Id
-      baseVersion: number
-      /** Changed fields before the update */
-      before: Record<string, unknown>
-      after: BaseRow
-    }
-  | { kind: "delete"; table: string; id: Id; before: BaseRow }
-
-export type OutboxRow = {
-  seq: number
-  commitId: Id
-  command: string
-  actor: ActorRef
-  at: Ms
-  ops: ChangeOp[]
-  events: EventRow[]
-  audit: AuditRow[]
-}
-
 /* ---------------- Control database (demo controls) ---------------- */
 
 export type ClockRow = { id: "clock"; offsetMs: number; updatedAt: number }
-
-export type NetworkRow = {
-  branchId: BranchCode
-  status: "online" | "offline" | "syncing"
-  /** Demo-clock time the branch went offline */
-  since?: Ms
-  snapshotSeq?: number
-  edgeDbName?: string
-  queuedCount: number
-  lastReplay?: { count: number; conflicts: number; at: Ms }
-}
 
 export type DemoMetaRow = {
   id: "meta"
@@ -1686,4 +1721,5 @@ export type DemoMetaRow = {
   seededAt: number
   /** Demo day the seed is anchored to */
   seedDate: ISODate
+  scale: "full" | "small"
 }

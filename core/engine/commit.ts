@@ -3,21 +3,13 @@ import type { z } from "zod"
 
 import { chainAudit, GENESIS_HASH, type UnchainedAudit } from "@/core/audit/chain"
 import { now } from "@/core/clock/clock"
-import type { MedcoreDb } from "@/core/db/database"
+import type { OmniflowDb } from "@/core/db/database"
 import { newId } from "@/core/db/ids"
-import type {
-  ActorRef,
-  AuditRow,
-  BaseRow,
-  ChangeOp,
-  EventRow,
-  Id,
-  Ms,
-  Origin,
-} from "@/core/db/schema"
+import type { ActorRef, AuditRow, BaseRow, EventRow, Id, Ms } from "@/core/db/schema"
 import { TABLE_SPECS, type TableName } from "@/core/db/tables"
 import { publish } from "@/core/events/bus"
 import { EVENT_CATALOG } from "@/core/events/registry"
+import { resolveSecurity, SYSTEM_SECURITY } from "@/core/security/resolve"
 
 import {
   ConflictError,
@@ -29,31 +21,32 @@ import {
 import { changedFields, runInvariants } from "./invariants"
 import { commitLockName, withLock } from "./locks"
 import { TxImpl } from "./tx"
-import type { Actor, Change, CommandDef, CommitResult, Tx } from "./types"
+import {
+  isSystemActor,
+  type Actor,
+  type Change,
+  type CommandDef,
+  type CommitContext,
+  type CommitResult,
+  type SecurityContext,
+  type Tx,
+} from "./types"
 
 /* ================================================================== *
- * Helpers shared with offline replay
+ * Helpers
  * ================================================================== */
 
-export function toActorRef(actor: ActorRef): ActorRef {
-  const { staffId, personaId, role, branchId, name } = actor
-  return { staffId, personaId, role, branchId, name }
+export function toActorRef(actor: Actor | ActorRef): ActorRef {
+  const { userId, username, name, sessionId, locationId } = actor
+  return { userId, username, name, sessionId, locationId }
 }
 
-export function originFor(db: MedcoreDb): Origin {
-  return db.kind === "edge" && db.edgeBranch ? `edge:${db.edgeBranch}` : "central"
+/** The app a command belongs to: the prefix of its name ("si.checkout" → "si"). */
+export function appOfCommand(command: string): string {
+  return command.split(".")[0] ?? command
 }
 
-const BASE_KEYS = new Set([
-  "id",
-  "version",
-  "createdAt",
-  "updatedAt",
-  "createdBy",
-  "updatedBy",
-  "origin",
-  "originAt",
-])
+const BASE_KEYS = new Set(["id", "version", "createdAt", "updatedAt", "createdBy", "updatedBy", "origin"])
 
 function domainFields(row: BaseRow): Record<string, unknown> {
   const out: Record<string, unknown> = {}
@@ -69,14 +62,14 @@ function pick(row: BaseRow, fields: string[]): Record<string, unknown> {
   return out
 }
 
-function patientIdOf(table: TableName, row: BaseRow | undefined): Id | undefined {
-  const field = TABLE_SPECS[table].patientField
+function docNoOf(table: TableName, row: BaseRow | undefined): string | undefined {
+  const field = TABLE_SPECS[table].docNoField
   if (!field || !row) return undefined
   const value = (row as Record<string, unknown>)[field]
-  return typeof value === "string" ? value : undefined
+  return typeof value === "string" && value ? value : undefined
 }
 
-/** Audit rows for a set of changes (before chaining). */
+/** Audit rows for a set of changes (before chaining). Unaudited tables are skipped. */
 export function auditRowsFor(
   changes: readonly Change[],
   meta: {
@@ -84,24 +77,25 @@ export function auditRowsFor(
     command: string
     at: Ms
     actor: ActorRef
-    origin: Origin
     reason?: string
     approvedBy?: Id
   }
 ): UnchainedAudit[] {
   const rows: UnchainedAudit[] = []
   for (const change of changes) {
+    if (TABLE_SPECS[change.table].audited === false) continue
     const common = {
       commitId: meta.commitId,
       command: meta.command,
+      app: appOfCommand(meta.command),
       at: meta.at,
       actor: meta.actor,
       entity: change.table,
       entityId: change.id,
-      patientId: patientIdOf(change.table, change.after ?? change.before),
+      docNo: docNoOf(change.table, change.after ?? change.before),
       reason: meta.reason,
       approvedBy: meta.approvedBy,
-      origin: meta.origin,
+      origin: "central" as const,
     }
     if (change.kind === "insert" && change.after) {
       rows.push({ ...common, action: "insert", after: domainFields(change.after) })
@@ -121,62 +115,25 @@ export function auditRowsFor(
   return rows
 }
 
-/** Outbox ops for an edge commit (plan §3.7). */
-export function opsFor(changes: readonly Change[]): ChangeOp[] {
-  return changes.map((change): ChangeOp => {
-    if (change.kind === "insert") {
-      return { kind: "insert", table: change.table, row: change.after! }
-    }
-    if (change.kind === "update") {
-      const fields = changedFields(change.before!, change.after!)
-      return {
-        kind: "update",
-        table: change.table,
-        id: change.id,
-        baseVersion: change.before!.version,
-        before: pick(change.before!, fields),
-        after: change.after!,
-      }
-    }
-    return { kind: "delete", table: change.table, id: change.id, before: change.before! }
-  })
-}
-
 type WriteMeta = {
   command: string
   actor: ActorRef
-  origin: Origin
-  /** Events built from tx.emit() */
-  emitted: TxImpl["pendingEvents"]
-  /** Pre-built events carried over by replay (re-sequenced here) */
-  carriedEvents?: EventRow[]
-  /**
-   * Origin for events emitted in this commit, when it differs from `origin`.
-   * Replay passes "central": decisions made while syncing happen centrally.
-   */
-  emittedOrigin?: Origin
-  originAt?: Ms
   idempotency?: { key: string; result: unknown }
-  appliedCommit?: { commitId: Id; origin: Origin }
 }
 
 /**
- * Apply one transaction's buffered changes, events, audit rows, counters,
- * idempotency record and (on edge) outbox entry in ONE IndexedDB transaction.
- * Must be called while holding the commit lock.
+ * Apply one transaction's buffered changes, events, audit rows, counters and
+ * idempotency record in ONE IndexedDB transaction. Must be called while
+ * holding the commit lock.
  */
-export async function writeCommit(
-  db: MedcoreDb,
-  tx: TxImpl,
-  meta: WriteMeta
-): Promise<EventRow[]> {
+export async function writeCommit(db: OmniflowDb, tx: TxImpl, meta: WriteMeta): Promise<EventRow[]> {
   const changes = tx.changes()
   const at = tx.now()
 
   const lastEvent = await db.events.orderBy("seq").last()
   let seq = lastEvent?.seq ?? 0
   const events: EventRow[] = []
-  for (const pending of meta.emitted) {
+  for (const pending of tx.pendingEvents) {
     const def = EVENT_CATALOG[pending.type]
     const opts = pending.opts
     seq += 1
@@ -188,25 +145,15 @@ export async function writeCommit(
       at,
       realAt: Date.now(),
       actor: meta.actor,
-      branchId: opts.branchId !== undefined ? opts.branchId : meta.actor.branchId,
-      patientId: opts.refs?.patientId,
+      locationId: opts.locationId !== undefined ? opts.locationId : meta.actor.locationId,
+      app: def?.module ?? appOfCommand(meta.command),
       refs: opts.refs ?? {},
       summaryKey: def?.labelKey ?? `events.${pending.type}`,
       params: opts.params ?? {},
       consumers: def?.consumers ?? [],
       commitId: tx.commitId,
       command: meta.command,
-      origin: meta.emittedOrigin ?? meta.origin,
-      originAt: meta.emittedOrigin ? undefined : meta.originAt,
-    })
-  }
-  for (const carried of meta.carriedEvents ?? []) {
-    seq += 1
-    events.push({
-      ...carried,
-      seq,
-      originAt: carried.originAt ?? carried.at,
-      replayedAt: at,
+      origin: "central",
     })
   }
 
@@ -215,9 +162,8 @@ export async function writeCommit(
     auditRowsFor(changes, {
       commitId: tx.commitId,
       command: meta.command,
-      at: meta.originAt ?? at,
+      at,
       actor: meta.actor,
-      origin: meta.origin,
       reason: tx.auditCtx.reason,
       approvedBy: tx.auditCtx.approvedBy,
     }),
@@ -235,9 +181,6 @@ export async function writeCommit(
   const tables: Table[] = [...byTable.keys()].map((name) => db.t(name) as Table)
   tables.push(db.events, db.audit, db.counters)
   if (meta.idempotency) tables.push(db.idempotency)
-  if (meta.appliedCommit) tables.push(db.appliedCommits)
-  const writeOutbox = db.kind === "edge" && changes.length > 0
-  if (writeOutbox) tables.push(db.outbox)
 
   await db.transaction("rw", tables, async () => {
     for (const [name, list] of byTable) {
@@ -257,26 +200,6 @@ export async function writeCommit(
         command: meta.command,
         result: meta.idempotency.result,
         at,
-      })
-    }
-    if (meta.appliedCommit) {
-      await db.appliedCommits.put({
-        commitId: meta.appliedCommit.commitId,
-        appliedAt: at,
-        origin: meta.appliedCommit.origin,
-      })
-    }
-    if (writeOutbox) {
-      const lastOut = await db.outbox.orderBy("seq").last()
-      await db.outbox.add({
-        seq: (lastOut?.seq ?? 0) + 1,
-        commitId: tx.commitId,
-        command: meta.command,
-        actor: meta.actor,
-        at,
-        ops: opsFor(changes),
-        events,
-        audit,
       })
     }
   })
@@ -313,7 +236,7 @@ function translateStorageError(error: unknown): unknown {
 }
 
 export function publishCommit(
-  db: MedcoreDb,
+  db: OmniflowDb,
   command: string,
   actor: ActorRef,
   commitId: Id,
@@ -324,14 +247,15 @@ export function publishCommit(
     db: db.name,
     commitId,
     command,
-    branchId: actor.branchId,
+    userId: actor.userId,
+    locationId: actor.locationId,
     events: events.map((e) => ({
       seq: e.seq,
       type: e.type,
       summaryKey: e.summaryKey,
       params: e.params,
       refs: e.refs,
-      patientId: e.patientId,
+      app: e.app,
     })),
   })
 }
@@ -342,18 +266,19 @@ export function publishCommit(
 
 /**
  * Records a refused attempt as its own tiny commit: one "blocked" audit row
- * and a RuleViolationBlocked event. The refused command itself wrote nothing.
+ * and a RuleViolationBlocked (or PermissionDeniedBlocked) event. The refused
+ * command itself wrote nothing.
  */
 export async function recordBlocked(
-  db: MedcoreDb,
-  actor: ActorRef,
+  db: OmniflowDb,
+  actor: Actor | ActorRef,
   command: string,
   code: string,
   params: Record<string, string | number>
 ): Promise<void> {
   const actorRef = toActorRef(actor)
-  const origin = originFor(db)
   const commitId = newId("cm")
+  const type = code === "PERMISSION_DENIED" ? "PermissionDeniedBlocked" : "RuleViolationBlocked"
   const events = await withLock(commitLockName(db.name), async () => {
     const at = now()
     const lastAudit = await db.audit.orderBy("seq").last()
@@ -363,6 +288,7 @@ export async function recordBlocked(
         {
           commitId,
           command,
+          app: appOfCommand(command),
           at,
           actor: actorRef,
           action: "blocked",
@@ -370,28 +296,29 @@ export async function recordBlocked(
           entityId: command,
           after: params,
           code,
-          origin,
+          origin: "central",
         },
       ],
       { seq: lastAudit?.seq ?? 0, hash: lastAudit?.hash ?? GENESIS_HASH }
     )
-    const def = EVENT_CATALOG.RuleViolationBlocked
+    const def = EVENT_CATALOG[type]
     const event: EventRow = {
       seq: (lastEvent?.seq ?? 0) + 1,
       id: newId("ev"),
-      type: "RuleViolationBlocked",
+      type,
       v: 1,
       at,
       realAt: Date.now(),
       actor: actorRef,
-      branchId: actorRef.branchId,
+      locationId: actorRef.locationId,
+      app: appOfCommand(command),
       refs: {},
-      summaryKey: def?.labelKey ?? "events.RuleViolationBlocked",
+      summaryKey: def?.labelKey ?? `events.${type}`,
       params: { code, command, ...params },
       consumers: def?.consumers ?? [],
       commitId,
       command,
-      origin,
+      origin: "central",
     }
     await db.transaction("rw", [db.audit, db.events], async () => {
       await db.audit.add(row)
@@ -403,12 +330,58 @@ export async function recordBlocked(
 }
 
 /* ================================================================== *
- * commit()
+ * Live security (plan §3.3 changes 1 to 4)
  * ================================================================== */
 
-function mayRun(roles: CommandDef<z.ZodType, unknown>["roles"], actor: Actor) {
-  return actor.role === "system" || roles === "any" || roles.includes(actor.role as never)
+function requiredKeys(permission: CommandDef<z.ZodType, unknown>["permission"]): string[] {
+  if (permission === "authenticated" || permission === "system") return []
+  return typeof permission === "string" ? [permission] : [...permission]
 }
+
+/**
+ * Reads the actor's user, session, roles, grants and limits from the database
+ * and refuses disabled or locked users, ended sessions and missing
+ * permissions. Runs inside the commit lock so an RBAC change in another
+ * window applies to the very next commit.
+ */
+async function authorize(
+  db: OmniflowDb,
+  def: CommandDef<z.ZodType, unknown>,
+  ctx: CommitContext
+): Promise<SecurityContext> {
+  const { actor } = ctx
+  if (isSystemActor(actor)) return SYSTEM_SECURITY
+  if (def.permission === "system") {
+    throw new PermissionDenied(def.name, actor.userId, ["system"])
+  }
+  const user = await db.users.get(actor.userId)
+  if (!user) throw new RuleViolation("USER_UNKNOWN", { user: actor.username }, true)
+  if (user.status === "disabled") throw new RuleViolation("USER_DISABLED", { user: user.username }, true)
+  if (user.status === "locked") throw new RuleViolation("USER_LOCKED", { user: user.username }, true)
+
+  const sessionId = actor.sessionId
+  if (ctx.scenarioSession) {
+    if (!sessionId?.startsWith("scenario:")) {
+      throw new RuleViolation("SESSION_ENDED", { user: user.username }, true)
+    }
+  } else {
+    const session = sessionId ? await db.sessions.get(sessionId) : undefined
+    if (!session || session.endedAt !== undefined || session.userId !== user.id) {
+      throw new RuleViolation("SESSION_ENDED", { user: user.username }, true)
+    }
+  }
+
+  const security = await resolveSecurity(db, user.id)
+  const keys = requiredKeys(def.permission)
+  if (keys.length && !keys.some((key) => security.grants.has(key))) {
+    throw new PermissionDenied(def.name, user.id, keys)
+  }
+  return security
+}
+
+/* ================================================================== *
+ * commit()
+ * ================================================================== */
 
 function idempotencyKeyOf(input: unknown): string | undefined {
   if (input && typeof input === "object" && "idempotencyKey" in input) {
@@ -419,15 +392,15 @@ function idempotencyKeyOf(input: unknown): string | undefined {
 }
 
 /**
- * Run a command as one ACID transaction (plan §3.3):
- * validate, check role, dedupe by idempotency key, take the cross-window
- * commit lock, run against a buffered transaction, enforce invariants, then
- * write everything in one IndexedDB transaction and notify other windows.
+ * Run a command as one ACID transaction (plan §3.3): validate, take the
+ * cross-window commit lock, check the user and the permission live, dedupe by
+ * idempotency key, run against a buffered transaction, enforce invariants,
+ * then write everything in one IndexedDB transaction and notify other windows.
  */
 export async function commit<S extends z.ZodType, O>(
   def: CommandDef<S, O>,
   input: z.input<S>,
-  ctx: { db: MedcoreDb; actor: Actor }
+  ctx: CommitContext
 ): Promise<CommitResult<O>> {
   const { db, actor } = ctx
 
@@ -443,15 +416,11 @@ export async function commit<S extends z.ZodType, O>(
   }
   const data = parsed.data as z.output<S>
 
-  if (!mayRun(def.roles as CommandDef<z.ZodType, unknown>["roles"], actor)) {
-    await recordBlocked(db, actor, def.name, "PERMISSION_DENIED", { role: actor.role })
-    throw new PermissionDenied(def.name, actor.role, def.roles)
-  }
-
   const key = idempotencyKeyOf(data)
   let outcome: CommitResult<O>
   try {
     outcome = await withLock(commitLockName(db.name), async () => {
+      const security = await authorize(db, def as CommandDef<z.ZodType, unknown>, ctx)
       if (key) {
         const prior = await db.idempotency.get(key)
         if (prior) {
@@ -463,22 +432,24 @@ export async function commit<S extends z.ZodType, O>(
           }
         }
       }
-      const tx = new TxImpl(db, actor, newId("cm"), now(), originFor(db), false)
+      const tx = new TxImpl(db, actor, newId("cm"), now(), def.name, def.permission, security)
       const result = await def.run(tx as Tx, data)
       await checkNewIds(tx)
       await runInvariants(tx)
       const events = await writeCommit(db, tx, {
         command: def.name,
         actor: toActorRef(actor),
-        origin: tx.origin,
-        emitted: tx.pendingEvents,
         idempotency: key ? { key, result } : undefined,
       })
       return { result, commitId: tx.commitId, events, deduplicated: false }
     })
   } catch (error) {
     const translated = translateStorageError(error)
-    if (translated instanceof RuleViolation && translated.audit) {
+    if (translated instanceof PermissionDenied) {
+      await recordBlocked(db, actor, def.name, "PERMISSION_DENIED", {
+        permission: translated.permissions.join(", "),
+      })
+    } else if (translated instanceof RuleViolation && translated.audit) {
       await recordBlocked(db, actor, def.name, translated.code, translated.params)
     }
     throw translated
@@ -488,6 +459,14 @@ export async function commit<S extends z.ZodType, O>(
     publishCommit(db, def.name, toActorRef(actor), outcome.commitId, outcome.events)
   }
   return outcome
+}
+
+/**
+ * Engine-level activity stamp for a session (plan §3.8): a platform-table
+ * write with no audit row, no version bump and no bus notice.
+ */
+export async function touchSession(db: OmniflowDb, sessionId: string): Promise<void> {
+  await db.sessions.update(sessionId, { lastActivityRealAt: Date.now() })
 }
 
 export { ConflictError, NotFoundError, PermissionDenied, RuleViolation, ValidationError }

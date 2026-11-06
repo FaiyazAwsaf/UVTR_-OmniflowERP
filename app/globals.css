@@ -5,9 +5,9 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * UVTR_MedCore design tokens. Source of truth: docs/ui_guidelines.md, derived
- * from sample_ui/ (a dark hospital dashboard). Dark is the default theme; the
- * light theme is derived from it.
+ * UVTR_OmniflowERP design tokens (carried over from UVTR_MedCore). Source of
+ * truth: docs/ui_guidelines.md, derived from sample_ui/ (a dark dashboard
+ * sample). Dark is the default theme; the light theme is derived from it.
  */
 
 @theme inline {

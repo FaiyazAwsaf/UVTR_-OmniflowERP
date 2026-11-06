@@ -1,17 +1,7 @@
 import Dexie, { type Table } from "dexie"
 
-import type { BranchCode } from "@/config/brand.config"
-
-import type {
-  AppliedCommitRow,
-  AuditRow,
-  CounterRow,
-  EventRow,
-  IdempotencyRow,
-  OutboxRow,
-} from "./schema"
+import type { AuditRow, CounterRow, EventRow, IdempotencyRow } from "./schema"
 import {
-  EDGE_ONLY_STORES,
   PLATFORM_STORES,
   TABLE_NAMES,
   TABLE_SPECS,
@@ -25,56 +15,36 @@ import {
  */
 export const SCHEMA_VERSION = 1
 
-export const CENTRAL_DB_NAME = "medcore-central"
-
-export function edgeDbName(branch: BranchCode): string {
-  return `medcore-edge-${branch}`
-}
+export const CENTRAL_DB_NAME = "omniflow-central"
 
 export type DomainTables = {
   [T in TableName]: Table<TableRows[T], string>
 }
 
-function storesFor(kind: "central" | "edge"): Record<string, string> {
-  const stores: Record<string, string> = {}
-  for (const name of TABLE_NAMES) stores[name] = TABLE_SPECS[name].indexes
-  Object.assign(stores, PLATFORM_STORES)
-  if (kind === "edge") Object.assign(stores, EDGE_ONLY_STORES)
-  return stores
+function stores(): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const name of TABLE_NAMES) out[name] = TABLE_SPECS[name].indexes
+  Object.assign(out, PLATFORM_STORES)
+  return out
 }
 
 // Declaration merging: Dexie creates one property per declared table, so the
-// domain tables are typed as instance properties (db.patients, db.rxLines, ...).
+// domain tables are typed as instance properties (db.parties, db.journals, ...).
 // eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging, @typescript-eslint/no-empty-object-type
-export interface MedcoreDb extends DomainTables {}
+export interface OmniflowDb extends DomainTables {}
 
-/**
- * One data database: the central store, or a branch edge store while that
- * branch is offline (plan §3.2). Both share the same schema; edge adds `outbox`.
- */
+/** The one data database (plan §3.2, D4: no edge stores). */
 // eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
-export class MedcoreDb extends Dexie {
+export class OmniflowDb extends Dexie {
   events!: Table<EventRow, number>
   audit!: Table<AuditRow, number>
   counters!: Table<CounterRow, string>
   idempotency!: Table<IdempotencyRow, string>
-  appliedCommits!: Table<AppliedCommitRow, string>
-  /** Only present on edge databases */
-  outbox!: Table<OutboxRow, number>
 
-  readonly kind: "central" | "edge"
-  readonly edgeBranch: BranchCode | null
-
-  constructor(
-    name: string,
-    kind: "central" | "edge" = "central",
-    edgeBranch: BranchCode | null = null
-  ) {
+  constructor(name: string = CENTRAL_DB_NAME) {
     // Strict durability: a commit is on disk before IndexedDB reports success.
     super(name, { chromeTransactionDurability: "strict" })
-    this.kind = kind
-    this.edgeBranch = edgeBranch
-    this.version(SCHEMA_VERSION).stores(storesFor(kind))
+    this.version(SCHEMA_VERSION).stores(stores())
   }
 
   /** Typed access to a domain table by name. */
@@ -83,27 +53,21 @@ export class MedcoreDb extends Dexie {
   }
 }
 
-const instances = new Map<string, MedcoreDb>()
+const instances = new Map<string, OmniflowDb>()
 
 /** The shared central database (one connection per window). */
-export function getCentralDb(): MedcoreDb {
+export function getCentralDb(): OmniflowDb {
   let db = instances.get(CENTRAL_DB_NAME)
   if (!db) {
-    db = new MedcoreDb(CENTRAL_DB_NAME, "central")
+    db = new OmniflowDb(CENTRAL_DB_NAME)
     instances.set(CENTRAL_DB_NAME, db)
   }
   return db
 }
 
-/** The edge database for an offline branch. */
-export function getEdgeDb(branch: BranchCode): MedcoreDb {
-  const name = edgeDbName(branch)
-  let db = instances.get(name)
-  if (!db) {
-    db = new MedcoreDb(name, "edge", branch)
-    instances.set(name, db)
-  }
-  return db
+/** Test hook: a database with its own name (fake-indexeddb per test). */
+export function createDb(name: string): OmniflowDb {
+  return new OmniflowDb(name)
 }
 
 /** Close and forget a cached connection (before deleting its database). */
@@ -113,4 +77,11 @@ export function forgetDb(name: string): void {
     db.close()
     instances.delete(name)
   }
+}
+
+/** Empty every table of a database in one transaction (demo reset). */
+export async function clearDatabase(db: OmniflowDb): Promise<void> {
+  await db.transaction("rw", db.tables, async () => {
+    await Promise.all(db.tables.map((table) => table.clear()))
+  })
 }

@@ -5,11 +5,11 @@ import * as React from "react"
 import { startClockSync } from "@/core/clock/control"
 import { runWhileLeader } from "@/core/clock/leader"
 import { startSweeper } from "@/core/clock/sweeper"
-import { getCentralDb, getEdgeDb } from "@/core/db/database"
+import { getCentralDb } from "@/core/db/database"
 import { DbProvider } from "@/core/db/DbProvider"
 import { ensureSeeded } from "@/core/demo/reset"
 import { subscribe } from "@/core/events/bus"
-import { ensureNetworkRows, offlineBranches } from "@/core/sync/network"
+import { PermissionsProvider } from "@/core/security/useCan"
 import { useT } from "@/lib/i18n/provider"
 
 function EngineLoading() {
@@ -25,7 +25,7 @@ function EngineLoading() {
  * Starts the client-side engine for this window: seeds on first load, keeps
  * the demo clock in sync, runs the sweeper while this window is the leader,
  * and reloads the window after a demo reset. Renders a loading state until
- * the data is ready.
+ * the data is ready, then provides the database and the live permissions.
  */
 export function EngineProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = React.useState(false)
@@ -33,7 +33,6 @@ export function EngineProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     let alive = true
     ;(async () => {
-      await ensureNetworkRows()
       await ensureSeeded()
       if (alive) setReady(true)
     })().catch((error) => console.error("engine start failed", error))
@@ -44,16 +43,7 @@ export function EngineProvider({ children }: { children: React.ReactNode }) {
 
   React.useEffect(() => startClockSync(), [])
 
-  React.useEffect(
-    () =>
-      runWhileLeader(() =>
-        startSweeper(async () => [
-          getCentralDb(),
-          ...(await offlineBranches()).map((branch) => getEdgeDb(branch)),
-        ])
-      ),
-    []
-  )
+  React.useEffect(() => runWhileLeader(() => startSweeper(async () => [getCentralDb()])), [])
 
   React.useEffect(
     () =>
@@ -64,5 +54,9 @@ export function EngineProvider({ children }: { children: React.ReactNode }) {
   )
 
   if (!ready) return <EngineLoading />
-  return <DbProvider>{children}</DbProvider>
+  return (
+    <DbProvider>
+      <PermissionsProvider>{children}</PermissionsProvider>
+    </DbProvider>
+  )
 }

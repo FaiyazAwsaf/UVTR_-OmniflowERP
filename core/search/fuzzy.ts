@@ -1,10 +1,10 @@
 /**
- * Bangla-tolerant name matching and duplicate scoring (PRD §9 Identity, HAZ-02).
- * Used by registration (ranked duplicate warning), patient search and offline
- * replay (possible duplicates go to the review queue, never auto-merged).
+ * Bangla-tolerant name matching and duplicate scoring (plan §6.2: duplicate
+ * warning on name + phone when a party is created). Used by party creation
+ * and the global search.
  */
 
-import type { PatientRow } from "@/core/db/schema"
+import type { PartyRow } from "@/core/db/schema"
 
 /*
  * Name normalisation: common spelling variants of Bangladeshi names collapse
@@ -141,7 +141,7 @@ export function normalizeName(name: string): string[] {
     .filter(Boolean)
 }
 
-/** Search keys for a patient: normalised tokens of both scripts, deduplicated. */
+/** Search keys for a name: normalised tokens of both scripts, deduplicated. */
 export function nameKeys(nameEn: string, nameBn?: string): string[] {
   return [...new Set([...normalizeName(nameEn), ...normalizeName(nameBn ?? "")])]
 }
@@ -180,64 +180,60 @@ export function nameSimilarity(a: string, b: string): number {
   return matched / Math.max(ta.length, tb.length)
 }
 
-export type DuplicateReason = "nid" | "brn" | "name" | "dob" | "phone"
+export type DuplicateReason = "nid" | "bin" | "name" | "phone"
 
 export type DuplicateCandidate = {
-  patientId: string
+  partyId: string
   score: number
   reasons: DuplicateReason[]
 }
 
-export type IdentityInput = {
+export type PartyIdentityInput = {
   nameEn: string
-  dob?: string
   phone?: string
   nid?: string
-  brn?: string
+  bin?: string
 }
 
-/** Score at or above which registration shows the ranked duplicate warning. */
+/** Score at or above which party creation shows the duplicate warning (plan §6.2). */
 export const DUPLICATE_THRESHOLD = 0.6
 
 /**
- * Likelihood that `input` is the same person as `existing` (0 to 1). An exact
- * NID or BRN match is certain; otherwise name, date of birth and phone count.
+ * Likelihood that `input` is the same party as `existing` (0 to 1). An exact
+ * NID or BIN match is certain (and refused on create); otherwise name and
+ * phone count.
  */
 export function scoreDuplicate(
-  input: IdentityInput,
-  existing: Pick<PatientRow, "nameEn" | "dob" | "phone" | "nid" | "brn">
+  input: PartyIdentityInput,
+  existing: Pick<PartyRow, "nameEn" | "phone" | "nid" | "bin">
 ): { score: number; reasons: DuplicateReason[] } {
   if (input.nid && existing.nid && input.nid === existing.nid) {
     return { score: 1, reasons: ["nid"] }
   }
-  if (input.brn && existing.brn && input.brn === existing.brn) {
-    return { score: 1, reasons: ["brn"] }
+  if (input.bin && existing.bin && input.bin === existing.bin) {
+    return { score: 1, reasons: ["bin"] }
   }
   const reasons: DuplicateReason[] = []
   const name = nameSimilarity(input.nameEn, existing.nameEn)
-  let score = name * 0.5
+  let score = name * 0.6
   if (name >= 0.6) reasons.push("name")
-  if (input.dob && input.dob === existing.dob) {
-    score += 0.3
-    reasons.push("dob")
-  }
   const digits = (s?: string) => (s ?? "").replace(/\D/g, "")
   if (input.phone && digits(input.phone) && digits(input.phone) === digits(existing.phone)) {
-    score += 0.2
+    score += 0.4
     reasons.push("phone")
   }
   return { score: Math.min(1, Math.round(score * 100) / 100), reasons }
 }
 
-/** Ranked likely duplicates among active patients (highest score first). */
+/** Ranked likely duplicates among active parties (highest score first). */
 export function findLikelyDuplicates(
-  input: IdentityInput,
-  patients: PatientRow[],
+  input: PartyIdentityInput,
+  parties: PartyRow[],
   { limit = 5, excludeId }: { limit?: number; excludeId?: string } = {}
 ): DuplicateCandidate[] {
-  return patients
-    .filter((p) => p.identityStatus === "active" && p.id !== excludeId)
-    .map((p) => ({ patientId: p.id, ...scoreDuplicate(input, p) }))
+  return parties
+    .filter((p) => p.status !== "blocked" && p.id !== excludeId)
+    .map((p) => ({ partyId: p.id, ...scoreDuplicate(input, p) }))
     .filter((c) => c.score >= DUPLICATE_THRESHOLD)
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)

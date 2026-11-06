@@ -1,10 +1,9 @@
 /**
  * Curated Bangladeshi name parts in English and Bangla script, used to build
- * synthetic patients. Combinations are random; no entry describes a real
- * person. Names used by the hero household, the scenario patients and the
- * planted duplicates (Rafiqul, Jahanara, Shahidul, Nasima, Kamrul, Tanvir,
- * Nusrat, Rokeya, Shafiqul, Rahima, Sharmin, Parul, the Karim surname and so
- * on) are left out so searches for them stay unambiguous.
+ * synthetic customers. Combinations are random; no entry describes a real
+ * person. (Carried over from UVTR_MedCore, whose story names are absent from
+ * these lists; the ERP's named users and planted customers are fixed in the
+ * seed, not drawn from here.)
  */
 
 /** [English, Bangla] */

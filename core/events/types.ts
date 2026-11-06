@@ -4,7 +4,7 @@ export type EventDef = {
   module: string
   /** i18n key for the event label shown in the stream drawer */
   labelKey: string
-  /** i18n keys of the consumers shown as "→ Pharmacy queue · Billing · Audit" */
+  /** i18n keys of the consumers shown as "→ General ledger · Receivables · Audit" */
   consumers: string[]
   severity?: "info" | "success" | "warning" | "critical"
 }

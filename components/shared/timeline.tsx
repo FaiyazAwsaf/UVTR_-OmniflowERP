@@ -20,7 +20,7 @@ export type TimelineItem = {
 }
 
 /**
- * A vertical timeline (audit trail, patient 360, report versions): tone dots
+ * A vertical timeline (audit trail, party 360, document status): tone dots
  * or icon wells joined by a hairline, the time on the right.
  */
 export function Timeline({

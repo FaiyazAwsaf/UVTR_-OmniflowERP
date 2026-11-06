@@ -1,5 +1,5 @@
 import { HOUR } from "@/core/clock/dates"
-import type { MedcoreDb } from "@/core/db/database"
+import type { OmniflowDb } from "@/core/db/database"
 
 /**
  * The demo panel's "Tamper test" (plan §3.5). It deliberately bypasses the
@@ -10,7 +10,7 @@ import type { MedcoreDb } from "@/core/db/database"
  * when there is no audit row yet.
  */
 export async function tamperMiddleAuditRow(
-  db: MedcoreDb
+  db: OmniflowDb
 ): Promise<number | null> {
   const count = await db.audit.count()
   if (!count) return null

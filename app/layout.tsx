@@ -24,10 +24,10 @@ const fontBangla = Noto_Sans_Bengali({
 })
 
 export const metadata: Metadata = {
-  title: "UVTR_MedCore",
+  title: "UVTR_OmniflowERP",
   description:
-    "A connected hospital operating system demo: identity, OPD, e-prescription, lab, pharmacy, billing, procurement and dashboards. A product of UVTR Infotech.",
-  applicationName: "UVTR_MedCore",
+    "UVTR_OmniflowERP SME package: 18 connected apps for finance, sales and distribution, supply chain and core system components, demonstrated on a car detailing business. A product of UVTR Infotech.",
+  applicationName: "UVTR_OmniflowERP",
   authors: [{ name: "UVTR Infotech", url: "https://uvtrinfotech.com/" }],
   creator: "UVTR Infotech",
   publisher: "UVTR Infotech",

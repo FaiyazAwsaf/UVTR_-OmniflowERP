@@ -1,4 +1,4 @@
-import type { MedcoreDb } from "@/core/db/database"
+import type { OmniflowDb } from "@/core/db/database"
 import type { ISODate, Ms } from "@/core/db/schema"
 
 export type SeedOptions = {
@@ -6,6 +6,8 @@ export type SeedOptions = {
   now: Ms
   /** Calendar day of `now` in Dhaka, YYYY-MM-DD */
   today: ISODate
+  /** "small" for unit tests: same fixed ids and planted states, smaller volumes */
+  scale?: "full" | "small"
 }
 
 export type SeedSummary = {
@@ -20,4 +22,4 @@ export type SeedSummary = {
  * after the seeded history, and write NO events or audit rows (the engine
  * writes the genesis audit row and a DemoReset event after seeding).
  */
-export type SeedFn = (db: MedcoreDb, opts: SeedOptions) => Promise<SeedSummary>
+export type SeedFn = (db: OmniflowDb, opts: SeedOptions) => Promise<SeedSummary>

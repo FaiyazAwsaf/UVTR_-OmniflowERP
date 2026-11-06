@@ -14,8 +14,9 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { useNow } from "@/core/clock/useNow"
-import { useDb, useDbInfo } from "@/core/db/DbProvider"
-import type { EventRow, PatientRow } from "@/core/db/schema"
+import { useDb } from "@/core/db/DbProvider"
+import type { EventRow } from "@/core/db/schema"
+import { useSession } from "@/core/session/session"
 import { subscribe } from "@/core/events/bus"
 import { useLocale } from "@/lib/i18n/provider"
 import { cn } from "@/lib/utils"
@@ -24,6 +25,7 @@ import {
   consumerLabel,
   eventDef,
   eventLabel,
+  locationCode,
   SEVERITY_DOT,
 } from "@/modules/demo/components/labels"
 
@@ -43,7 +45,7 @@ export const INHERIT_FONT = { fontFamily: "inherit" } as const
 
 const LIMIT = 200
 
-type StreamFilter = "all" | "branch" | "patient"
+type StreamFilter = "all" | "location" | "mine"
 
 /**
  * Top-bar button for the live event stream (plan §3.4). Shows how many events
@@ -141,61 +143,27 @@ function useFreshSeqs(dbName: string): ReadonlySet<number> {
 }
 
 function EventStreamPanel() {
-  const { t, num, locale, uhid } = useLocale()
-  const { db, branch } = useDbInfo()
+  const { t, num, locale } = useLocale()
+  const db = useDb()
+  const { userId, locationId } = useSession()
   const [filter, setFilter] = React.useState<StreamFilter>("all")
-  const [patientId, setPatientId] = React.useState<string | null>(null)
   const [selectedSeq, setSelectedSeq] = React.useState<number | null>(null)
   const fresh = useFreshSeqs(db.name)
   // Re-render periodically so "2 minutes ago" stays true (and on clock moves).
   useNow(15_000)
+  void locale
 
   const events = useLiveQuery(() => {
-    if (filter === "branch" && branch) {
-      return db.events
-        .where("branchId")
-        .equals(branch)
-        .reverse()
-        .limit(LIMIT)
-        .toArray()
+    if (filter === "location" && locationId) {
+      return db.events.where("locationId").equals(locationId).reverse().limit(LIMIT).toArray()
     }
-    if (filter === "patient" && patientId) {
-      return db.events
-        .where("patientId")
-        .equals(patientId)
-        .reverse()
-        .limit(LIMIT)
-        .toArray()
+    if (filter === "mine" && userId) {
+      return db.events.where("actor.userId").equals(userId).reverse().limit(LIMIT).toArray()
     }
     return db.events.orderBy("seq").reverse().limit(LIMIT).toArray()
-  }, [db, filter, branch, patientId])
+  }, [db, filter, locationId, userId])
 
-  const patientIds = React.useMemo(() => {
-    const ids = new Set<string>()
-    for (const event of events ?? [])
-      if (event.patientId) ids.add(event.patientId)
-    if (patientId) ids.add(patientId)
-    return [...ids]
-  }, [events, patientId])
-
-  const patients = useLiveQuery(async () => {
-    const rows = await db.patients.bulkGet(patientIds)
-    const map = new Map<string, PatientRow>()
-    for (const row of rows) if (row) map.set(row.id, row)
-    return map
-  }, [db, patientIds])
-
-  const pinned = patientId ? patients?.get(patientId) : undefined
-  const pinnedName = pinned
-    ? locale === "bn"
-      ? pinned.nameBn
-      : pinned.nameEn
-    : patientId
-
-  const select = (event: EventRow) => {
-    setSelectedSeq(event.seq)
-    if (event.patientId) setPatientId(event.patientId)
-  }
+  const select = (event: EventRow) => setSelectedSeq(event.seq)
 
   return (
     <>
@@ -224,41 +192,22 @@ function EventStreamPanel() {
           options={[
             { value: "all", label: t("demo.stream.filters.all") },
             {
-              value: "branch",
-              label: t("demo.stream.filters.myBranch"),
-              disabled: !branch,
+              value: "location",
+              label: t("demo.stream.filters.myLocation"),
+              disabled: !locationId,
             },
             {
-              value: "patient",
-              label: t("demo.stream.filters.thisPatient"),
-              disabled: !patientId,
-              title: patientId
-                ? (pinnedName ?? undefined)
-                : t("demo.stream.patientHint"),
+              value: "mine",
+              label: t("demo.stream.filters.mine"),
+              disabled: !userId,
             },
           ]}
         />
-        {filter === "patient" && pinnedName ? (
-          <p className="truncate text-[0.6875rem] text-muted-foreground">
-            {pinnedName}
-            {pinned ? (
-              <span className="ml-1.5 font-mono">{uhid(pinned.uhid)}</span>
-            ) : null}
-          </p>
-        ) : null}
       </SheetHeader>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         {selectedSeq !== null ? (
-          <EventDetail
-            seq={selectedSeq}
-            onBack={() => setSelectedSeq(null)}
-            onOnlyPatient={(id) => {
-              setPatientId(id)
-              setFilter("patient")
-              setSelectedSeq(null)
-            }}
-          />
+          <EventDetail seq={selectedSeq} onBack={() => setSelectedSeq(null)} />
         ) : events === undefined ? (
           <p className="p-4 text-xs text-muted-foreground">
             {t("demo.common.loading")}
@@ -281,9 +230,6 @@ function EventStreamPanel() {
                 <EventListItem
                   key={event.seq}
                   event={event}
-                  patient={
-                    event.patientId ? patients?.get(event.patientId) : undefined
-                  }
                   fresh={fresh.has(event.seq)}
                   onSelect={() => select(event)}
                 />
@@ -303,27 +249,20 @@ function EventStreamPanel() {
 
 function EventListItem({
   event,
-  patient,
   fresh,
   onSelect,
 }: {
   event: EventRow
-  patient: PatientRow | undefined
   fresh: boolean
   onSelect: () => void
 }) {
-  const { t, tk, num, locale, relative, dateTime } = useLocale()
+  const { tk, num, locale, relative, dateTime } = useLocale()
   const def = eventDef(event.type)
   const label = eventLabel(event, tk, num)
   const consumers = (event.consumers ?? def?.consumers ?? []).map((key) =>
     consumerLabel(key, tk)
   )
-  const edge = !!event.origin && event.origin !== "central"
-  const who = [
-    actorName(event.actor, locale, tk),
-    event.branchId,
-    patient ? (locale === "bn" ? patient.nameBn : patient.nameEn) : undefined,
-  ]
+  const who = [actorName(event.actor, locale, tk), locationCode(event.locationId), event.app?.toUpperCase()]
     .filter(Boolean)
     .join(" · ")
 
@@ -364,7 +303,7 @@ function EventListItem({
             </span>
           </span>
           <span className="truncate text-xs text-muted-foreground">{who}</span>
-          {consumers.length || edge || event.replayedAt ? (
+          {consumers.length ? (
             <span className="mt-0.5 flex flex-wrap items-center gap-1">
               {consumers.length ? (
                 <>
@@ -380,16 +319,6 @@ function EventListItem({
                     </span>
                   ))}
                 </>
-              ) : null}
-              {edge ? (
-                <span className="rounded-full border border-warning/40 px-1.5 py-px font-mono text-[0.625rem] text-warning">
-                  {event.origin}
-                </span>
-              ) : null}
-              {event.replayedAt ? (
-                <span className="rounded-full border border-info/40 px-1.5 py-px text-[0.625rem] text-info">
-                  {t("demo.stream.replayed")}
-                </span>
               ) : null}
             </span>
           ) : null}

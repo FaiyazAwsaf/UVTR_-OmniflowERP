@@ -1,90 +1,49 @@
-import { getBranch, headquarters, type BranchCode } from "@/config/brand.config"
+import { locations } from "@/config/brand.config"
 import type { ActorRef } from "@/core/db/schema"
 import { EVENT_CATALOG } from "@/core/events/registry"
 import type { EventDef } from "@/core/events/types"
-import type { Role } from "@/core/rbac/types"
-import { PERSONAS, type PersonaSeed } from "@/core/seed/content/personas"
+import { findSeedUser } from "@/core/security/seed-users"
 import type { Locale } from "@/lib/i18n/config"
 
 /**
  * Display helpers shared by the launcher, Demo Wall, event stream, demo panel
- * and audit viewer. Every lookup degrades to a readable fallback so a missing
+ * and audit trail. Every lookup degrades to a readable fallback so a missing
  * key or an unknown id never breaks a screen.
  */
 
-export type Tk = (
-  key: string,
-  params?: Record<string, string | number>
-) => string
+export type Tk = (key: string, params?: Record<string, string | number>) => string
 export type Num = (value: number) => string
 
-/** A persona's display name in the active language. */
-export function personaName(persona: PersonaSeed, locale: Locale): string {
-  if (persona.staff)
-    return locale === "bn" ? persona.staff.nameBn : persona.staff.nameEn
-  return persona.patientName?.[locale] ?? persona.id
-}
-
-export function personaByStaffId(
-  staffId: string | undefined
-): PersonaSeed | undefined {
-  if (!staffId) return undefined
-  return PERSONAS.find(
-    (p) => p.staff?.id === staffId || p.patientId === staffId
-  )
-}
-
-/** Name for a staff id (or "system"), in the active language. */
-export function staffName(
-  staffId: string | undefined,
-  locale: Locale,
-  tk: Tk
-): string {
-  if (!staffId || staffId === "system") return tk("demo.common.system")
-  const persona = personaByStaffId(staffId)
-  return persona ? personaName(persona, locale) : staffId
+/** A user's name by id, in the active language (static directory, then the id). */
+export function userNameById(userId: string | undefined, locale: Locale, tk: Tk): string {
+  if (!userId || userId === "system") return tk("demo.common.system")
+  if (userId === "demo-setup") return tk("demo.common.demoSetup")
+  const seed = findSeedUser(userId)
+  if (seed) return locale === "bn" ? seed.nameBn : seed.nameEn
+  return userId
 }
 
 /** Name of the actor on an event or audit row, in the active language. */
-export function actorName(
-  actor: ActorRef | undefined,
-  locale: Locale,
-  tk: Tk
-): string {
-  if (!actor || actor.staffId === "system" || actor.role === "system") {
-    return tk("demo.common.system")
-  }
-  const persona = personaByStaffId(actor.staffId)
-  return persona ? personaName(persona, locale) : actor.name || actor.staffId
+export function actorName(actor: ActorRef | undefined, locale: Locale, tk: Tk): string {
+  if (!actor) return tk("demo.common.system")
+  if (actor.userId === "system") return tk("demo.common.system")
+  if (actor.userId === "demo-setup") return tk("demo.common.demoSetup")
+  const seed = findSeedUser(actor.userId)
+  if (seed) return locale === "bn" ? seed.nameBn : seed.nameEn
+  return actor.name || actor.username
 }
 
-export function roleLabel(role: Role | "system" | undefined, tk: Tk): string {
-  if (!role || role === "system") return tk("demo.common.system")
-  const label = tk(`demo.roles.${role}`)
-  return label === `demo.roles.${role}` ? role : label
+/** "GUL" for a location id. */
+export function locationCode(id: string | null | undefined): string | undefined {
+  if (!id) return undefined
+  return locations.find((l) => l.id === id)?.code ?? id
 }
 
-/** "Dhanmondi" for a branch, the headquarters name for network level. */
-export function branchName(
-  code: BranchCode | null | undefined,
-  locale: Locale
-): string {
-  if (!code) return headquarters.name[locale]
-  try {
-    return getBranch(code).name[locale]
-  } catch {
-    return code
-  }
-}
-
-/** "Dhanmondi (B1)", or the headquarters name for network level. */
-export function branchLabel(
-  code: BranchCode | null | undefined,
-  locale: Locale
-): string {
-  return code
-    ? `${branchName(code, locale)} (${code})`
-    : headquarters.name[locale]
+/** "Gulshan Studio (GUL)", or "All locations" for none. */
+export function locationLabel(id: string | null | undefined, locale: Locale): string {
+  const location = id ? locations.find((l) => l.id === id) : undefined
+  if (!location) return locale === "bn" ? "সব অবস্থান" : "All locations"
+  return `${location.name[locale]} (${location.code})`
 }
 
 /** Counts in event params read in the window's language; ids stay Latin. */
@@ -101,15 +60,10 @@ export function localizeParams(
 
 /**
  * The event's label in the active language. `known` is false when the label
- * key has no translation yet (an event added by another module), in which
- * case the raw event type is shown instead. Never throws.
+ * key has no translation yet, in which case the raw event type is shown.
  */
 export function eventLabel(
-  event: {
-    type?: string
-    summaryKey?: string
-    params?: Record<string, string | number>
-  },
+  event: { type?: string; summaryKey?: string; params?: Record<string, string | number> },
   tk: Tk,
   num: Num
 ): { text: string; known: boolean } {
@@ -140,10 +94,7 @@ export function eventDef(type: string | undefined): EventDef | undefined {
   return type ? EVENT_CATALOG[type] : undefined
 }
 
-export const SEVERITY_TEXT: Record<
-  NonNullable<EventDef["severity"]>,
-  string
-> = {
+export const SEVERITY_TEXT: Record<NonNullable<EventDef["severity"]>, string> = {
   info: "text-info",
   success: "text-success",
   warning: "text-warning",

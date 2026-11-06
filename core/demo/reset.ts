@@ -1,12 +1,9 @@
-import Dexie from "dexie"
-
-import { branches } from "@/config/brand.config"
-import { chainAudit, GENESIS_HASH } from "@/core/audit/chain"
 import { rules } from "@/config/rules.config"
+import { chainAudit, GENESIS_HASH } from "@/core/audit/chain"
 import { applyClockOffset, now } from "@/core/clock/clock"
 import { atDhaka, dhakaDate } from "@/core/clock/dates"
 import { getControlDb } from "@/core/db/control"
-import { getCentralDb, getEdgeDb, type MedcoreDb } from "@/core/db/database"
+import { clearDatabase, getCentralDb, type OmniflowDb } from "@/core/db/database"
 import { newId } from "@/core/db/ids"
 import type { EventRow } from "@/core/db/schema"
 import { toActorRef } from "@/core/engine/commit"
@@ -16,23 +13,13 @@ import { publish } from "@/core/events/bus"
 import { EVENT_CATALOG } from "@/core/events/registry"
 import { seedDatabase } from "@/core/seed"
 import type { SeedSummary } from "@/core/seed/types"
-import { onlineRow } from "@/core/sync/network"
-import { clearDatabase } from "@/core/sync/offline"
 
 /** Bump when the seed changes shape, so stale browsers re-seed on load. */
-export const SEED_VERSION = 3
-const SEED_LOCK = "mc:seed"
+export const SEED_VERSION = 1
+const SEED_LOCK = "of:seed"
 
-/** Empty every branch edge store that exists in this browser. */
-async function clearEdges(): Promise<void> {
-  const names = await Dexie.getDatabaseNames().catch(() => [] as string[])
-  for (const branch of branches) {
-    const edge = getEdgeDb(branch.code)
-    if (names.includes(edge.name)) await clearDatabase(edge)
-  }
-}
-
-async function writeGenesis(db: MedcoreDb, summary: SeedSummary): Promise<void> {
+/** The genesis audit row and the DemoReset event (plan §7). */
+export async function writeGenesis(db: OmniflowDb, summary: SeedSummary): Promise<void> {
   const at = now()
   const commitId = newId("cm")
   const actor = toActorRef(SYSTEM_ACTOR)
@@ -41,6 +28,7 @@ async function writeGenesis(db: MedcoreDb, summary: SeedSummary): Promise<void> 
       {
         commitId,
         command: "demo.reset",
+        app: "demo",
         at,
         actor,
         action: "system",
@@ -61,7 +49,8 @@ async function writeGenesis(db: MedcoreDb, summary: SeedSummary): Promise<void> 
     at,
     realAt: Date.now(),
     actor,
-    branchId: null,
+    locationId: null,
+    app: "demo",
     refs: {},
     summaryKey: def?.labelKey ?? "events.DemoReset",
     params: {},
@@ -81,14 +70,12 @@ async function resetUnlocked(): Promise<SeedSummary> {
   const central = getCentralDb()
   const control = getControlDb()
   return withLock(commitLockName(central.name), async () => {
-    await clearEdges()
     await clearDatabase(central)
-    // Anchor the demo clock to clinic time today (rules.simulated.clinicTime).
+    // Anchor the demo clock to opening time today (rules.openingTime, 10:30 Dhaka).
     const wall = Date.now()
-    const offsetMs = atDhaka(dhakaDate(wall), rules.simulated.clinicTime) - wall
+    const offsetMs = atDhaka(dhakaDate(wall), rules.openingTime) - wall
     await control.clock.put({ id: "clock", offsetMs, updatedAt: wall })
     applyClockOffset(offsetMs)
-    await control.network.bulkPut(branches.map((b) => onlineRow(b.code)))
     const at = now()
     const summary = await seedDatabase(central, { now: at, today: dhakaDate(at) })
     await writeGenesis(central, summary)
@@ -97,15 +84,15 @@ async function resetUnlocked(): Promise<SeedSummary> {
       seedVersion: SEED_VERSION,
       seededAt: Date.now(),
       seedDate: dhakaDate(at),
+      scale: "full",
     })
     return summary
   })
 }
 
 /**
- * One-click demo reset (plan §3.8): wipes every store, sets the demo clock to
- * clinic time today (`rules.simulated.clinicTime`), brings all branches
- * online, re-seeds for that moment and tells every window to reload.
+ * One-click demo reset: wipes the store, sets the demo clock to opening time
+ * today, re-seeds for that moment and tells every window to reload.
  */
 export async function resetDemo(): Promise<SeedSummary> {
   const summary = await withLock(SEED_LOCK, resetUnlocked)
@@ -122,7 +109,7 @@ export async function ensureSeeded(): Promise<boolean> {
     const control = getControlDb()
     const meta = await control.demoMeta.get("meta")
     const central = getCentralDb()
-    const hasData = (await central.personas.count()) > 0
+    const hasData = (await central.users.count()) > 0
     if (meta && meta.seedVersion === SEED_VERSION && hasData) return false
     await resetUnlocked()
     return true

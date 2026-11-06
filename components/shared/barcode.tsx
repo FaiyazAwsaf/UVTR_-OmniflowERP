@@ -6,7 +6,7 @@ import JsBarcode from "jsbarcode"
 import { cn } from "@/lib/utils"
 
 /**
- * Code128 barcode (accession labels, pharmacy labels, receipts) drawn with
+ * Code128 barcode (SKU labels, receipts, document numbers) drawn with
  * jsbarcode into an SVG. The value must be plain ASCII (identifiers are
  * always Latin, plan §3.11). Rendered black on a white plate so it scans in
  * both themes and prints cleanly.

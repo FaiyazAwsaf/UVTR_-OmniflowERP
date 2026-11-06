@@ -6,7 +6,7 @@ import { toast } from "sonner"
 import {
   ConflictDialog,
   DeniedDialog,
-  NoPersonaDialog,
+  NoUserDialog,
   RuleViolationDialog,
 } from "@/components/shared/engine-dialogs"
 import { useEngineFeedback } from "@/core/engine/feedback"
@@ -15,7 +15,7 @@ import { useLocale } from "@/lib/i18n/provider"
 /**
  * Renders the engine's user-facing outcome for a failed command
  * (`useEngineFeedback().current`, plan §3.3): conflicts, rule violations,
- * denials and a missing persona as dialogs; validation, not-found and
+ * denials and a window with no signed-in user as dialogs; validation, not-found and
  * unexpected errors as toasts. Mounted ONCE per window, inside the engine
  * (components/providers.tsx), so the launcher, the Demo Wall and the demo
  * panel get it too.
@@ -64,14 +64,13 @@ export function EngineFeedbackHost() {
       return (
         <DeniedDialog
           open
-          // The engine's PermissionDenied carries the command's allowed roles.
-          roles={current.error.roles}
-          actorRole={current.error.role}
+          // The engine's PermissionDenied carries the key(s) the command needs.
+          permissions={current.error.permissions}
           onClose={clear}
         />
       )
-    case "no-persona":
-      return <NoPersonaDialog open onClose={clear} />
+    case "no-user":
+      return <NoUserDialog open onClose={clear} />
     default:
       return null
   }

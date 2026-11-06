@@ -3,18 +3,16 @@ import type { z } from "zod"
 import type { CommandDef } from "./types"
 
 /**
- * Declare a command. Keeps the input schema, allowed roles and run function
- * together and fully typed:
+ * Declare a command. Keeps the input schema, the permission key and the run
+ * function together and fully typed:
  *
- *   export const signRx = defineCommand({
- *     name: "rx.sign",
- *     roles: ["doctor"],
- *     input: z.object({ rxId: z.string(), expectedVersion: z.number() }),
+ *   export const issueInvoice = defineCommand({
+ *     name: "si.issueInvoice",
+ *     permission: "si.invoice.issue",
+ *     input: z.object({ orderIds: z.array(z.string()), idempotencyKey: z.string() }),
  *     async run(tx, input) { ... },
  *   })
  */
-export function defineCommand<S extends z.ZodType, O>(
-  def: CommandDef<S, O>
-): CommandDef<S, O> {
+export function defineCommand<S extends z.ZodType, O>(def: CommandDef<S, O>): CommandDef<S, O> {
   return def
 }

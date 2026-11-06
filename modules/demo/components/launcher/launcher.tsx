@@ -1,219 +1,153 @@
 "use client"
 
 import * as React from "react"
-import Link from "next/link"
-import {
-  ArrowRight,
-  Columns2,
-  LayoutGrid,
-  Smartphone,
-  TriangleAlert,
-  Tv,
-} from "lucide-react"
+import { useRouter } from "next/navigation"
+import { ExternalLink, LayoutGrid, Lock, MonitorPlay, PanelsTopLeft } from "lucide-react"
+import { toast } from "sonner"
 
-import { DemoPanelTrigger } from "@/components/shell/demo/demo-panel"
-import { EventStreamTrigger } from "@/components/shell/demo/event-stream"
-import { LangToggle } from "@/components/shell/demo/lang-toggle"
+import { GeneratedAvatar } from "@/components/shared/avatars"
+import { TenantMark } from "@/components/shared/tenant-mark"
 import { Wordmark } from "@/components/shell/demo/wordmark"
+import { LanguageToggle, ThemeToggle } from "@/components/shell/toggles"
 import { Button } from "@/components/ui/button"
-import { HOME_ROUTE } from "@/core/rbac/routes"
-import { ROLES } from "@/core/rbac/types"
-import { usePersona } from "@/core/session/persona"
-import { PERSONAS } from "@/core/seed/content/personas"
+import { tenant } from "@/config/brand.config"
+import { ROLE_DESIGNATION, ROLE_ORDER, SEED_USERS, type SeedUser } from "@/core/security/seed-users"
+import { usePermissions } from "@/core/security/useCan"
+import { updateSession } from "@/core/session/session"
 import { useLocale } from "@/lib/i18n/provider"
+import { cn } from "@/lib/utils"
 
-import { branchLabel, personaName, roleLabel } from "../labels"
 import { ROLE_ICONS } from "../role-icons"
-import { SeedStatus } from "../seed-status"
-import { RoleCard } from "./role-card"
-import {
-  DISPLAY_BOARD,
-  openDemoLayout,
-  openWindow,
-  PATIENT_APP,
-} from "./windows"
-
-const PERSONAS_BY_ROLE = ROLES.map(
-  (role) =>
-    [
-      role,
-      PERSONAS.filter((p) => p.role === role).sort((a, b) => a.order - b.order),
-    ] as const
-)
+import { ResetDemoButton, SeedStatus } from "../seed-status"
+import { openDemoLayout, openWindow, userUrl, windowNameFor } from "./windows"
 
 /**
- * The launcher (plan §9, "/"): quick-start actions for the presenter, this
- * window's persona and the seed status, then a card per role with a persona
- * picker. Works at 960x600 and scales up to the 1920x1200 presenter screen.
+ * The launcher ("/", plan §9): demo users by role (one click signs THIS
+ * window in), the 4-window demo layout, the Demo Wall, reset and seed status.
  */
 export function Launcher() {
-  const { t } = useLocale()
-  const [popupBlocked, setPopupBlocked] = React.useState(false)
-  const blocked = React.useCallback(() => setPopupBlocked(true), [])
+  const { t, locale } = useLocale()
+  const router = useRouter()
+  const { user } = usePermissions()
 
-  const openLayout = () => setPopupBlocked(openDemoLayout().blocked > 0)
-  const openDisplay = () =>
-    setPopupBlocked(!openWindow(DISPLAY_BOARD.url, DISPLAY_BOARD.name))
-  const openPatientApp = () =>
-    setPopupBlocked(
-      !openWindow(PATIENT_APP.url, PATIENT_APP.name, PATIENT_APP.features)
-    )
+  const signInHere = (u: SeedUser) => updateSession({ pendingQuickSignIn: u.username, pendingRoute: null })
+  const openLayout = () => {
+    const { blocked } = openDemoLayout()
+    if (blocked) toast.warning(t("demo.launcher.popupBlocked"))
+  }
 
   return (
-    <div className="flex min-h-svh flex-col bg-background">
-      <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b border-hairline bg-background/95 px-4 backdrop-blur md:px-6">
-        <Wordmark className="text-lg" />
-        <span className="hidden truncate text-xs text-muted-foreground sm:inline">
-          {t("brand.tagline")}
+    <div className="min-h-svh bg-background" data-testid="launcher">
+      <header className="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 pt-6 pb-4">
+        <Wordmark className="text-2xl" />
+        <span className="rounded-full border border-primary/60 px-2 py-px font-mono text-xs font-semibold text-primary">
+          SME
+        </span>
+        <span className="ml-2 flex items-center gap-2 text-sm text-muted-foreground">
+          <TenantMark size={24} />
+          {tenant.shortName[locale]}
         </span>
         <div className="ml-auto flex items-center gap-1.5">
-          <LangToggle />
-          <EventStreamTrigger />
-          <DemoPanelTrigger />
+          <LanguageToggle />
+          <ThemeToggle />
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-[120rem] flex-1 flex-col gap-6 p-4 md:p-6">
-        <section className="grid gap-4 md:grid-cols-[minmax(0,1fr)_19rem]">
-          <div className="surface-card flex flex-col gap-4 p-5">
-            <div>
-              <h1 className="text-[1.375rem] leading-tight font-semibold">
-                {t("shell.launcherTitle")}
-              </h1>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {t("shell.launcherSubtitle")}
+      <main className="mx-auto flex max-w-6xl flex-col gap-6 px-4 pb-10">
+        <section className="surface-card flex flex-col gap-4 p-5">
+          <div>
+            <h1 className="text-[1.375rem] font-semibold">{t("shell.launcherTitle")}</h1>
+            <p className="text-sm text-muted-foreground">{t("shell.launcherSubtitle")}</p>
+            {user ? (
+              <p className="mt-1 text-sm">
+                {t("demo.launcher.signedInAs", { name: locale === "bn" ? user.nameBn : user.nameEn })}
               </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button size="lg" onClick={openLayout} data-testid="open-layout">
-                <LayoutGrid />
-                {t("demo.launcher.openLayout")}
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                nativeButton={false}
-                render={<Link href="/wall" />}
-                data-testid="open-wall"
-              >
-                <Columns2 />
-                {t("demo.launcher.openWall")}
-              </Button>
-              <Button size="lg" variant="outline" onClick={openDisplay}>
-                <Tv />
-                {t("demo.launcher.openDisplay")}
-              </Button>
-              <Button size="lg" variant="outline" onClick={openPatientApp}>
-                <Smartphone />
-                {t("demo.launcher.openPatientApp")}
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {t("demo.launcher.openLayoutHint")}
-            </p>
-            {popupBlocked ? (
-              <div
-                role="alert"
-                className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-warning/10 px-3 py-2 text-xs text-warning"
-                data-testid="popup-blocked"
-              >
-                <TriangleAlert className="size-3.5 shrink-0" />
-                <span className="min-w-0 flex-1">
-                  {t("demo.launcher.popupBlocked")}
-                </span>
-                <Link
-                  href="/wall"
-                  className="font-medium text-link hover:underline"
-                >
-                  {t("demo.launcher.openWall")}
-                </Link>
-              </div>
             ) : null}
           </div>
-
-          <div className="surface-card flex flex-col gap-4 p-5">
-            <ThisWindow />
-            <div className="border-t border-hairline pt-4">
-              <SeedStatus />
-            </div>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={openLayout} data-testid="open-layout">
+              <PanelsTopLeft />
+              {t("demo.launcher.openLayout")}
+            </Button>
+            <Button variant="outline" onClick={() => router.push("/wall")} data-testid="open-wall">
+              <MonitorPlay />
+              {t("demo.launcher.openWall")}
+            </Button>
+            <Button variant="outline" onClick={() => router.push("/apps")} data-testid="open-apps">
+              <LayoutGrid />
+              {t("demo.launcher.openApps")}
+            </Button>
           </div>
+          <p className="text-xs text-muted-foreground">{t("demo.launcher.openLayoutHint")}</p>
         </section>
 
         <section className="flex flex-col gap-3">
           <div>
-            <h2 className="text-[1.0625rem] font-semibold">
-              {t("demo.launcher.rolesTitle")}
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              {t("demo.launcher.rolesHint")}
-            </p>
+            <h2 className="text-[1.0625rem] font-semibold">{t("demo.launcher.usersTitle")}</h2>
+            <p className="text-sm text-muted-foreground">{t("demo.launcher.usersHint")}</p>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-            {PERSONAS_BY_ROLE.map(([role, personas]) =>
-              personas.length ? (
-                <RoleCard
-                  key={role}
-                  role={role}
-                  personas={personas}
-                  onBlocked={blocked}
-                />
-              ) : null
-            )}
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {ROLE_ORDER.map((role) => {
+              const users = SEED_USERS.filter((u) => u.role === role)
+              const Icon = ROLE_ICONS[role]
+              return (
+                <div key={role} className="surface-card flex flex-col gap-2 p-4" data-testid={`role-${role}`}>
+                  <div className="flex items-center gap-2 text-sm font-semibold">
+                    <span className="icon-well flex size-8 items-center justify-center text-primary">
+                      <Icon className="size-4" />
+                    </span>
+                    {ROLE_DESIGNATION[role][locale]}
+                  </div>
+                  <ul className="flex flex-col gap-1">
+                    {users.map((u) => (
+                      <li key={u.username} className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => signInHere(u)}
+                          data-testid={`launch-${u.username}`}
+                          className={cn(
+                            "flex min-w-0 flex-1 items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors outline-none hover:bg-primary-soft focus-visible:ring-[3px] focus-visible:ring-ring/40",
+                            u.lockedAtSeed && "opacity-70"
+                          )}
+                          title={t("demo.launcher.openHere")}
+                        >
+                          <GeneratedAvatar seed={u.username} sex={u.sex} role={u.role} size={30} />
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-medium">
+                              {locale === "bn" ? u.nameBn : u.nameEn}
+                            </span>
+                            <span className="block truncate text-xs text-muted-foreground">
+                              <span lang="en" className="font-mono">
+                                {u.username} · {u.home}
+                              </span>
+                              {(locale === "bn" ? u.noteBn : u.noteEn) ? ` · ${locale === "bn" ? u.noteBn : u.noteEn}` : ""}
+                            </span>
+                          </span>
+                          {u.lockedAtSeed ? <Lock className="size-3.5 text-warning" /> : null}
+                        </button>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label={t("demo.launcher.openNewWindow")}
+                          title={t("demo.launcher.openNewWindow")}
+                          onClick={() => openWindow(userUrl(u.username), windowNameFor(u.username))}
+                        >
+                          <ExternalLink />
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )
+            })}
           </div>
         </section>
+
+        <section className="surface-card flex flex-wrap items-center gap-3 p-4">
+          <SeedStatus className="flex-1" />
+          <ResetDemoButton className="ml-auto" />
+        </section>
       </main>
-    </div>
-  )
-}
-
-/** Who this window is signed in as, with a shortcut back to their home screen. */
-function ThisWindow() {
-  const { t, tk, locale } = useLocale()
-  const persona = usePersona()
-
-  if (!persona) {
-    return (
-      <div className="flex flex-col gap-1">
-        <p className="micro">{t("demo.launcher.thisWindow")}</p>
-        <p className="text-xs text-muted-foreground">
-          {t("demo.launcher.noPersona")}
-        </p>
-      </div>
-    )
-  }
-  const Icon = ROLE_ICONS[persona.role]
-  return (
-    <div className="flex flex-col gap-2">
-      <p className="micro">{t("demo.launcher.thisWindow")}</p>
-      <div className="flex items-center gap-3">
-        <span className="icon-well flex size-9 shrink-0 items-center justify-center text-primary">
-          <Icon className="size-4" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p
-            className="truncate text-sm font-medium"
-            data-testid="this-window-persona"
-          >
-            {t("demo.launcher.signedInAs", {
-              name: personaName(persona, locale),
-            })}
-          </p>
-          <p className="truncate text-[0.6875rem] text-muted-foreground">
-            {roleLabel(persona.role, tk)} ·{" "}
-            {branchLabel(persona.branchId, locale)}
-          </p>
-        </div>
-      </div>
-      <Button
-        size="sm"
-        variant="outline"
-        className="self-start"
-        nativeButton={false}
-        render={<Link href={HOME_ROUTE[persona.role]} />}
-      >
-        {t("demo.launcher.continue")}
-        <ArrowRight />
-      </Button>
     </div>
   )
 }

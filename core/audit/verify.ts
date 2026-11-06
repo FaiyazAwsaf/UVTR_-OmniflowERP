@@ -1,4 +1,4 @@
-import type { MedcoreDb } from "@/core/db/database"
+import type { OmniflowDb } from "@/core/db/database"
 
 import { GENESIS_HASH, hashAuditRow } from "./chain"
 
@@ -9,8 +9,8 @@ export type ChainStatus = {
   brokenAt?: number
 }
 
-/** Recompute the whole audit chain (plan §3.5, "Verify chain"). */
-export async function verifyChain(db: MedcoreDb): Promise<ChainStatus> {
+/** Recompute the whole audit chain (plan §3.11, "Verify chain"). */
+export async function verifyChain(db: OmniflowDb): Promise<ChainStatus> {
   let prevHash = GENESIS_HASH
   let count = 0
   let brokenAt: number | undefined

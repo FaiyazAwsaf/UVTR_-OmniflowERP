@@ -1,8 +1,7 @@
-import type { BranchCode } from "@/config/brand.config"
 import type { Refs } from "@/core/db/schema"
 
 /**
- * Cross-window notices over BroadcastChannel (plan §3.6). Data sync itself is
+ * Cross-window notices over BroadcastChannel (plan §3.12). Data sync itself is
  * Dexie liveQuery; the bus carries toasts, drawer flashes and control signals.
  * BroadcastChannel does not echo to the sender, so publish() also delivers to
  * this window's own listeners (with `local: true`).
@@ -14,7 +13,7 @@ export type BusEvent = {
   summaryKey: string
   params: Record<string, string | number>
   refs: Refs
-  patientId?: string
+  app: string
 }
 
 export type BusMessage =
@@ -24,13 +23,14 @@ export type BusMessage =
       db: string
       commitId: string
       command: string
-      branchId: BranchCode | null
+      userId: string
+      locationId: string | null
       events: BusEvent[]
     }
   | { kind: "reset" }
   | { kind: "reload"; reason?: string }
   | { kind: "clock"; offsetMs: number }
-  | { kind: "network"; branchId: BranchCode }
+  | { kind: "session-ended"; sessionId: string; reason: "sign-out" | "forced" | "timeout" }
 
 export type BusEnvelope = BusMessage & { local: boolean }
 

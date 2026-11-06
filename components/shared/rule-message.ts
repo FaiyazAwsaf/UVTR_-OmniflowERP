@@ -1,4 +1,4 @@
-import { branches } from "@/config/brand.config"
+import { locations } from "@/config/brand.config"
 import type { Locale } from "@/lib/i18n/config"
 import { en } from "@/lib/i18n/en"
 
@@ -8,7 +8,6 @@ type Formatters = {
   num: (value: number) => string
   money: (poisha: number) => string
   dmy: (value: string | number | Date) => string
-  uhid: (value: string) => string
 }
 
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/
@@ -25,9 +24,9 @@ const RULE_NAMESPACES = Object.entries(en)
 /**
  * The message for a rule code (RuleViolation.code) in the window's language,
  * with its params formatted: money for
- * `...P` amounts, grouped UHIDs, DD-MM-YYYY dates, branch names and numbers in
- * the active numerals. Lookup order: the refusing command's module
- * (`billing.checkout` looks in `billing.rules`), then the engine's shared
+ * `...P` amounts, DD-MM-YYYY dates, location names (by id or code) and
+ * numbers in the active numerals. Lookup order: the refusing command's module
+ * (`si.checkout` looks in `si.rules`), then the engine's shared
  * `rules`, then every other module's `rules`, so a module code reads the same
  * on any screen. Unknown codes fall back to "blocked by rule <code>".
  */
@@ -41,16 +40,9 @@ export function ruleMessage(
   for (const [key, value] of Object.entries(params)) {
     if (typeof value === "number") {
       formatted[key] = key.endsWith("P") ? f.money(value) : f.num(value)
-    } else if (key === "uhid") {
-      formatted[key] = f.uhid(value)
-    } else if (key === "branch") {
-      const branch = branches.find((b) => b.code === value)
-      formatted[key] = branch
-        ? `${branch.name[f.locale]} (${branch.code})`
-        : value
-    } else if (key === "step") {
-      const step = f.tk(`shell.feedback.steps.${value}`)
-      formatted[key] = step.startsWith("shell.") ? value : step
+    } else if (key === "location") {
+      const location = locations.find((l) => l.id === value || l.code === value)
+      formatted[key] = location ? location.name[f.locale] : value
     } else if (ISO_DAY.test(value)) {
       formatted[key] = f.dmy(value)
     } else {

@@ -1,29 +1,31 @@
 import {
-  Banknote,
+  BookOpenText,
+  Car,
   ChartLine,
-  ConciergeBell,
-  FlaskConical,
+  ClipboardCheck,
+  Eye,
+  HandCoins,
+  KeyRound,
   Landmark,
-  Microscope,
-  Package,
-  Pill,
-  Smartphone,
-  Stethoscope,
+  ShoppingCart,
+  Warehouse,
+  Wrench,
   type LucideIcon,
 } from "lucide-react"
 
-import type { Role } from "@/core/rbac/types"
+import type { RoleCode } from "@/core/security/types"
 
 /** One icon per role, used on the launcher cards and Demo Wall panes. */
-export const ROLE_ICONS: Record<Role, LucideIcon> = {
-  receptionist: ConciergeBell,
-  doctor: Stethoscope,
-  labtech: FlaskConical,
-  pathologist: Microscope,
-  pharmacist: Pill,
-  cashier: Banknote,
-  store: Package,
-  finance: Landmark,
-  ceo: ChartLine,
-  patient: Smartphone,
+export const ROLE_ICONS: Record<RoleCode, LucideIcon> = {
+  OWNER: ChartLine,
+  ACC_MGR: Landmark,
+  ACCOUNTANT: BookOpenText,
+  STUDIO_MGR: ClipboardCheck,
+  ADVISOR: Car,
+  CASHIER: HandCoins,
+  TECHNICIAN: Wrench,
+  STORE: Warehouse,
+  PROCUREMENT: ShoppingCart,
+  SYS_ADMIN: KeyRound,
+  AUDITOR: Eye,
 }
