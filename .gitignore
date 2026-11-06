@@ -45,7 +45,7 @@ next-env.d.ts
 /playwright-report/
 /blob-report/
 
-docs/
+/docs/
 
 # parallel agent worktrees
 /.claude/worktrees/
