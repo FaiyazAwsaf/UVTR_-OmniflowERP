@@ -39,9 +39,26 @@ const storageKey = () => `of:wall:${windowKey()}`
 
 const userName = (u: SeedUser, locale: "en" | "bn") => (locale === "bn" ? u.nameBn : u.nameEn)
 
-/** Pane users chosen in this Wall tab, kept across reloads of the tab. */
+/**
+ * Pane users: `/wall?users=farzana,mahbub` (launchers; missing panes keep
+ * the default layout), else the ones chosen in this Wall tab (kept across
+ * reloads), else Advisor, Technician, Cashier and Accountant.
+ */
 function readPanes(): string[] {
   if (typeof window === "undefined") return DEFAULT_PANES
+  const fromUrl = new URL(window.location.href).searchParams.get("users")
+  if (fromUrl) {
+    const wanted = fromUrl
+      .split(",")
+      .map((name) => name.trim().toLowerCase())
+      .filter((name) => findSeedUser(name))
+      .slice(0, DEFAULT_PANES.length)
+    if (wanted.length) {
+      const panes = DEFAULT_PANES.map((fallback, i) => wanted[i] ?? fallback)
+      writePanes(panes)
+      return panes
+    }
+  }
   try {
     const saved = JSON.parse(
       window.sessionStorage.getItem(storageKey()) ?? "null"
@@ -233,6 +250,7 @@ function WallPane({
             onClick={onReload}
             aria-label={t("demo.wall.home")}
             title={t("demo.wall.home")}
+            data-testid={`wall-reload-${index + 1}`}
           >
             <House />
           </Button>
@@ -244,6 +262,7 @@ function WallPane({
             }
             aria-label={t("demo.wall.openWindow")}
             title={t("demo.wall.openWindow")}
+            data-testid={`wall-window-${index + 1}`}
           >
             <ExternalLink />
           </Button>

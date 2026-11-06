@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/tooltip"
 import { usePermissions } from "@/core/security/useCan"
 import type { NavItem } from "@/core/security/types"
+import { useSyncFlash } from "@/components/shell/use-sync-flash"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { useModKey } from "@/hooks/use-mod-key"
 import { cn } from "@/lib/utils"
@@ -41,10 +42,10 @@ export function useSidebarCollapsed(): boolean {
  */
 export function Wordmark({ className, chip = true }: { className?: string; chip?: boolean }) {
   return (
-    <span className="inline-flex items-center gap-2">
+    <span className="inline-flex items-center gap-1.5">
       <span
         className={cn(
-          "inline-flex items-baseline text-[1.25rem] leading-none font-bold tracking-tight whitespace-nowrap",
+          "inline-flex items-baseline font-sans text-[1.25rem] leading-none font-bold tracking-tight whitespace-nowrap",
           className
         )}
         translate="no"
@@ -102,12 +103,12 @@ export function AppSidebar() {
       <div
         className={cn(
           "flex h-18 shrink-0 items-center",
-          collapsed ? "justify-center" : "px-6"
+          collapsed ? "justify-center" : "px-5"
         )}
       >
         <Link
           href={home}
-          className="rounded-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40"
+          className="min-w-0 rounded-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40"
           aria-label="UVTR_OmniflowERP"
         >
           {collapsed ? (
@@ -119,7 +120,8 @@ export function AppSidebar() {
               <span className="text-primary">O</span>
             </span>
           ) : (
-            <Wordmark />
+            // Sized so the wordmark and its SME chip fit the 232px sidebar.
+            <Wordmark className="text-[1.0625rem]" />
           )}
         </Link>
       </div>
@@ -146,7 +148,7 @@ export function AppSidebar() {
                     label={tk(item.labelKey)}
                     active={item.href === active}
                     collapsed={collapsed}
-                    count={counts[item.href]}
+                    count={counts ? (counts[item.href] ?? 0) : undefined}
                     pillId={pillId}
                   />
                 ))}
@@ -255,11 +257,14 @@ function NavRow({
   const { num } = useLocale()
   const Icon = item.icon
   const hasCount = count !== undefined && count > 0
+  // A badge that moves because of another window's commit flashes the row.
+  const flash = useSyncFlash(count)
+  const slug = item.app ?? item.href.slice(1).replace(/\//g, "-")
 
   const link = (
     <Link
       href={item.href}
-      data-testid={`nav-${item.app ?? item.href.slice(1).replace(/\//g, "-")}`}
+      data-testid={`nav-${slug}`}
       aria-current={active ? "page" : undefined}
       title={collapsed ? undefined : label}
       className={cn(
@@ -267,7 +272,8 @@ function NavRow({
         collapsed ? "w-10 justify-center self-center" : "px-2.5",
         active
           ? "text-primary-foreground"
-          : "text-sidebar-foreground/85 hover:bg-sidebar-accent hover:text-foreground"
+          : "text-sidebar-foreground/85 hover:bg-sidebar-accent hover:text-foreground",
+        !active && flash
       )}
     >
       {active ? (
@@ -306,7 +312,10 @@ function NavRow({
         <>
           <span className="sr-only">{label}</span>
           {hasCount ? (
-            <span className="count-badge nums absolute -top-1 -right-1 z-10 flex h-4 min-w-4 items-center justify-center px-1 text-[0.625rem] font-semibold">
+            <span
+              data-testid={`nav-count-${slug}`}
+              className="count-badge nums absolute -top-1 -right-1 z-10 flex h-4 min-w-4 items-center justify-center px-1 text-[0.625rem] font-semibold"
+            >
               {num(count)}
             </span>
           ) : null}
@@ -315,7 +324,10 @@ function NavRow({
         <>
           <span className="relative z-10 min-w-0 flex-1 truncate">{label}</span>
           {hasCount ? (
-            <span className="count-badge nums relative z-10 flex h-5 min-w-5 items-center justify-center px-1.5 text-[0.6875rem] font-semibold">
+            <span
+              data-testid={`nav-count-${slug}`}
+              className="count-badge nums relative z-10 flex h-5 min-w-5 items-center justify-center px-1.5 text-[0.6875rem] font-semibold"
+            >
               {num(count)}
             </span>
           ) : null}

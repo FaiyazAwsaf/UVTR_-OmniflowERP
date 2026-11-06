@@ -9,9 +9,32 @@ import { useDb } from "@/core/db/DbProvider"
 import { commit, touchSession } from "@/core/engine/commit"
 import { SYSTEM_ACTOR } from "@/core/engine/types"
 import { ROLE_LANDING, findSeedUser } from "@/core/security/seed-users"
-import { signIn } from "@/core/security/signin"
-import { setSignedIn, setSignedOut, updateSession, useSession } from "@/core/session/session"
+import { signIn, signOut } from "@/core/security/signin"
+import { getSession, setSignedIn, setSignedOut, updateSession, useSession } from "@/core/session/session"
 import { windowKey } from "@/core/session/windowId"
+
+/** Sign out a window's previous session as its own user (an ended one is left alone). */
+async function endPreviousSession(userId: string, sessionId: string, locationId: string | null): Promise<void> {
+  const db = getCentralDb()
+  try {
+    const user = await db.users.get(userId)
+    if (!user) return
+    await commit(signOut, {}, {
+      db,
+      actor: {
+        userId: user.id,
+        username: user.username,
+        name: user.nameEn,
+        nameBn: user.nameBn,
+        sessionId,
+        locationId: locationId ?? user.homeLocationId,
+        locationIds: user.locationIds,
+      },
+    })
+  } catch {
+    // Already ended (forced, timed out) or the user is locked: nothing to do.
+  }
+}
 
 /**
  * Per-window session upkeep (plan §3.8, §3.14), mounted once in the providers:
@@ -32,6 +55,7 @@ export function SessionGate() {
     busy.current = true
     void (async () => {
       try {
+        const previous = getSession()
         const result = await commit(
           signIn,
           { username: pendingQuickSignIn, windowId: windowKey(), method: "demo-quick" },
@@ -39,6 +63,12 @@ export function SessionGate() {
         )
         const outcome = result.result
         if (outcome.status === "ok") {
+          // Switching user in this window (launcher, Demo Wall pane, ?user=)
+          // ends the window's previous session, so the sessions list only
+          // shows windows that are really signed in.
+          if (previous.userId && previous.sessionId) {
+            await endPreviousSession(previous.userId, previous.sessionId, previous.locationId)
+          }
           setSignedIn(outcome)
           const seed = findSeedUser(pendingQuickSignIn)
           const target = pendingRoute ?? (window.location.pathname === "/" || window.location.pathname === "/login"

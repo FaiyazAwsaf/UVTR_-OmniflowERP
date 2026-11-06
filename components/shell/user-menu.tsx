@@ -2,9 +2,11 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { Check, ChevronDown, LayoutGrid, LogOut, MapPin } from "lucide-react"
+import { Check, ChevronDown, KeyRound, LayoutGrid, LogOut, MapPin } from "lucide-react"
 
 import { UserAvatar } from "@/components/shared/avatars"
+import { ChangePasswordDialog } from "@/components/shell/change-password-dialog"
+import { switchLocation } from "@/components/shell/location-switcher"
 import { UiScaleStepper } from "@/components/shell/ui-scale"
 import {
   DropdownMenu,
@@ -22,7 +24,7 @@ import { signOut } from "@/core/security/signin"
 import { usePermissions } from "@/core/security/useCan"
 import { nameOf, useLocations, userName } from "@/core/security/users"
 import { useActor } from "@/core/session/actor"
-import { setSignedOut, updateSession, useSession } from "@/core/session/session"
+import { setSignedOut, useSession } from "@/core/session/session"
 import { cn } from "@/lib/utils"
 import { useLocale } from "@/lib/i18n/provider"
 
@@ -45,8 +47,8 @@ export function useSignOut() {
 
 /**
  * The avatar block (name, role, chevron) opens the user menu
- * (ui_guidelines.md §3): location switch for users with several, display
- * size, the launcher and sign out.
+ * (ui_guidelines.md §3): the profile line, change password, location switch
+ * for users with several, display size, the launcher and sign out.
  */
 export function UserMenu({ user, className }: { user: UserRow; className?: string }) {
   const { t, locale } = useLocale()
@@ -57,9 +59,12 @@ export function UserMenu({ user, className }: { user: UserRow; className?: strin
   const doSignOut = useSignOut()
   const current = locationId ?? user.homeLocationId
   const mine = (locations ?? []).filter((l) => user.locationIds.includes(l.id))
+  const home = (locations ?? []).find((l) => l.id === user.homeLocationId)
   const role = security?.roleCodes[0]
+  const [passwordOpen, setPasswordOpen] = React.useState(false)
 
   return (
+    <>
     <DropdownMenu>
       <DropdownMenuTrigger
         data-slot="user-menu"
@@ -92,12 +97,24 @@ export function UserMenu({ user, className }: { user: UserRow; className?: strin
               <span className="block truncate text-[0.9375rem] font-semibold text-foreground">
                 {userName(user, locale)}
               </span>
+              <span className="block truncate text-xs font-normal text-muted-foreground">
+                {[locale === "bn" ? user.designationBn : user.designationEn, nameOf(home, locale)]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </span>
               <span lang="en" className="block truncate font-mono text-xs font-normal text-muted-foreground">
-                {user.username}
+                {user.username} · {user.employeeNo}
               </span>
             </span>
           </DropdownMenuLabel>
         </DropdownMenuGroup>
+        <DropdownMenuSeparator className="mx-0 my-0" />
+        <div className="p-1.5">
+          <DropdownMenuItem data-testid="change-password" onClick={() => setPasswordOpen(true)}>
+            <KeyRound />
+            {t("shell.changePassword")}
+          </DropdownMenuItem>
+        </div>
         {mine.length > 1 ? (
           <>
             <DropdownMenuSeparator className="mx-0 my-0" />
@@ -108,7 +125,10 @@ export function UserMenu({ user, className }: { user: UserRow; className?: strin
                   <DropdownMenuItem
                     key={l.id}
                     data-testid={`location-${l.code}`}
-                    onClick={() => updateSession({ locationId: l.id })}
+                    onClick={() =>
+                      l.id !== current &&
+                      switchLocation(l, t("shell.location.switched", { location: nameOf(l, locale) }))
+                    }
                     className={cn("gap-3", l.id === current && "bg-primary-soft")}
                   >
                     <MapPin />
@@ -140,5 +160,7 @@ export function UserMenu({ user, className }: { user: UserRow; className?: strin
         </div>
       </DropdownMenuContent>
     </DropdownMenu>
+    <ChangePasswordDialog open={passwordOpen} onOpenChange={setPasswordOpen} />
+    </>
   )
 }

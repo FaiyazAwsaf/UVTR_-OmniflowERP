@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
  */
 export function Wordmark({ className }: { className?: string }) {
   return (
-    <span className={cn("font-semibold tracking-tight whitespace-nowrap", className)} translate="no">
+    <span className={cn("font-sans font-semibold tracking-tight whitespace-nowrap", className)} translate="no">
       <span className="text-foreground">UVTR_</span>
       <span className="text-primary">OmniflowERP</span>
     </span>
