@@ -12,6 +12,7 @@ export const LANDING: Record<string, RegExp> = {
   rakib: /\/stl\/my-jobs/,
   habib: /\/ic/,
   tahmid: /\/sac/,
+  nusrat: /\/ptl/,
 }
 
 /** Quick sign-in (the launcher's one click) and wait for the shell on the landing route. */
@@ -158,4 +159,29 @@ export async function plantSearchData(page: Page): Promise<void> {
     invoice("inv_e2e_gul", "INV-GUL-2627-000123", "loc_gul"),
     invoice("inv_e2e_utt", "INV-UTT-2627-000456", "loc_utt"),
   ])
+}
+
+/** Reads rows straight from the shared IndexedDB (seeded fixed ids, numbers to search for). */
+export async function readRows<T = Record<string, unknown>>(
+  page: Page,
+  table: string,
+  filter?: { field: string; equals: string }
+): Promise<T[]> {
+  return page.evaluate(
+    async ({ table, filter }) => {
+      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open("omniflow-central")
+        request.onsuccess = () => resolve(request.result)
+        request.onerror = () => reject(request.error)
+      })
+      const rows = await new Promise<unknown[]>((resolve, reject) => {
+        const req = db.transaction(table, "readonly").objectStore(table).getAll()
+        req.onsuccess = () => resolve(req.result)
+        req.onerror = () => reject(req.error)
+      })
+      db.close()
+      return filter ? rows.filter((r) => (r as Record<string, unknown>)[filter.field] === filter.equals) : rows
+    },
+    { table, filter }
+  ) as Promise<T[]>
 }

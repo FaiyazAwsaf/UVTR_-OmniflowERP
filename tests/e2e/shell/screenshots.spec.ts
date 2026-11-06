@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test"
 
-import { openDemoPanel, plantJournalApproval, plantSearchData, signIn } from "./helpers"
+import { openDemoPanel, signIn } from "./helpers"
 
 /**
  * Screenshots of the shell for review (plan §13.1 rule 8), EN and BN at
@@ -53,8 +53,6 @@ for (const lang of LANGS) {
       test.setTimeout(120_000)
       await page.setViewportSize({ width: size.width, height: size.height })
       await signIn(page, "farzana", `&lang=${lang}`)
-      await plantJournalApproval(page)
-      await plantSearchData(page)
       await page.goto("/apps")
       await expect(page.getByTestId("apps-grid")).toBeVisible()
       await shot(page, `apps-${tag}`)
@@ -67,7 +65,7 @@ for (const lang of LANGS) {
         await page.keyboard.press("Control+b")
       }
       await page.getByTestId("approvals-bell").click()
-      await expect(page.getByTestId("bell-item")).toBeVisible()
+      await expect(page.getByTestId("bell-item").first()).toBeVisible()
       await shot(page, `bell-${tag}`)
       await page.keyboard.press("Escape")
       await page.getByTestId("user-menu").click()
@@ -75,7 +73,7 @@ for (const lang of LANGS) {
       await shot(page, `user-menu-${tag}`)
       await page.keyboard.press("Escape")
       await page.keyboard.press("Control+k")
-      await page.getByTestId("palette-input").fill("২৭")
+      await page.getByTestId("palette-input").fill("১৫-৭৭")
       await expect(page.getByTestId("search-result").first()).toBeVisible()
       await shot(page, `palette-vehicle-${tag}`)
       await page.getByTestId("palette-input").fill("INV-")
@@ -104,7 +102,6 @@ for (const lang of LANGS) {
 test("light theme", async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1200 })
   await signIn(page, "farzana")
-  await plantJournalApproval(page)
   await page.goto("/approvals")
   await page.locator('[data-slot="theme-toggle"]').first().click()
   await expect(page.getByTestId("approval-row").first()).toBeVisible()

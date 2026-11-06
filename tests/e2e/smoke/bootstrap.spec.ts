@@ -62,4 +62,20 @@ test.describe("Phase 0 bootstrap", () => {
     await expect(page).toHaveURL(/\/fa/)
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/fa-960.png` })
   })
+
+  test("checkpoint 1: the audit trail shows diffs and the hash chain verifies", async ({ page }) => {
+    await page.goto("/?user=mahbub")
+    await expect(page).toHaveURL(/\/fa/)
+    // A real commit first, so the chain holds more than the genesis row.
+    await page.goto("/?user=shamima")
+    await expect(page).toHaveURL(/\/frs/)
+    await page.goto("/sac/audit")
+    await expect(page.getByTestId("audit-viewer")).toBeVisible()
+    await page.getByTestId("audit-verify").click()
+    await expect(page.getByTestId("audit-chain")).toHaveAttribute("data-state", "intact")
+    await page.getByTestId("audit-row").first().click()
+    await expect(page.getByTestId("audit-details")).toBeVisible()
+    if (SHOTS) await page.screenshot({ path: `${SHOTS}/audit-960.png` })
+  })
 })
+
