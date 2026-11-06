@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Run a memory-heavy command (install, typecheck, lint, tests, build, e2e, a
+# server) while holding the machine-wide lock; says so when it has to wait.
+LOCK=/tmp/omniflow-heavy.lock
+exec 9>"$LOCK"
+if ! flock -n 9; then echo "heavy: waiting for the lock" >&2; flock 9; fi
+exec "$@"

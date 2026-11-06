@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Build, serve on PORT, run a command against it (e.g. a screenshot script),
+# stop the server; all under the heavy lock. Usage: with-server 3401 node shots.mjs
+set -uo pipefail
+PORT="$1"; shift
+LOCK=/tmp/omniflow-heavy.lock
+exec 9>"$LOCK"
+if ! flock -n 9; then echo "with-server: waiting for the lock" >&2; flock 9; fi
+LOG="$(mktemp)"
+if ! bun run build >"$LOG" 2>&1; then tail -40 "$LOG"; rm -f "$LOG"; exit 1; fi
+rm -f "$LOG"
+bunx next start -p "$PORT" >/dev/null 2>&1 &
+SERVER=$!
+cleanup() { pkill -P "$SERVER" 2>/dev/null; kill "$SERVER" 2>/dev/null; }
+trap cleanup EXIT
+for i in $(seq 1 80); do curl -s -o /dev/null "http://localhost:$PORT/" && break; sleep 0.5; done
+"$@"
