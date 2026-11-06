@@ -163,6 +163,7 @@ function simulate(w: World, q: EventQueue, rules: Map<string, Rule>, input: Plan
   const lastTransfer = new Map<Loc, PlannedTransfer>()
   const onOrder = new Map<Id, number>()
   let shortfallDone = false
+  let rejectedAny = false
 
   type Dyn = { at: Ms; seq: number; run: () => void }
   const dyn: Dyn[] = []
@@ -235,7 +236,12 @@ function simulate(w: World, q: EventQueue, rules: Map<string, Rule>, input: Plan
       const grnDay = isoAddDays(day, rng.int(2, 5))
       const grnAt = dhakaAt(grnDay, "11:00")
       for (const l of lines) {
-        if (l.units >= 3 && rng.bool(0.08)) l.rejected = Math.min(2, l.units - 1)
+        // 8% of lines have a QC rejection (the first eligible line always does, so the story has one).
+        const reject = rng.bool(0.08)
+        if (l.units >= 3 && (reject || !rejectedAny) && grnAt <= now && grnAt + 2 * 24 * 60 * MINUTE <= now) {
+          l.rejected = Math.min(2, l.units - 1)
+          rejectedAny = true
+        }
         onOrder.set(l.itemId, (onOrder.get(l.itemId) ?? 0) + l.units * ITEM_BY_ID.get(l.itemId)!.purchaseFactor)
       }
       const po: PlannedPo = { id: w.ctx.seq("po"), vendorId, prId, orderAt, grnAt: grnAt <= now ? grnAt : null, lines, kind: "weekly" }
@@ -275,10 +281,12 @@ function simulate(w: World, q: EventQueue, rules: Map<string, Rule>, input: Plan
     if (!lines.size) return
     const dispatchAt = dhakaAt(day, "09:00")
     const t: PlannedTransfer = { id: w.ctx.seq("trf"), to: loc, dispatchAt, receiveAt: dhakaAt(day, RECEIVE_TIME[loc]), lines }
-    if (!shortfallDone && loc === LOC.UTT) {
-      const retail = [...lines].find(([id, n]) => ITEM_BY_ID.get(id)!.kind === "retail" && n >= 6)
-      if (retail) {
-        t.shortfall = { itemId: retail[0], qty: 2 }
+    // One shortfall of 2 pieces in the window: a retail line to Uttara if one comes, else any line counted in pieces.
+    if (!shortfallDone) {
+      const pieces = [...lines].filter(([id, n]) => ITEM_BY_ID.get(id)!.baseUom === "pc" && n >= 6 && !input.pinned.has(key(loc, id)))
+      const pick = (loc === LOC.UTT ? pieces.find(([id]) => ITEM_BY_ID.get(id)!.kind === "retail") : undefined) ?? (isoAddDays(day, 7) >= today ? pieces[0] : undefined)
+      if (pick) {
+        t.shortfall = { itemId: pick[0], qty: 2 }
         shortfallDone = true
       }
     }

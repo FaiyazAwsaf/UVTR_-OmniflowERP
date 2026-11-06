@@ -68,7 +68,17 @@ export function seedPurchasing(w: World, stock: StockOut): { bills: VendorBillRo
     }).id
   }
 
-  for (const po of stock.pos) {
+  // Bills for the goods received: 5% mismatched first (at least one), released by Farzana the next day.
+  const plans = stock.pos.map((po) => {
+    const billDay = po.grnAt ? isoAddDays(dhakaDate(po.grnAt), rng.int(0, 3)) : ""
+    const canMismatch = !!po.grnAt && po.kind === "weekly" && isoAddDays(billDay, 1) < w.cal.today
+    return { po, billDay, mismatch: rng.bool(0.05) && canMismatch, canMismatch }
+  })
+  if (!plans.some((p) => p.mismatch)) {
+    const first = plans.find((p) => p.canMismatch)
+    if (first) first.mismatch = true
+  }
+  for (const { po, billDay, mismatch } of plans) {
     const row = writePo(w, po)
     if (!po.grnAt || !po.grnId) continue
     if (po.kind === "bengal-partial") continue
@@ -76,9 +86,7 @@ export function seedPurchasing(w: World, stock: StockOut): { bills: VendorBillRo
       bills.push(writeHeldBill(w, po, row))
       continue
     }
-    const billDay = isoAddDays(dhakaDate(po.grnAt), rng.int(0, 3))
     if (billDay >= w.cal.today) continue
-    const mismatch = rng.bool(0.05) && isoAddDays(billDay, 1) < w.cal.today
     bills.push(writeGoodsBill(w, po, row, billDay, mismatch))
   }
 

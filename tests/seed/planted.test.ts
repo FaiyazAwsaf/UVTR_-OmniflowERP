@@ -253,6 +253,17 @@ for (const scale of ["full", "small"] as const) {
       })
       expect(soon.length).toBe(2)
       expect(get("transfers", PLANT.inTransitTransfer).status).toBe("dispatched")
+      // One transfer shortfall of 2 pieces, noted on its line.
+      const short = rows(bag, "transferLines").filter((l) => l.discrepancyNote)
+      expect(short.length).toBe(1)
+      expect(short[0].qtySent - short[0].qtyReceived).toBe(2)
+      if (scale === "full") {
+        // QC rejections went back to the vendor; a mismatched bill was released by Farzana.
+        expect(rows(bag, "grnLines").some((g) => g.quarantineStatus === "returned" && g.qtyRejected > 0)).toBe(true)
+        const released = rows(bag, "vendorBills").filter((b) => b.matchStatus === "mismatch" && b.status !== "on-hold")
+        expect(released.length).toBeGreaterThan(0)
+        for (const b of released) expect(get("approvals", b.holdApprovalId!).decidedBy).toBe(USR.farzana)
+      }
     })
 
     it("closed periods are exactly the months before last month and hold nothing pending; recurring entries posted every month before this one", () => {
