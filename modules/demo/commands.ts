@@ -1,6 +1,8 @@
 import { z } from "zod"
 
 import { defineCommand } from "@/core/engine/defineCommand"
+import { postJournal } from "@/core/ledger/post"
+import { linesForManualVoucher } from "@/core/ledger/rules"
 
 /**
  * Dev controls for checkpoint 1 (plan §12 P1 "Accept when"), used by the demo
@@ -35,5 +37,30 @@ export const devSetGrant = defineCommand({
       }
     }
     return { granted: input.granted }
+  },
+})
+
+/**
+ * Post a small, real, balanced manual voucher (R24, JV) so a checkpoint can
+ * show a journal appearing live in another window's ledger before FA's
+ * screens exist: Dr office expenses, Cr petty cash at Head Office.
+ */
+export const devPostTestJournal = defineCommand({
+  name: "demo.devPostTestJournal",
+  permission: "fa.journal.create",
+  input: z.object({ amountP: z.number().int().positive().default(100_00) }),
+  async run(tx, input) {
+    const journal = await postJournal(tx, {
+      voucherType: "JV",
+      date: tx.today(),
+      narration: "Checkpoint test voucher (stationery from petty cash)",
+      lines: linesForManualVoucher([
+        { account: "OFFICE", debitP: input.amountP, locationId: "loc_hq" },
+        { account: "PETTY_HQ", creditP: input.amountP, locationId: "loc_hq" },
+      ]),
+      rule: "R24",
+    })
+    tx.emit("JournalPosted", { refs: { journalId: journal.id }, params: { no: journal.journalNo } })
+    return { journalId: journal.id, journalNo: journal.journalNo }
   },
 })

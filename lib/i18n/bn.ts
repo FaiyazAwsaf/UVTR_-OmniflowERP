@@ -1,5 +1,6 @@
 import { coreBn } from "./core/bn"
 import { reportsBn } from "./core/reports.bn"
+import { sharedBn } from "./core/shared.bn"
 import { faBn } from "@/modules/fa/i18n/bn"
 import { apBn } from "@/modules/ap/i18n/bn"
 import { arBn } from "@/modules/ar/i18n/bn"
@@ -30,6 +31,7 @@ import type { Dictionary } from "./en"
 export const bn: Dictionary = {
   ...coreBn,
   ...reportsBn,
+  ...sharedBn,
   ...faBn,
   ...apBn,
   ...arBn,

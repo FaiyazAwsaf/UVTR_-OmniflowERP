@@ -1,5 +1,6 @@
 import { coreEn } from "./core/en"
 import { reportsEn } from "./core/reports.en"
+import { sharedEn } from "./core/shared.en"
 import { faEn } from "@/modules/fa/i18n/en"
 import { apEn } from "@/modules/ap/i18n/en"
 import { arEn } from "@/modules/ar/i18n/en"
@@ -29,6 +30,7 @@ import { commsEn } from "@/modules/comms/i18n/en"
 export const en = {
   ...coreEn,
   ...reportsEn,
+  ...sharedEn,
   ...faEn,
   ...apEn,
   ...arEn,
