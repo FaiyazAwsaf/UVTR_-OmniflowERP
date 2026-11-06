@@ -106,9 +106,9 @@ export function TopBar({ user }: { user: UserRow }) {
         data-testid="tenant-mark"
       >
         <TenantMark size={30} />
-        <span className="text-sm font-semibold">{tenant.shortName[locale]}</span>
+        <span className="hidden text-sm font-semibold @min-[116rem]/topbar:inline">{tenant.shortName[locale]}</span>
       </span>
-      <GlobalSearch className="hidden w-[18rem] shrink @min-[72rem]/topbar:flex @min-[116rem]/topbar:w-[26rem]" />
+      <GlobalSearch className="hidden w-[18rem] shrink @min-[72rem]/topbar:flex @min-[100rem]/topbar:w-[21.5rem] @min-[116rem]/topbar:w-[26rem]" />
       {/* Narrow bars (a Demo Wall pane in a small window) drop what the
           palette or the Wall header also offers: theme, language, the
           event stream and the demo panel. */}

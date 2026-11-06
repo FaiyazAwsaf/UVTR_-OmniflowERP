@@ -45,7 +45,7 @@ export function Wordmark({ className, chip = true }: { className?: string; chip?
     <span className="inline-flex items-center gap-1.5">
       <span
         className={cn(
-          "inline-flex items-baseline text-[1.25rem] leading-none font-bold tracking-tight whitespace-nowrap",
+          "inline-flex items-baseline font-sans text-[1.25rem] leading-none font-bold tracking-tight whitespace-nowrap",
           className
         )}
         translate="no"

@@ -31,6 +31,40 @@ test.describe("sign-in and access", () => {
     await expect(page.getByTestId("launch-shuvo")).toHaveAttribute("data-locked", "true")
     await expect(page.getByTestId("launch-polash")).toHaveAttribute("data-locked", "true")
     await expect(page.getByTestId("launch-nayeem")).toHaveAttribute("data-locked", "false")
+    // One click on a locked user lands on /login with the lockout message.
+    await page.getByTestId("launch-polash").click()
+    await expect(page).toHaveURL(/\/login/)
+    await expect(page.getByTestId("login-error")).toHaveAttribute("data-reason", "locked")
+  })
+
+  test("a user changes their own password from the user menu", async ({ page }) => {
+    await signIn(page, "sabbir")
+    await page.getByTestId("user-menu").click()
+    await page.getByTestId("change-password").click()
+    await expect(page.getByTestId("change-password-dialog")).toBeVisible()
+    await page.getByTestId("password-current").fill("wrong-one")
+    await page.getByTestId("password-next").fill("newpass99")
+    await page.getByTestId("password-confirm").fill("newpass99")
+    await page.getByTestId("password-submit").click()
+    await expect(page.getByTestId("password-error")).toContainText("The current password is wrong")
+    await page.getByTestId("password-current").fill("demo1234")
+    await page.getByTestId("password-confirm").fill("different99")
+    await page.getByTestId("password-submit").click()
+    await expect(page.getByTestId("password-error")).toContainText("don't match")
+    await page.getByTestId("password-confirm").fill("newpass99")
+    await page.getByTestId("password-submit").click()
+    await expect(page.getByText("Password changed")).toBeVisible()
+    await expect(page.getByTestId("change-password-dialog")).toBeHidden()
+
+    // A plain sign-out shows no notice; the new password works.
+    await page.getByTestId("user-menu").click()
+    await page.getByTestId("sign-out").click()
+    await expect(page).toHaveURL(/\/login/)
+    await expect(page.getByTestId("signed-out-notice")).toHaveCount(0)
+    await page.getByTestId("login-username").fill("sabbir")
+    await page.getByTestId("login-password").fill("newpass99")
+    await page.getByTestId("login-submit").click()
+    await expect(page).toHaveURL(/\/si\/counter/)
   })
 
   test("the demo password and the simulated MFA step sign the administrator in", async ({ page }) => {
