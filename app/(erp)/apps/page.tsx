@@ -4,11 +4,12 @@ import Link from "next/link"
 import { Lock } from "lucide-react"
 
 import { AppChip } from "@/components/shared/app-frame"
+import { PageHeader } from "@/components/shared/page-header"
 import { useNavCounts } from "@/components/shell/nav-counts"
+import { useSyncFlash } from "@/components/shell/use-sync-flash"
 import { APP_NAV } from "@/core/security/registry"
 import { SUITES, type AppCode, type NavItem, type SuiteCode } from "@/core/security/types"
 import { usePermissions } from "@/core/security/useCan"
-import { useSyncFlash } from "@/components/shell/use-sync-flash"
 import { cn } from "@/lib/utils"
 import { useLocale } from "@/lib/i18n/provider"
 
@@ -35,15 +36,15 @@ export default function AppsPage() {
 
   return (
     <div className="flex flex-col gap-6" data-testid="apps-grid">
-      <div className="flex flex-wrap items-end gap-x-4 gap-y-1">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-[1.375rem] font-semibold">{t("shell.apps.title")}</h1>
-          <p className="text-sm text-muted-foreground">{t("shell.apps.subtitle")}</p>
-        </div>
-        <p className="text-xs text-muted-foreground" data-testid="apps-open-count">
-          {t("shell.apps.openCount", { open: num(open), total: num(APP_NAV.length) })}
-        </p>
-      </div>
+      <PageHeader
+        title={t("shell.apps.title")}
+        subtitle={t("shell.apps.subtitle")}
+        actions={
+          <span className="text-xs text-muted-foreground" data-testid="apps-open-count">
+            {t("shell.apps.openCount", { open: num(open), total: num(APP_NAV.length) })}
+          </span>
+        }
+      />
       {SUITES.map((suite) => (
         <section key={suite.code} className="flex flex-col gap-3" data-testid={`suite-${suite.code}`}>
           <h2 className="flex items-baseline gap-2">

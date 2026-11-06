@@ -23,6 +23,7 @@ import { toast } from "sonner"
 
 import { AppChip } from "@/components/shared/app-frame"
 import { EmptyState } from "@/components/shared/empty-state"
+import { PageHeader } from "@/components/shared/page-header"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -139,12 +140,7 @@ export function ApprovalsInbox() {
 
   return (
     <div className="flex flex-col gap-5" data-testid="approvals-inbox">
-      <div className="flex flex-wrap items-end gap-x-4 gap-y-1">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-[1.375rem] font-semibold">{t("approvals.inbox.title")}</h1>
-          <p className="text-sm text-muted-foreground">{t("approvals.inbox.subtitle")}</p>
-        </div>
-      </div>
+      <PageHeader title={t("approvals.inbox.title")} subtitle={t("approvals.inbox.subtitle")} />
 
       {groups.map((group) => (
         <section
@@ -270,7 +266,7 @@ function ApprovalItem({
       <span className="icon-well flex size-9 shrink-0 items-center justify-center text-muted-foreground">
         <Icon className="size-4" />
       </span>
-      <div className="min-w-0 flex-1 basis-[14rem]">
+      <div className="min-w-0 flex-1 basis-56">
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
           {href ? (
             <Link

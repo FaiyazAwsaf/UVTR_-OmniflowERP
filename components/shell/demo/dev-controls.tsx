@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useLiveQuery } from "dexie-react-hooks"
-import { LogOut, MonitorSmartphone, ShieldMinus, ShieldPlus, Wrench } from "lucide-react"
+import { BookOpenText, LogOut, MonitorSmartphone, ShieldMinus, ShieldPlus, Wrench } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -23,7 +23,7 @@ import { nameOf, useRoles, useUserMap } from "@/core/security/users"
 import { useSession } from "@/core/session/session"
 import { cn } from "@/lib/utils"
 import { useLocale } from "@/lib/i18n/provider"
-import { devSetGrant } from "@/modules/demo/commands"
+import { devPostTestJournal, devSetGrant } from "@/modules/demo/commands"
 import { locationCode } from "@/modules/demo/components/labels"
 
 import { SectionTitle } from "./section-title"
@@ -31,12 +31,14 @@ import { SectionTitle } from "./section-title"
 const APP_OPTIONS = [...APP_CODES, "dashboard"] as const
 
 /**
- * Checkpoint 1 dev controls (plan §12 P1 "Accept when" item 4) in the demo
- * panel's Data tab: revoke or grant a role's `<app>.app.view` (real,
- * audited `demo.devSetGrant`, needs rbac.role.edit) so the app disappears
- * live from another window, and force a session to end (`sac.endSession`,
- * needs sac.session.end) so that window returns to /login with the notice.
- * Until the RBAC and SAC screens exist, the administrator (Tahmid) uses these.
+ * Checkpoint 1 dev controls (plan §12 P1 "Accept when" items 3 and 4) in the
+ * demo panel's Data tab, all real, permission-checked, audited commands:
+ * revoke or grant a role's `<app>.app.view` (`demo.devSetGrant`, needs
+ * rbac.role.edit) so the app disappears live from another window; force a
+ * session to end (`sac.endSession`, needs sac.session.end) so that window
+ * returns to /login with the notice; post a small balanced test voucher
+ * (`demo.devPostTestJournal`, needs fa.journal.create) that appears live in
+ * every window. Until the RBAC, SAC and FA screens exist, these stand in.
  */
 export function DevControls() {
   const { t } = useLocale()
@@ -45,7 +47,45 @@ export function DevControls() {
       <SectionTitle icon={Wrench} title={t("demo.dev.title")} hint={t("demo.dev.hint")} />
       <GrantToggle />
       <ActiveSessions />
+      <TestJournal />
     </section>
+  )
+}
+
+const TEST_JOURNAL_P = 100_00
+
+function TestJournal() {
+  const { t, money } = useLocale()
+  const { can } = usePermissions()
+  const allowed = can("fa.journal.create")
+  const command = useCommand(devPostTestJournal)
+
+  const post = async () => {
+    const result = await command.run({ amountP: TEST_JOURNAL_P })
+    if (result) toast.success(t("demo.dev.journalPosted", { no: result.journalNo }))
+  }
+
+  return (
+    <div className="flex flex-col gap-2 rounded-lg bg-card p-3" data-testid="dev-journal">
+      <p className="flex items-center gap-1.5 text-xs font-medium">
+        <BookOpenText className="size-3.5 text-primary" />
+        {t("demo.dev.journalTitle")}
+      </p>
+      <p className="text-[0.6875rem] text-muted-foreground">
+        {t("demo.dev.journalHint", { amount: money(TEST_JOURNAL_P) })}
+      </p>
+      <Button
+        size="sm"
+        className="self-start"
+        disabled={!allowed || command.pending}
+        onClick={() => void post()}
+        data-testid="dev-test-journal"
+      >
+        <BookOpenText />
+        {t("demo.dev.journalPost")}
+      </Button>
+      {!allowed ? <p className="text-[0.6875rem] text-warning">{t("demo.dev.journalNeeds")}</p> : null}
+    </div>
   )
 }
 

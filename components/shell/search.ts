@@ -2,9 +2,10 @@ import type { OmniflowDb } from "@/core/db/database"
 import type { Id, PartyRow, VehicleRow } from "@/core/db/schema"
 import type { TableName } from "@/core/db/tables"
 import type { AppCode } from "@/core/security/types"
+import { docApp, docHref } from "@/components/shared/doc-routes"
 import { latinDigits } from "@/lib/i18n/dmy"
 
-import { DOC_PREFIXES, DOC_ROUTES, docHref } from "./doc-routes"
+import { DOC_NUMBER_FIELD, DOC_PREFIXES } from "./doc-routes"
 
 /**
  * The global search behind the command palette and the top-bar field
@@ -137,27 +138,29 @@ async function searchDocs(db: OmniflowDb, query: string, can: Can): Promise<DocH
   for (const { table, number } of docTargets(query)) {
     // Parties (C-, V-) are matched by code in their own group.
     if (table === "parties") continue
-    const route = DOC_ROUTES[table]
-    if (!route || !can(`${route.app}.app.view`)) continue
+    const app = docApp(table)
+    const field = DOC_NUMBER_FIELD[table]
+    if (!app || !field || !can(`${app}.app.view`)) continue
     const rows = (await db
       .table(table)
-      .where(route.field)
+      .where(field)
       .startsWith(number)
       .reverse()
       .limit(LIMIT.docs * 2)
       .toArray()) as AnyDoc[]
     for (const row of rows) {
-      if (!docAllowed(route.app, row, can)) continue
-      const docNo = String(row[route.field] ?? "")
+      if (!docAllowed(app, row, can)) continue
+      const href = docHref(table, row.id)
+      if (!href) continue
       found.push({
         hit: {
           kind: "doc",
           table,
           id: row.id,
-          docNo,
-          app: route.app,
+          docNo: String(row[field] ?? ""),
+          app,
           status: typeof row.status === "string" ? row.status : undefined,
-          href: docHref(table, row.id, docNo) ?? route.list,
+          href,
         },
         partyId: row.partyId ?? row.vendorId,
       })

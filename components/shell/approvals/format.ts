@@ -1,9 +1,8 @@
 "use client"
 
+import { docApp, docHref } from "@/components/shared/doc-routes"
 import type { ApprovalRow, Id, UserRow } from "@/core/db/schema"
 import type { Locale } from "@/lib/i18n/config"
-
-import { docApp, docHref } from "../doc-routes"
 
 type Fmt = {
   money: (poisha: number) => string
@@ -21,18 +20,17 @@ export function kindLabel(kind: ApprovalRow["kind"], tk: Fmt["tk"]): string {
   return tk(`approvals.kinds.${kind}`)
 }
 
-/** The figure the approval is about: money, a percent, or nothing (credit override). */
+/** The figure the approval is about: a percent for discounts, else money (none for a bare credit override). */
 export function approvalFigure(approval: ApprovalRow, fmt: Fmt): string | null {
   if (approval.kind === "discount-pct") return approval.pct !== undefined ? fmt.pct(approval.pct, 0) : null
-  if (approval.kind === "credit-override") return approval.amountP !== undefined ? fmt.money(approval.amountP) : null
   return approval.amountP !== undefined ? fmt.money(approval.amountP) : null
 }
 
 /** Where the approval's document opens, and the app that owns it. */
 export function approvalLink(approval: ApprovalRow): { href: string | null; app: string | null } {
   return {
-    href: docHref(approval.docType, approval.docId, approval.docNo),
-    app: docApp(approval.docType),
+    href: docHref(approval.docType, approval.docId) ?? null,
+    app: docApp(approval.docType) ?? null,
   }
 }
 

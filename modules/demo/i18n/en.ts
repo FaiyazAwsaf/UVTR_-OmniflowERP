@@ -63,6 +63,12 @@ export const demoEn = {
       forceSignOut: "Force sign-out",
       forceReason: "Forced from the demo panel",
       forced: "{name} was signed out",
+      journalTitle: "A test voucher",
+      journalHint:
+        "Posts a real, balanced journal voucher ({amount}, stationery from Head Office petty cash) through the ledger, so it appears live in every window.",
+      journalPost: "Post a test voucher",
+      journalPosted: "Posted {no}",
+      journalNeeds: "Needs the permission to create journal vouchers. Sign in as the Accountant or the Accounts Manager.",
     },
     seed: {
       title: "Demo data",

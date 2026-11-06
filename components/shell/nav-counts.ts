@@ -12,7 +12,7 @@ import type { Id } from "@/core/db/schema"
 import type { AppCode } from "@/core/security/types"
 import { usePermissions } from "@/core/security/useCan"
 
-import { docApp } from "./doc-routes"
+import { docApp } from "@/components/shared/doc-routes"
 
 /** Ids of what waits in one app (a set, so a bill on hold that is also my approval counts once). */
 type Waiting = Partial<Record<AppCode, string[]>>

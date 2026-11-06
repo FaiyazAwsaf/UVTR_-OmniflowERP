@@ -105,6 +105,27 @@ test.describe("live security across windows", () => {
     await context.close()
   })
 
+  test("a test voucher posted in one window appears live in another", async ({ browser }) => {
+    const context = await browser.newContext({ viewport: { width: 1280, height: 800 } })
+    const accountant = await context.newPage()
+    const manager = await context.newPage()
+    await signIn(accountant, "mahbub")
+    await signIn(manager, "farzana")
+    await manager.getByTestId("event-stream-trigger").click()
+    await expect(manager.getByTestId("event-stream")).toBeVisible()
+
+    await openDemoPanel(accountant, "Data")
+    await accountant.getByTestId("dev-test-journal").click()
+    const posted = accountant.getByText(/Posted JV-\d{4}-\d{6}/)
+    await expect(posted).toBeVisible()
+    const journalNo = (await posted.textContent())!.match(/JV-\d{4}-\d{6}/)![0]
+
+    await expect(
+      manager.getByTestId("event-row").filter({ hasText: `Voucher ${journalNo} posted` })
+    ).toBeVisible()
+    await context.close()
+  })
+
   test("a forced sign-out returns the other window to /login with the notice", async ({ browser }) => {
     const context = await browser.newContext({ viewport: { width: 1280, height: 800 } })
     const admin = await context.newPage()
