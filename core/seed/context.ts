@@ -30,8 +30,13 @@ export type RowData<T extends TableName> = Omit<Row<T>, keyof BaseRow>
 export class SeedBag {
   private readonly tables = new Map<TableName, Map<Id, Row<TableName>>>()
 
-  put<T extends TableName>(table: T, id: Id, at: Ms, data: RowData<T>): Row<T> {
+  /** `by`: the history actor who created the row (defaults to "system"). */
+  put<T extends TableName>(table: T, id: Id, at: Ms, data: RowData<T>, by?: Id): Row<T> {
     const row = seedRow<Row<T>>(id, at, data)
+    if (by) {
+      row.createdBy = by
+      row.updatedBy = by
+    }
     let rows = this.tables.get(table)
     if (!rows) {
       rows = new Map()
