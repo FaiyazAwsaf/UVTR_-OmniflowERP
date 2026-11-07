@@ -1,6 +1,7 @@
-import { StubPage } from "@/components/shared/stub-page"
+import { ItemDetail } from "@/modules/pm/components/item-detail"
 
-/** /pm/items/[id]: filled in Phase 2 (implementation_plan.md §9). */
-export default function Page() {
-  return <StubPage app="pm" titleKey="pm.pages.item" />
+/** /pm/items/[id]: item detail (implementation_plan.md §9). */
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  return <ItemDetail id={decodeURIComponent(id)} />
 }
