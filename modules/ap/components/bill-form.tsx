@@ -70,10 +70,12 @@ export function BillForm() {
   const vendor = data?.vendor
   const lines = React.useMemo(() => data?.lines ?? [], [data])
 
+  // A vendor invoice usually covers one delivery: the oldest GRN is included by default.
+  const firstGrnId = lines.find((l) => l.availableQty > 0)?.grn.id
   const goodsRows = React.useMemo(
     () =>
       lines.map((l) => {
-        const s = goods[l.grnLine.id] ?? { include: l.availableQty > 0, qty: l.availableQty, priceP: l.grnLine.unitCostP }
+        const s = goods[l.grnLine.id] ?? { include: l.availableQty > 0 && l.grn.id === firstGrnId, qty: l.availableQty, priceP: l.grnLine.unitCostP }
         const qty = s.qty ?? 0
         const priceP = s.priceP ?? 0
         const vatRate = l.poLine?.vatRatePct ?? rules.vatStandardPct
@@ -83,7 +85,7 @@ export function BillForm() {
           : []
         return { l, s, qty, priceP, values, diffs, over: s.include && qty > l.availableQty + 1e-9 }
       }),
-    [lines, goods]
+    [lines, goods, firstGrnId]
   )
   const included = goodsRows.filter((r) => r.s.include && r.qty > 0)
   const expenseRows = expense.map((e) => {
@@ -141,7 +143,7 @@ export function BillForm() {
       <PageHeader title={t("ap.pages.billNew")} subtitle={t("ap.form.subtitle")} />
       <SectionCard title={t("ap.form.vendor")} size="sm">
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Field label={t("ap.form.kind")} className="sm:col-span-2 xl:col-span-4">
+          <Field group label={t("ap.form.kind")} className="sm:col-span-2 xl:col-span-4">
             <Pills
               value={kind}
               testId="bill-kind"
@@ -167,7 +169,7 @@ export function BillForm() {
           <Field label={t("ap.form.dueDate")} hint={t("ap.form.dueHint")}>
             <DateField value={dueDate} onChange={setDueDate} />
           </Field>
-          <Field label={t("ap.form.mushak")} hint={t("ap.form.mushakHint")} className="sm:col-span-2 xl:col-span-3">
+          <Field group label={t("ap.form.mushak")} hint={t("ap.form.mushakHint")} className="sm:col-span-2 xl:col-span-3">
             <label className="flex items-center gap-2 pt-1 text-sm">
               <Checkbox checked={mushak} onCheckedChange={(v) => setMushak(!!v)} data-testid="bill-mushak" />
               {t("ap.bill.mushak")}
@@ -208,7 +210,7 @@ export function BillForm() {
                         <div className="flex min-w-0 flex-col">
                           <span className="truncate font-medium">{nameOf(l.item, locale)}</span>
                           <span lang="en" className="font-mono text-xs text-muted-foreground">
-                            {l.item?.sku} · {l.po?.poNo}
+                            {l.item?.sku} · {l.po?.poNo} · {l.grn.grnNo}
                           </span>
                         </div>
                       </td>

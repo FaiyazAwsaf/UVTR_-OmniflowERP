@@ -233,7 +233,7 @@ function RefundDialog({
               <MoneyText poisha={advance} className="font-mono font-semibold" />
             </div>
           ) : null}
-          <Field label={t("ar.refunds.method")}>
+          <Field group label={t("ar.refunds.method")}>
             <Pills
               value={method}
               onChange={(m) => {
@@ -251,7 +251,7 @@ function RefundDialog({
               <MoneyInput valueP={amountP} onChange={setAmountP} aria-invalid={(amountP ?? 0) > advance || undefined} data-testid="refund-amount" />
             </Field>
           </div>
-          <Field label={t("ar.refunds.source")}>
+          <Field group label={t("ar.refunds.source")}>
             <Pills value={source} onChange={(s) => setSource(s as (typeof SOURCES)[number])} options={SOURCES.map((s) => ({ value: s, label: tk(`ar.refunds.sources.${s}`) }))} />
           </Field>
           <Field label={t("ar.refunds.reason")}>

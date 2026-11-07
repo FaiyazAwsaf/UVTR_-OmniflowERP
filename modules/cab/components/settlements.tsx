@@ -145,7 +145,7 @@ function SettlementDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
               <SimulatedBadge />
             </div>
           </DialogHeader>
-          <Field label={t("cab.settle.kind")} hint={t("cab.settle.clearing", { amount: money(clearingBal) })}>
+          <Field group label={t("cab.settle.kind")} hint={t("cab.settle.clearing", { amount: money(clearingBal) })}>
             <Pills
               value={kind}
               onChange={(v) => {

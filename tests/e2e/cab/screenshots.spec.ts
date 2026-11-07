@@ -85,6 +85,7 @@ for (const lang of LANGS) {
       await expect(page.locator('[data-testid="recon-line"][data-matched="false"]')).toHaveCount(1)
       await shot(page, `cab-recon-imported-${tag}`)
       await page.goto("/ar/receipts/new?party=pty_swift_ride")
+      await page.getByTestId("receipt-amount").click()
       await page.getByTestId("receipt-amount").fill("150000")
       await page.getByTestId("receipt-amount").blur()
       await shot(page, `ar-receipt-allocated-${tag}`)

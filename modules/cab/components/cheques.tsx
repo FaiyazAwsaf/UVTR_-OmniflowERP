@@ -72,7 +72,7 @@ export function Cheques() {
   }, [data, dir, status, query])
 
   const act = async (c: ChequeRow, action: "deposit" | "clear" | "bounce" | "present", reason = "") => {
-    const r = await update.run({ chequeId: c.id, action, expectedVersion: c.version, reason })
+    const r = await update.run({ chequeId: c.id, action, expectedStatus: c.status, reason })
     if (r) {
       const key = action === "deposit" ? "deposited" : action === "clear" ? "cleared" : action === "bounce" ? "bounced" : "presented"
       toast.success(tk(`cab.cheques.${key}`, { no: c.chequeNo }))
@@ -122,7 +122,7 @@ export function Cheques() {
     {
       key: "doc",
       header: t("cab.cheques.colDoc"),
-      hide: "md",
+      hide: "lg",
       cell: (r) =>
         r.receipt ? (
           <DocLink docType="receipts" docId={r.receipt.id} docNo={r.receipt.receiptNo} />

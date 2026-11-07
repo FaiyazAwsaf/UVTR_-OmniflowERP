@@ -122,7 +122,7 @@ export function PaymentForm() {
                   }}
                 />
               </Field>
-              <Field label={t("ap.pay.method")} className="sm:col-span-2">
+              <Field group label={t("ap.pay.method")} className="sm:col-span-2">
                 <Pills
                   value={method}
                   testId="payment-method"

@@ -22,8 +22,9 @@ test.describe("AR accounts receivable", () => {
     await page.getByTestId("receipt-party").click()
     await page.getByTestId("receipt-party-search").fill("Swift Ride")
     await page.getByTestId("receipt-party-option").first().click()
-    await page.getByTestId("receipt-method").getByRole("radio", { name: "Bank transfer" }).click()
+    await page.getByTestId("receipt-method").locator('[data-value="bank-transfer"]').click()
     await expect(page.getByTestId("receipt-allocation").getByTestId("alloc-row").first()).toBeVisible()
+    await page.getByTestId("receipt-amount").click()
     await page.getByTestId("receipt-amount").fill("100000")
     await page.getByTestId("receipt-amount").blur()
     // The oldest invoice takes the money first, and the deductions are proposed.
@@ -40,7 +41,8 @@ test.describe("AR accounts receivable", () => {
   test("a cash advance is refunded from the till (R28)", async ({ page }) => {
     await signIn(page, "mahbub")
     await page.goto("/ar/receipts/new?party=pty_shahed_kabir")
-    await page.getByTestId("receipt-method").getByRole("radio", { name: "Cash" }).click()
+    await page.getByTestId("receipt-method").locator('[data-value="cash"]').click()
+    await page.getByTestId("receipt-amount").click()
     await page.getByTestId("receipt-amount").fill("2000")
     await page.getByTestId("receipt-amount").blur()
     // Clear any allocation so the whole amount is held as advance.
@@ -51,6 +53,7 @@ test.describe("AR accounts receivable", () => {
     await page.goto("/ar/refunds")
     await page.getByTestId("refund-new").click()
     await page.getByTestId("refund-party").selectOption("pty_shahed_kabir")
+    await page.getByTestId("refund-amount").click()
     await page.getByTestId("refund-amount").fill("1500")
     await page.getByTestId("refund-reason").fill("Booking cancelled by the customer")
     await page.getByTestId("refund-save").click()

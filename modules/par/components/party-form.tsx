@@ -195,7 +195,7 @@ export function PartyForm({ party, onDone }: { party?: PartyRow; onDone?: () => 
       <div className="grid gap-4 @container/form lg:grid-cols-2">
         <SectionCard title={t("par.form.identity")} size="sm">
           <div className="grid gap-3 @min-[28rem]/form:grid-cols-2">
-            <Field label={t("par.form.kind")} error={!f.isCustomer && !f.isVendor ? t("par.form.kindRequired") : undefined}>
+            <Field group label={t("par.form.kind")} error={!f.isCustomer && !f.isVendor ? t("par.form.kindRequired") : undefined}>
               <div className="flex flex-wrap gap-3 pt-1.5">
                 <label className="flex items-center gap-2 text-sm">
                   <Checkbox checked={f.isCustomer} disabled={!canCustomer} onCheckedChange={(v) => set("isCustomer", !!v)} data-testid="party-is-customer" />
@@ -207,7 +207,7 @@ export function PartyForm({ party, onDone }: { party?: PartyRow; onDone?: () => 
                 </label>
               </div>
             </Field>
-            <Field label={t("par.form.type")}>
+            <Field group label={t("par.form.type")}>
               <Pills
                 value={f.type}
                 onChange={(v) => set("type", v as FormState["type"])}

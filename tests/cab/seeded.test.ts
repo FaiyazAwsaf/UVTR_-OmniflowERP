@@ -9,7 +9,8 @@ import type { Actor } from "@/core/engine/types"
 import { seedDatabase } from "@/core/seed"
 import { PLANT, PTY, VND } from "@/core/seed/content/seed-refs"
 import { dhakaAt } from "@/core/seed/time"
-import { recordPayment } from "@/modules/ap/commands"
+import { recordBill, recordPayment } from "@/modules/ap/commands"
+import { billableLines } from "@/modules/ap/queries"
 import { recordReceipt } from "@/modules/ar/commands"
 import { loadAging } from "@/modules/ar/queries"
 import { deductionsFor, invoiceAvailableP } from "@/modules/ar/lib"
@@ -114,6 +115,27 @@ describe("seeded books (small profile)", () => {
     expect((await db.journals.get(posted.journalId!))?.rule).toBe("R13")
     expect(await gl(db, "PPV")).toBeGreaterThan(ppvBefore)
     await ties()
+  })
+
+  it("E5 by hand: a Bengal Detail bill 6% over the PO is routed to Farzana and Rashed", async () => {
+    const lines = await billableLines(db, VND.bengalDetail)
+    const line = lines.find((l) => l.availableQty > 0)!
+    const r = await run(
+      db,
+      recordBill,
+      {
+        kind: "goods",
+        partyId: VND.bengalDetail,
+        vendorRef: "BDS/E5/T1",
+        hasMushak63: true,
+        goodsLines: [{ grnLineId: line.grnLine.id, qty: line.availableQty, unitPriceP: Math.round(line.grnLine.unitCostP * 1.06) }],
+        idempotencyKey: "seeded-e5b",
+      },
+      mahbub
+    )
+    expect(r.status).toBe("on-hold")
+    const approval = (await db.approvals.get(r.approvalId!))!
+    expect(approval.routedTo).toEqual(expect.arrayContaining(["usr_farzana", "usr_rashed"]))
   })
 
   it("E6: Prime Guard ৳60,000 + VAT ৳9,000 paid by cheque: AIT ৳6,000, VDS ৳9,000, ৳54,000 paid after Farzana approves", async () => {

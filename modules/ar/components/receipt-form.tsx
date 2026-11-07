@@ -182,7 +182,7 @@ export function ReceiptForm() {
                   testId="receipt-party"
                 />
               </Field>
-              <Field label={t("ar.form.method")} className="sm:col-span-2">
+              <Field group label={t("ar.form.method")} className="sm:col-span-2">
                 <Pills
                   value={method}
                   testId="receipt-method"

@@ -162,7 +162,7 @@ export function AgingView({ side }: { side: "ar" | "ap" }) {
           />
           <span className="ml-auto text-xs text-muted-foreground">{t("ar.aging.count", { count: num(rows.length) })}</span>
         </div>
-        <ListTable rows={data ? rows : undefined} columns={columns} rowKey={(r) => r.partyId} rowTestId="aging-row" footer={footer} pageSize={40} dense />
+        <ListTable rows={data ? rows : undefined} columns={columns} rowKey={(r) => r.partyId} rowTestId="aging-row" footer={footer} pageSize={40} />
       </section>
     </div>
   )

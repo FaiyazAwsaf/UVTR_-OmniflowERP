@@ -246,11 +246,14 @@ export const updateCheque = defineCommand({
   input: z.object({
     chequeId: z.string(),
     action: z.enum(["deposit", "clear", "bounce", "present"]),
-    expectedVersion: z.number().int(),
+    expectedVersion: z.number().int().optional(),
+    /** The status the user acted on; a background touch (the PDC notice) is not a conflict */
+    expectedStatus: z.enum(["in-hand", "deposited", "cleared", "bounced", "issued", "presented", "cancelled"]).optional(),
     reason: z.string().trim().default(""),
   }),
   async run(tx, input) {
     const cheque = await tx.get("cheques", input.chequeId, { expectedVersion: input.expectedVersion })
+    if (input.expectedStatus && cheque.status !== input.expectedStatus) tx.reject("CHEQUE_STATUS", { no: cheque.chequeNo, status: cheque.status })
     const party = await tx.get("parties", cheque.partyId)
     const today = tx.today()
     const move = (from: ChequeRow["status"][], to: ChequeRow["status"]) => {
