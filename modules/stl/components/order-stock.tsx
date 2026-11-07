@@ -54,7 +54,6 @@ export function OrderStockCheck({ order, lines }: { order: SalesOrderRow; lines:
   const rows = useLiveQuery(
     async () => (catalogue && openKey ? readOrderStockCheck(db, catalogue, { locationId: order.locationId, lines, on: today }) : []),
     // `lines` changes with `openKey`; the query re-runs on stock changes by itself.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [db, catalogue, order.locationId, openKey, today]
   )
   if (!rows?.length) return null
