@@ -1,6 +1,6 @@
-import { StubPage } from "@/components/shared/stub-page"
+import { Schedules } from "@/modules/irt/components/schedules"
 
-/** /irt/schedules: filled in Phase 2 (implementation_plan.md §9). */
+/** /irt/schedules: report schedules, simulated email (plan §9). */
 export default function Page() {
-  return <StubPage app="irt" titleKey="irt.pages.schedules" />
+  return <Schedules />
 }

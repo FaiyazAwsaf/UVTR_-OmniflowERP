@@ -49,7 +49,6 @@ export function useReport(
     const narrowed = narrowByDate(rows ?? [], dateFieldOf(dataset), params.range)
     return { status: "ready", result: shapeReport(dataset, narrowed, def) }
     // `key` stands for the definition and parameters.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [db, key])
   return state ?? { status: "loading" }
 }

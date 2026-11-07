@@ -1,6 +1,12 @@
-import { StubPage } from "@/components/shared/stub-page"
+import * as React from "react"
 
-/** /irt/builder: filled in Phase 2 (implementation_plan.md §9). */
+import { Builder } from "@/modules/irt/components/builder"
+
+/** /irt/builder: the report builder (`?id=` edits a saved report, `?from=` copies one, so Suspense). */
 export default function Page() {
-  return <StubPage app="irt" titleKey="irt.pages.builder" />
+  return (
+    <React.Suspense fallback={null}>
+      <Builder />
+    </React.Suspense>
+  )
 }
