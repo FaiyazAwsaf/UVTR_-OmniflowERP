@@ -2,12 +2,16 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
 import { feedbackFor, useEngineFeedback } from "@/core/engine/feedback"
 import { SCENARIOS } from "@/core/scenarios/registry"
 import { runScenario } from "@/core/scenarios/runner"
 import type { ScenarioDef } from "@/core/scenarios/types"
+import { findSeedUser } from "@/core/security/seed-users"
 import { getSession, updateSession } from "@/core/session/session"
+import { useLocale } from "@/lib/i18n/provider"
+import { openCompanion, openWindow, userUrl, windowNameFor } from "@/modules/demo/components/launcher/windows"
 
 import { useDemoUi } from "./store"
 
@@ -26,6 +30,7 @@ export type LaunchState = {
  */
 export function useScenarioLauncher() {
   const router = useRouter()
+  const { t, locale } = useLocale()
   const [state, setState] = React.useState<LaunchState>({
     running: null,
     failed: null,
@@ -38,7 +43,22 @@ export function useScenarioLauncher() {
       busy.current = true
       setState({ running: scenario.id, failed: null })
       try {
-        const { outcome, route } = await runScenario(scenario)
+        const { outcome, route, companionRoute } = await runScenario(scenario)
+        // A second user on the same story (E13, E15): the next Demo Wall pane,
+        // else a window of its own (a button when the browser blocks it).
+        if (scenario.companion && companionRoute) {
+          const companion = scenario.companion.user
+          if (!openCompanion(companion, companionRoute)) {
+            const seed = findSeedUser(companion)
+            toast(t("demo.scenarios.companionBlocked", { name: seed ? (locale === "bn" ? seed.nameBn : seed.nameEn) : companion }), {
+              duration: 20_000,
+              action: {
+                label: t("demo.scenarios.companionOpen"),
+                onClick: () => void openWindow(userUrl(companion, {}, companionRoute), windowNameFor(companion)),
+              },
+            })
+          }
+        }
         const cue = { scenarioId: scenario.id, step: 0, params: outcome.params }
         const session = getSession()
         const signedInAsUser = session.userId === `usr_${scenario.user}` && !!session.sessionId
@@ -69,7 +89,7 @@ export function useScenarioLauncher() {
         busy.current = false
       }
     },
-    [router]
+    [router, t, locale]
   )
 
   return { ...state, launch }

@@ -159,6 +159,8 @@ export const demoEn = {
       failed: "Setup failed. The reason is shown in the dialog.",
       jumpTitle: "Jump into the main journey",
       jumpHint: "Skip ahead if a step goes wrong: the story is set up to that point.",
+      companionBlocked: "The browser blocked {name}'s window for this scenario.",
+      companionOpen: "Open window",
     },
     data: {
       title: "Audit integrity",

@@ -10,7 +10,26 @@ import { ROLE_LANDING, findSeedUser } from "@/core/security/seed-users"
 export function userUrl(username: string, extra?: Record<string, string>, route?: string): string {
   const seed = findSeedUser(username)
   const params = new URLSearchParams({ user: username, ...extra })
-  return `${route ?? (seed ? ROLE_LANDING[seed.role] : "/home")}?${params.toString()}`
+  const path = route ?? (seed ? ROLE_LANDING[seed.role] : "/home")
+  return `${path}${path.includes("?") ? "&" : "?"}${params.toString()}`
+}
+
+/** Message a Demo Wall pane posts to the wall to open a scenario's companion in the next pane. */
+export const WALL_COMPANION = "of:wall-companion"
+export type WallCompanionMessage = { type: typeof WALL_COMPANION; from: string; user: string; route: string }
+
+/**
+ * Opens a scenario's companion window (E13, E15: a second user on the same
+ * story). Inside a Demo Wall pane the wall signs the next pane in instead.
+ * Returns false when a pop-up blocker stopped a separate window.
+ */
+export function openCompanion(username: string, route: string): boolean {
+  if (window.parent !== window && window.name.startsWith("of-wall-")) {
+    const message: WallCompanionMessage = { type: WALL_COMPANION, from: window.name, user: username, route }
+    window.parent.postMessage(message, window.location.origin)
+    return true
+  }
+  return openWindow(userUrl(username, {}, route), windowNameFor(username)) !== null
 }
 
 export function windowNameFor(username: string): string {

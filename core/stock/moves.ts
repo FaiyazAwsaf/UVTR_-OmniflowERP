@@ -323,6 +323,18 @@ export async function watchReorder(tx: Tx, item: ItemRow, locationId: Id, before
   }
 }
 
+/**
+ * Quantity FEFO can issue today: on hand less quarantined, expired or held
+ * lots (what a job can actually use; `onHand` counts every lot).
+ */
+export async function usableQty(tx: Tx, itemId: Id, locationId: Id, date?: ISODate): Promise<number> {
+  const entries = await balancesAt(tx, itemId, locationId)
+  const all = entries.reduce((s, e) => s + Math.max(e.balance.qtyBase, 0), 0)
+  if (all <= 0) return 0
+  const { short } = allocateFefo(entries, all, date ?? tx.today())
+  return roundQty(all - short)
+}
+
 /** On-hand usable quantity and value of an item at a location. */
 export async function onHand(tx: Tx, itemId: Id, locationId: Id): Promise<{ qtyBase: number; valueP: Poisha }> {
   const row = await valueRow(tx, itemId, locationId)

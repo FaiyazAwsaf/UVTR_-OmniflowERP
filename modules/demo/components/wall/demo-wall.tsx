@@ -29,7 +29,7 @@ import { windowKey } from "@/core/session/windowId"
 import { useLocale } from "@/lib/i18n/provider"
 import { cn } from "@/lib/utils"
 
-import { DEMO_LAYOUT, openWindow, userUrl, windowNameFor } from "../launcher/windows"
+import { DEMO_LAYOUT, openWindow, userUrl, WALL_COMPANION, windowNameFor, type WallCompanionMessage } from "../launcher/windows"
 import { ROLE_ICONS } from "../role-icons"
 
 /** Default panes: Advisor (GUL), Technician (GUL), Cashier (GUL), Accountant (plan §9). */
@@ -97,14 +97,42 @@ export function DemoWall() {
     DEFAULT_PANES.map(() => 0)
   )
   const [expanded, setExpanded] = React.useState<number | null>(null)
+  // A pane opened on a scenario's screen (companion) instead of its landing route.
+  const [routes, setRoutes] = React.useState<(string | undefined)[]>(() => DEFAULT_PANES.map(() => undefined))
 
   const choose = (index: number, username: string) => {
     const next = panes.map((id, i) => (i === index ? username : id))
     setPanes(next)
     writePanes(next)
+    setRoutes((current) => current.map((r, i) => (i === index ? undefined : r)))
   }
-  const reload = (index: number) =>
+  const reload = (index: number) => {
+    setRoutes((current) => current.map((r, i) => (i === index ? undefined : r)))
     setReloads((current) => current.map((n, i) => (i === index ? n + 1 : n)))
+  }
+
+  // A launcher with a companion (E13, E15) run in one pane signs the next pane
+  // in as the companion user on its screen (plan §10).
+  React.useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return
+      const data = event.data as WallCompanionMessage | undefined
+      if (data?.type !== WALL_COMPANION || !findSeedUser(data.user)) return
+      const from = /^of-wall-(\d)$/.exec(data.from ?? "")
+      const source = from ? Number(from[1]) - 1 : 0
+      const target = (source + 1) % DEFAULT_PANES.length
+      setPanes((current) => {
+        const next = current.map((id, i) => (i === target ? data.user : id))
+        writePanes(next)
+        return next
+      })
+      setRoutes((current) => current.map((r, i) => (i === target ? data.route : r)))
+      setReloads((current) => current.map((n, i) => (i === target ? n + 1 : n)))
+      setExpanded(null)
+    }
+    window.addEventListener("message", onMessage)
+    return () => window.removeEventListener("message", onMessage)
+  }, [])
 
   return (
     <div className="flex h-svh flex-col bg-background" data-testid="demo-wall">
@@ -137,6 +165,7 @@ export function DemoWall() {
             key={index}
             index={index}
             username={username}
+            route={routes[index]}
             reload={reloads[index]}
             expanded={expanded === index}
             hidden={expanded !== null && expanded !== index}
@@ -155,6 +184,7 @@ export function DemoWall() {
 function WallPane({
   index,
   username,
+  route,
   reload,
   expanded,
   hidden,
@@ -164,6 +194,7 @@ function WallPane({
 }: {
   index: number
   username: string
+  route?: string
   reload: number
   expanded: boolean
   hidden: boolean
@@ -177,7 +208,7 @@ function WallPane({
   const n = num(index + 1)
   const name = userName(user, locale)
   const role = ROLE_DESIGNATION[user.role][locale]
-  const src = userUrl(user.username, { scale: "0.9" })
+  const src = userUrl(user.username, { scale: "0.9" }, route)
   const toggleLabel = expanded ? t("demo.wall.restore") : t("demo.wall.expand")
 
   return (
@@ -280,7 +311,7 @@ function WallPane({
         </div>
       </div>
       <iframe
-        key={`${user.username}:${reload}`}
+        key={`${user.username}:${reload}:${route ?? ""}`}
         name={`of-wall-${index + 1}`}
         src={src}
         title={t("demo.wall.frameTitle", { name, role })}
