@@ -63,17 +63,22 @@ export function CreditNoteDialog({
     const qty = picked[l.id]
     const chosen = qty !== undefined && qty !== null && qty > 0
     let amount = 0
+    let vat = 0
     if (chosen) {
-      if (qty === l.qty) amount = l.netP + l.vatP
-      else {
+      if (qty === l.qty) {
+        amount = l.netP + l.vatP
+        vat = l.vatP
+      } else {
         const gross = Math.round(qty * l.unitPriceP)
         const net = gross - Math.round((l.discountP * qty) / l.qty)
-        amount = net + percentOf(net, l.vatRatePct)
+        vat = percentOf(net, l.vatRatePct)
+        amount = net + vat
       }
     }
-    return { line: l, remaining, qty, chosen, amount }
+    return { line: l, remaining, qty, chosen, amount, vat }
   })
   const total = rows.reduce((s, r) => s + r.amount, 0)
+  const vatTotal = rows.reduce((s, r) => s + r.vat, 0)
   const open_ = Math.max(0, invoiceOpen(invoice) - invoice.reservedP)
   const toInvoice = Math.min(total, open_)
   const toAdvance = total - toInvoice
@@ -152,11 +157,17 @@ export function CreditNoteDialog({
               <Switch checked={restock} onCheckedChange={setRestock} data-testid="credit-note-restock" />
             </label>
           ) : null}
-          <dl className="grid grid-cols-3 gap-2 rounded-md bg-surface-raised px-3 py-2 text-[0.8125rem]">
+          <dl className="grid grid-cols-2 gap-2 rounded-md bg-surface-raised px-3 py-2 text-[0.8125rem] sm:grid-cols-4">
             <div>
               <dt className="text-xs text-muted-foreground">{t("common.total")}</dt>
               <dd className="font-mono font-semibold" data-testid="credit-note-total">
                 <MoneyText poisha={total} />
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">{t("si.credit.vatReversed")}</dt>
+              <dd className="font-mono" data-testid="credit-note-vat">
+                <MoneyText poisha={vatTotal} />
               </dd>
             </div>
             <div>

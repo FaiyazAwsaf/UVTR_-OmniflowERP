@@ -63,3 +63,49 @@ export async function fillVoucher(
   await page.getByTestId("journal-line-credit").nth(1).fill(opts.amount)
   await expect(page.getByTestId("journal-balance")).toHaveAttribute("data-balanced", "true")
 }
+
+/** Reads rows straight from the shared IndexedDB (assertions only). */
+export async function rows<T = Record<string, unknown>>(page: Page, table: string): Promise<T[]> {
+  return page.evaluate(async (name) => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("omniflow-central")
+      request.onsuccess = () => resolve(request.result)
+      request.onerror = () => reject(request.error)
+    })
+    const out = await new Promise<unknown[]>((resolve, reject) => {
+      const req = db.transaction(name, "readonly").objectStore(name).getAll()
+      req.onsuccess = () => resolve(req.result)
+      req.onerror = () => reject(req.error)
+    })
+    db.close()
+    return out
+  }, table) as Promise<T[]>
+}
+
+/** One row of a table by id. */
+export async function rowById<T = Record<string, unknown>>(page: Page, table: string, id: string): Promise<T> {
+  const found = (await rows<T & { id: string }>(page, table)).find((r) => r.id === id)
+  if (!found) throw new Error(`${table} ${id} not found`)
+  return found
+}
+
+/** The newest recorded run of a launcher (its refs name what the setup created). */
+export async function latestRun(page: Page, scenarioId: string): Promise<{ id: string; refs: Record<string, string> }> {
+  const runs = await rows<{ id: string; scenarioId: string; at: number; refs: Record<string, string> }>(page, "scenarioRuns")
+  const mine = runs.filter((r) => r.scenarioId === scenarioId).sort((a, b) => b.at - a.at)
+  if (!mine.length) throw new Error(`no ${scenarioId} run`)
+  return mine[0]
+}
+
+/** The user id this window is signed in as (its window session). */
+export async function windowUser(page: Page): Promise<string | null> {
+  return page.evaluate(() => {
+    for (let i = 0; i < window.sessionStorage.length; i++) {
+      const k = window.sessionStorage.key(i)
+      if (!k?.startsWith("of:session:")) continue
+      const session = JSON.parse(window.sessionStorage.getItem(k) ?? "{}") as { userId?: string | null }
+      if (session.userId) return session.userId
+    }
+    return null
+  })
+}

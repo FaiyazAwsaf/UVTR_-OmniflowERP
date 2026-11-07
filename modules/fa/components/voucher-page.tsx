@@ -190,48 +190,9 @@ export function VoucherPage({ id }: { id: string }) {
           ]}
         />
 
-        <div className="flex flex-wrap items-center gap-2 border-t border-hairline pt-4" data-testid="voucher-actions">
-          {mayDecide ? (
-            <>
-              <Button onClick={() => setDeciding("approve")} data-testid="voucher-approve">
-                <Check />
-                {t("fa.voucher.approve")}
-              </Button>
-              <Button variant="destructive-outline" onClick={() => setDeciding("reject")} data-testid="voucher-reject">
-                <X />
-                {t("fa.voucher.reject")}
-              </Button>
-            </>
-          ) : null}
-          {pending && isPreparer ? (
-            <span
-              data-testid="voucher-approve-hint"
-              className="inline-flex items-center gap-1.5 rounded-full bg-[color-mix(in_oklch,var(--warning)_18%,transparent)] px-3 py-1.5 text-xs font-medium text-[color-mix(in_oklch,var(--warning),var(--foreground)_32%)] dark:text-warning"
-            >
-              <Info className="size-3.5" />
-              {t("fa.voucher.youPrepared")}
-            </span>
-          ) : pending && !mayDecide ? (
-            <span className="text-xs text-muted-foreground" data-testid="voucher-waiting">
-              {t("fa.voucher.waitingFor", { names: routedNames || "-" })}
-            </span>
-          ) : null}
-          {(journal.status === "pending-approval" || journal.status === "draft") && can("fa.journal.create") ? (
-            <Button variant="destructive-outline" onClick={() => setDiscarding(true)} data-testid="journal-discard">
-              <Trash2 />
-              {t("fa.editor.discard")}
-            </Button>
-          ) : null}
-          {reversible(journal) && can("fa.journal.reverse") ? (
-            <Button variant="destructive-outline" onClick={() => setReversing(true)} data-testid="journal-reverse">
-              <RotateCcw />
-              {t("fa.voucher.reverse")}
-            </Button>
-          ) : null}
-          {journal.status === "posted" && journal.source && journal.source.docType !== "recurringJournals" && journal.source.docType !== "journals" ? (
-            <span className="text-xs text-muted-foreground">{t("fa.voucher.cantReverseSource")}</span>
-          ) : null}
-          <div className="ml-auto">
+        {/* Decisions on the right, clear of the scenario cue card (bottom-left); print on the left. */}
+        <div className="flex flex-wrap items-center justify-end gap-2 border-t border-hairline pt-4" data-testid="voucher-actions">
+          <div className="mr-auto">
             <PrintPreview
               title={t("fa.voucher.printTitle")}
               docNo={journal.journalNo}
@@ -281,6 +242,46 @@ export function VoucherPage({ id }: { id: string }) {
               </div>
             </PrintPreview>
           </div>
+          {mayDecide ? (
+            <>
+              <Button onClick={() => setDeciding("approve")} data-testid="voucher-approve">
+                <Check />
+                {t("fa.voucher.approve")}
+              </Button>
+              <Button variant="destructive-outline" onClick={() => setDeciding("reject")} data-testid="voucher-reject">
+                <X />
+                {t("fa.voucher.reject")}
+              </Button>
+            </>
+          ) : null}
+          {pending && isPreparer ? (
+            <span
+              data-testid="voucher-approve-hint"
+              className="inline-flex items-center gap-1.5 rounded-full bg-[color-mix(in_oklch,var(--warning)_18%,transparent)] px-3 py-1.5 text-xs font-medium text-[color-mix(in_oklch,var(--warning),var(--foreground)_32%)] dark:text-warning"
+            >
+              <Info className="size-3.5" />
+              {t("fa.voucher.youPrepared")}
+            </span>
+          ) : pending && !mayDecide ? (
+            <span className="text-xs text-muted-foreground" data-testid="voucher-waiting">
+              {t("fa.voucher.waitingFor", { names: routedNames || "-" })}
+            </span>
+          ) : null}
+          {(journal.status === "pending-approval" || journal.status === "draft") && can("fa.journal.create") ? (
+            <Button variant="destructive-outline" onClick={() => setDiscarding(true)} data-testid="journal-discard">
+              <Trash2 />
+              {t("fa.editor.discard")}
+            </Button>
+          ) : null}
+          {reversible(journal) && can("fa.journal.reverse") ? (
+            <Button variant="destructive-outline" onClick={() => setReversing(true)} data-testid="journal-reverse">
+              <RotateCcw />
+              {t("fa.voucher.reverse")}
+            </Button>
+          ) : null}
+          {journal.status === "posted" && journal.source && journal.source.docType !== "recurringJournals" && journal.source.docType !== "journals" ? (
+            <span className="text-xs text-muted-foreground">{t("fa.voucher.cantReverseSource")}</span>
+          ) : null}
         </div>
       </section>
 

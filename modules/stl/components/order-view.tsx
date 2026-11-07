@@ -31,6 +31,7 @@ import { cancelOrder } from "../commands"
 import { isTaskLine } from "../orders"
 import { ConsumptionTable, ExtraConsumptionButton, QcPanel, TaskActions, useConsumption } from "./job-parts"
 import { ClassTag, DocHeader, PrintDialog, useUserMap, VehicleCell } from "./kit"
+import { OrderStockCheck } from "./order-stock"
 import { QuoteLines } from "./quote-view"
 import { ScheduleDialog, type ScheduleTarget } from "./schedule-dialog"
 
@@ -189,6 +190,7 @@ export function OrderView({ id }: { id: Id }) {
               <QcPanel order={order} allDone={allDone} />
             </SectionCard>
           ) : null}
+          {order.status === "booked" || order.status === "in-progress" ? <OrderStockCheck order={order} lines={lines} /> : null}
           <SectionCard title={t("stl.order.tasks")} size="sm">
             {tasks.length ? (
               <div className="flex flex-col gap-3">

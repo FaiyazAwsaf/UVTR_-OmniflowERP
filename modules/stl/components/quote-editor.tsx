@@ -32,6 +32,7 @@ import { effectiveList, priceRequests, promotionApplies, type LineRequest } from
 import { useCatalogue } from "@/modules/pc/queries"
 
 import { createOrder, saveQuotation } from "../commands"
+import { requestsFromLines } from "../quote-requests"
 import { DepositFields, NO_DEPOSIT, useDepositFlow, type DepositState } from "./deposit"
 import { ClassTag, Field, newKey, TotalsBlock, useStudio } from "./kit"
 import { QuickAddCustomer } from "./quick-add"
@@ -89,17 +90,7 @@ export function QuoteEditor({ mode }: { mode: "quote" | "order" }) {
     setDiscountPct(editing.q.discountPct)
     setPromotionId(editing.q.promotionId ?? null)
     setNotes(editing.q.inspectionNotes)
-    const seen = new Set<string>()
-    const out: LineRequest[] = []
-    for (const l of editing.lines) {
-      if (l.packageId) {
-        if (!seen.has(l.packageId)) out.push({ kind: "package", packageId: l.packageId })
-        seen.add(l.packageId)
-      } else if (l.kind === "service") out.push({ kind: "service", serviceId: l.refId })
-      else if (l.kind === "add-on") out.push({ kind: "add-on", addOnId: l.refId, qty: l.qty })
-      else out.push({ kind: "item", itemId: l.refId, qty: l.qty })
-    }
-    setRequests(out)
+    setRequests(requestsFromLines(editing.lines))
   }
 
   const party = useLiveQuery(() => (partyId ? db.parties.get(partyId) : undefined), [db, partyId])

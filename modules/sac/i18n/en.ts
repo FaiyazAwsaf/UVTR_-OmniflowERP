@@ -313,5 +313,16 @@ export const sacEn = {
       empty: "No audit rows match these filters.",
       system: "System",
     },
+    scenarios: {
+      E14: {
+        title: "Lockout and forced sign-out",
+        summary: "Five wrong passwords lock a user; unlock; end a session live (SAC)",
+        cue1: "In another window, open the sign-in screen and type a wrong password for {user} {attempts} times.",
+        cue2: "Shuvo shows Locked in this user list at once; the launcher shows the lock too.",
+        cue3: "Open Shuvo and Unlock: he signs in again with demo1234.",
+        cue4: "Open Sessions and end Nayeem's session (force sign-out).",
+        cue5: "Nayeem's window returns to the sign-in screen with the notice; the audit trail records each step.",
+      },
+    },
   },
 }
