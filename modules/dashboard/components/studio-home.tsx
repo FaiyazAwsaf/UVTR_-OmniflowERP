@@ -7,7 +7,6 @@ import { AlarmClock, CalendarClock, CarFront, ClipboardList, Gauge, HandCoins, K
 
 import { DocStatus } from "@/components/shared/doc-status"
 import { EmptyState } from "@/components/shared/empty-state"
-import { MoneyText } from "@/components/shared/money-text"
 import { PageHeader } from "@/components/shared/page-header"
 import { RegPlate } from "@/components/shared/reg-plate"
 import { SectionCard } from "@/components/shared/section-card"
