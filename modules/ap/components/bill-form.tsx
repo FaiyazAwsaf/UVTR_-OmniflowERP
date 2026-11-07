@@ -199,7 +199,7 @@ export function BillForm() {
                   </tr>
                 </thead>
                 <tbody>
-                  {goodsRows.map(({ l, s, qty, priceP, values, diffs, over }) => (
+                  {goodsRows.map(({ l, s, values, diffs, over }) => (
                     <tr key={l.grnLine.id} data-testid="match-line" data-grn-line={l.grnLine.id} data-matched={s.include ? diffs.length === 0 : undefined} className={cn(!s.include && "opacity-55")}>
                       <td className="border-b border-hairline px-2 py-2">
                         <Checkbox checked={s.include} disabled={l.availableQty <= 0} onCheckedChange={(v) => setLine(l.grnLine.id, { include: !!v }, s)} aria-label={t("ap.form.include")} />
