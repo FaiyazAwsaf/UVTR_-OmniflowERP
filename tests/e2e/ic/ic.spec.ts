@@ -53,6 +53,8 @@ test("stock by location, stock card, reorder to a requisition, expiry watch, con
   await page.getByTestId("stock-row").first().click()
   await expect(page.getByTestId("stock-card")).toBeVisible()
   await expect(page.getByTestId("stock-card-row").first()).toBeVisible()
+  // The cutover balance is brought forward (an item with few moves, so it is on the first page).
+  await page.goto("/ic/items/itm_cc2_kit?location=loc_cst")
   await expect(page.locator('[data-testid="stock-card-row"][data-type="opening"]').first()).toBeAttached()
 
   await page.goto("/ic/expiry")
