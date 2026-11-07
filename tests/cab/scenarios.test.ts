@@ -121,21 +121,30 @@ describe("E7 bank reconciliation launcher", () => {
 })
 
 describe("E8 post-dated cheque bounce launcher", () => {
-  async function depositAndBounce(chequeId: string, params: Record<string, string | number>, invoiceId: string) {
+  /**
+   * E8's key action: deposit, then bounce. Nothing posts; the cheque's
+   * reservation on the invoice the cue names is released; the customer gets
+   * the cheque-bounced SMS. (When Metro has nothing left to reserve, as on
+   * the 1st with the planted cheque still in hand, the cheque is all advance.)
+   */
+  async function depositAndBounce(chequeId: string, params: Record<string, string | number>, invoiceId: string | undefined) {
     const cheque = (await db.cheques.get(chequeId))!
     expect(cheque).toMatchObject({ direction: "received", status: "in-hand", chequeDate: today, isPdc: true, partyId: PTY.metroFleet, amountP: T(85_000), chequeNo: params.chequeNo })
-    const before = (await db.salesInvoices.get(invoiceId))!
-    expect(before.invoiceNo).toBe(params.invoiceNo)
+    const before = invoiceId ? (await db.salesInvoices.get(invoiceId))! : undefined
+    if (before) expect(before.invoiceNo).toBe(params.invoiceNo)
+    else expect((await db.receipts.get(cheque.receiptId!))?.advanceP).toBe(T(85_000))
     await run(db, updateCheque, { chequeId, action: "deposit", expectedStatus: "in-hand" }, mahbub)
     const journals = await db.journals.count()
     await run(db, updateCheque, { chequeId, action: "bounce", expectedStatus: "deposited", reason: "Insufficient funds" }, mahbub)
     expect(await db.journals.count()).toBe(journals)
     expect((await db.cheques.get(chequeId))?.status).toBe("bounced")
     expect((await db.receipts.get(cheque.receiptId!))?.status).toBe("bounced")
-    const after = (await db.salesInvoices.get(invoiceId))!
-    expect(after.reservedP).toBe(before.reservedP - Number(params.reservedP))
-    expect(invoiceAvailableP(after)).toBe(invoiceAvailableP(before) + Number(params.reservedP))
-    expect(invoiceAvailableP(after)).toBe(params.collectP)
+    if (before && invoiceId) {
+      const after = (await db.salesInvoices.get(invoiceId))!
+      expect(after.reservedP).toBe(before.reservedP - Number(params.reservedP))
+      expect(invoiceAvailableP(after)).toBe(invoiceAvailableP(before) + Number(params.reservedP))
+      expect(invoiceAvailableP(after)).toBe(params.collectP)
+    }
     const sms = (await db.sms.where("partyId").equals(PTY.metroFleet).toArray()).filter((s) => s.templateId === "cheque-bounced" && s.text.includes(String(params.chequeNo)))
     expect(sms).toHaveLength(1)
     expect(sms[0].text).toContain("85,000")
@@ -147,8 +156,9 @@ describe("E8 post-dated cheque bounce launcher", () => {
       const { chequeId, invoiceId } = launch.outcome.refs!
       expect(launch.route).toBe(`/cab/cheques?id=${chequeId}`)
       expect(launch.outcome.params).toMatchObject({ amountP: T(85_000) })
-      expect(Number(launch.outcome.params!.reservedP)).toBeGreaterThan(T(85_000))
-      await depositAndBounce(chequeId!, launch.outcome.params!, invoiceId!)
+      // Grossed up for the VDS and AIT Metro deducts, on the oldest invoice that takes it (or what is left to reserve).
+      expect(Number(launch.outcome.params!.reservedP)).toBeGreaterThan(0)
+      await depositAndBounce(chequeId!, launch.outcome.params!, invoiceId)
       await ties()
     }
   }, 60_000)
@@ -157,7 +167,7 @@ describe("E8 post-dated cheque bounce launcher", () => {
     const first = await runScenario(E8, db)
     const second = await runScenario(E8, db)
     expect(second.outcome.params!.chequeNo).not.toBe(first.outcome.params!.chequeNo)
-    await depositAndBounce(second.outcome.refs!.chequeId!, second.outcome.params!, second.outcome.refs!.invoiceId!)
+    await depositAndBounce(second.outcome.refs!.chequeId!, second.outcome.params!, second.outcome.refs!.invoiceId)
     await ties()
   }, 60_000)
 })

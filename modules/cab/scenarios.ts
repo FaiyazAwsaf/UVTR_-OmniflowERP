@@ -125,7 +125,7 @@ function allocationFor(party: { deductsVds: boolean; deductsAit: boolean }, invo
   for (const inv of open) {
     const available = invoiceAvailableP(inv)
     const a = grossUp(party, inv, cashP, available, tax)
-    if (a > 0 && a < available + 1 && cashP - cashFor(party, inv, a, tax) <= 1) return [{ invoiceId: inv.id, amountP: a }]
+    if (a > 0 && cashP - cashFor(party, inv, a, tax) <= 1) return [{ invoiceId: inv.id, amountP: a }]
   }
   return allocateOldestFirst(cashP, open.map((i) => ({ ...i, availableP: invoiceAvailableP(i) })), party, tax).allocations
 }
