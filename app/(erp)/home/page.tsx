@@ -1,6 +1,8 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** "/home": the role home, filled in Phase 3 (WS-Dash). */
+import { RoleHome } from "@/modules/dashboard/components/role-home"
+
+/** /home: the signed-in user's role home (plan §9). */
 export default function HomePage() {
-  return <StubPage titleKey="shell.workspace.home" />
+  return <RoleHome />
 }

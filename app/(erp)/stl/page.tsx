@@ -1,6 +1,8 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /stl: filled in Phase 2 (implementation_plan.md §9). */
+import { StudioHome } from "@/modules/dashboard/components/studio-home"
+
+/** /stl: the STL studio home (plan §9), built by WS-Dash. */
 export default function Page() {
-  return <StubPage app="stl" titleKey="stl.pages.home" />
+  return <StudioHome />
 }
