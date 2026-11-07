@@ -13,6 +13,9 @@ import { dhakaAt } from "@/core/seed/time"
 import { recordBill, recordPayment } from "@/modules/ap/commands"
 import { apScenarios } from "@/modules/ap/scenarios"
 import { loadAging } from "@/modules/ar/queries"
+import { receiveGoods } from "@/modules/grn/commands"
+import { grnScenarios } from "@/modules/grn/scenarios"
+import { parseDmy } from "@/lib/i18n/dmy"
 
 import { gl, run, T } from "../ar/fin-helpers"
 import { freshDb, signedIn } from "../helpers/foundation"
@@ -25,6 +28,7 @@ import { freshDb, signedIn } from "../helpers/foundation"
 let db: OmniflowDb
 let mahbub: Actor
 let farzana: Actor
+let habib: Actor
 const today = dhakaDate(now())
 const E5 = apScenarios.find((s) => s.id === "E5")!
 const E6 = apScenarios.find((s) => s.id === "E6")!
@@ -34,6 +38,7 @@ beforeAll(async () => {
   await seedDatabase(db, { now: dhakaAt(today, "10:30"), today, scale: "small" })
   mahbub = await signedIn(db, "mahbub")
   farzana = await signedIn(db, "farzana")
+  habib = await signedIn(db, "habib")
 }, 180_000)
 afterAll(async () => {
   await db.delete()
@@ -111,6 +116,38 @@ describe("E5 three-way mismatch launcher", () => {
     await billAndRelease(second.outcome.params!, second.outcome.refs!.grnId!, "e5-c")
     const third = await runScenario(E5, db)
     expect(third.outcome.refs!.grnId).not.toBe(first.outcome.refs!.grnId)
+    await ties()
+  }, 60_000)
+})
+
+describe("E4 then E5", () => {
+  it("bills the receipt the presenter made in E4 instead of receiving again", async () => {
+    const e4 = await runScenario(grnScenarios.find((x) => x.id === "E4")!, db)
+    const poId = e4.outcome.refs!.poId!
+    const p = e4.outcome.params!
+    const po = (await db.purchaseOrders.get(poId))!
+    const lines = await db.poLines.where("poId").equals(poId).toArray()
+    const kits = lines.find((l) => l.itemId === ITM.cc2Kit)!
+    const polish = lines.find((l) => l.itemId === ITM.polish)!
+    // Habib performs E4 by hand: 20 kits (2 rejected for short expiry) and 12 polish.
+    const grn = await run(
+      db,
+      receiveGoods,
+      {
+        poId,
+        expectedVersion: po.version,
+        lots: [
+          { poLineId: kits.id, qtyAccepted: 18, qtyRejected: 2, rejectReason: "short-expiry", quarantine: true, batchNo: String(p.kitBatch), expiry: parseDmy(String(p.kitExpiry)) },
+          { poLineId: polish.id, qtyAccepted: 12, quarantine: true, batchNo: String(p.polishBatch), expiry: parseDmy(String(p.polishExpiry)) },
+        ],
+        idempotencyKey: "e4-by-hand",
+      },
+      habib
+    )
+    const e5 = await runScenario(E5, db)
+    expect(e5.outcome.refs!.grnId).toBe(grn.id)
+    expect(e5.outcome.params).toMatchObject({ kitQty: 18, ppvP: T(7_020) })
+    await billAndRelease(e5.outcome.params!, grn.id, "e5-after-e4")
     await ties()
   }, 60_000)
 })
