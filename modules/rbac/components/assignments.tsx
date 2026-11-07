@@ -38,7 +38,7 @@ export function Assignments() {
   const { userId: me } = useSession()
   const canEdit = useCan("rbac.assign.edit")
   const command = useCommand(assignRole)
-  const [query, setQuery] = React.useState(params.get("user") ?? "")
+  const [query, setQuery] = React.useState(params.get("for") ?? "")
   const [role, setRole] = React.useState("all")
   const [location, setLocation] = React.useState("all")
 

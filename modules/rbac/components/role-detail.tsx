@@ -74,6 +74,10 @@ export function RoleDetail({ roleId }: { roleId: Id }) {
         </p>
       ) : null}
 
+      <SectionCard title={t("rbac.role.matrix")} subtitle={t("rbac.role.matrixHint")} icon={ShieldCheck} size="sm">
+        <PermissionMatrix role={role} data={data} editable={editable} />
+      </SectionCard>
+
       <div className="grid gap-5 xl:grid-cols-2">
         <SectionCard
           title={t("rbac.role.holders")}
@@ -114,10 +118,6 @@ export function RoleDetail({ roleId }: { roleId: Id }) {
           </dl>
         </SectionCard>
       </div>
-
-      <SectionCard title={t("rbac.role.matrix")} subtitle={t("rbac.role.matrixHint")} icon={ShieldCheck} size="sm">
-        <PermissionMatrix role={role} data={data} editable={editable} />
-      </SectionCard>
 
       <RoleFormDialog open={editing} onOpenChange={setEditing} role={role} roles={data.roles} />
     </div>

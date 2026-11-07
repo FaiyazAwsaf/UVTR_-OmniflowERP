@@ -64,7 +64,7 @@ export function PrintPreview({
         <DialogHeader>
           <DialogTitle className="text-[1.0625rem] font-semibold">{t("irt.run.printPreview")}</DialogTitle>
         </DialogHeader>
-        <div className="overflow-auto rounded-md bg-surface-raised p-4">
+        <div className="max-h-[calc(100svh-12rem)] overflow-auto rounded-md bg-surface-raised p-4">
           <PrintLayout title={title} docNo={code} meta={meta}>
             <table className="w-full border-collapse text-[0.75rem]">
               <thead>

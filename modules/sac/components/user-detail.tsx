@@ -256,7 +256,7 @@ export function UserDetail({ userId }: { userId: Id }) {
           title={t("sac.user.roles")}
           icon={ShieldCheck}
           size="sm"
-          seeAllHref={`/rbac/assignments?user=${user.username}`}
+          seeAllHref={`/rbac/assignments?for=${user.username}`}
           seeAllLabel={t("sac.user.manageRoles")}
         >
           {roles.length ? (
@@ -305,7 +305,7 @@ export function UserDetail({ userId }: { userId: Id }) {
           title={t("sac.user.loginHistory")}
           icon={History}
           size="sm"
-          seeAllHref={`/sac/login-history?user=${user.username}`}
+          seeAllHref={`/sac/login-history?for=${user.username}`}
         >
           {data?.logins.length ? (
             <ul className="flex flex-col divide-y divide-hairline text-[0.8125rem]">

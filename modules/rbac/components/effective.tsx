@@ -44,7 +44,7 @@ export function EffectiveScreen() {
   const [location, setLocation] = React.useState("any")
   const [filter, setFilter] = React.useState("")
 
-  const wanted = params.get("user")
+  const wanted = params.get("for")
   const preset = wanted && data ? (data.users.find((u) => u.username === wanted)?.id ?? null) : null
   const selectedId = userId ?? preset
   const user = selectedId ? data?.userById.get(selectedId) : undefined

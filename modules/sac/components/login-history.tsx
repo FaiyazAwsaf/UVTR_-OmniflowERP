@@ -30,7 +30,7 @@ export function LoginHistory() {
   const params = useSearchParams()
   const directory = useUserDirectory()
   const [today] = React.useState(() => dhakaDate(now()))
-  const [username, setUsername] = React.useState<string | null>(params.get("user"))
+  const [username, setUsername] = React.useState<string | null>(params.get("for"))
   const [result, setResult] = React.useState("all")
   const [from, setFrom] = React.useState(() => addDaysISO(today, -29))
   const [to, setTo] = React.useState(today)

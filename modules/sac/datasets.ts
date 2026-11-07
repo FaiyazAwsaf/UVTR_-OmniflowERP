@@ -9,6 +9,13 @@ import type { DatasetLoaders, DatasetParams } from "@/core/reports/types"
  * rows also carry `userHref` and `time` for drill-down and display.
  */
 
+/** Readable sign-in methods (the dataset's method field is text). */
+const METHOD_LABEL: Record<string, string> = {
+  password: "Password",
+  "demo-quick": "Quick demo sign-in",
+  mfa: "Password and code",
+}
+
 function msRange(params: DatasetParams): [number, number] {
   const from = typeof params.from === "string" && params.from ? startOfDhakaDay(params.from) : 0
   const to = typeof params.to === "string" && params.to ? startOfDhakaDay(params.to) + DAY - 1 : Number.MAX_SAFE_INTEGER
@@ -32,7 +39,7 @@ export const sacDatasetLoaders: DatasetLoaders = {
       user: (e.userId && names.get(e.userId)) || e.username,
       username: e.username,
       result: e.result,
-      method: e.method,
+      method: METHOD_LABEL[e.method] ?? e.method,
       userHref: e.userId ? `/sac/users/${e.userId}` : undefined,
     }))
   },

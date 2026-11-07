@@ -94,6 +94,12 @@ test.describe("SAC users, sessions, policy and audit", () => {
     await expect(page.locator('[data-testid="login-row"][data-result="success"]')).toHaveCount(0)
     await expect(page.locator('[data-testid="login-row"][data-username="polash"]').first()).toBeVisible()
 
+    // `?for=` preselects a user without signing the window in as them (`?user=` is the quick sign-in).
+    await page.goto("/sac/login-history?for=shuvo")
+    await expect(page.locator('[data-testid="login-row"][data-username="shuvo"]').first()).toBeVisible()
+    await expect(page.locator('[data-testid="login-row"]:not([data-username="shuvo"])')).toHaveCount(0)
+    await expect(page.getByTestId("greeting-context")).toContainText("System Administrator")
+
     await page.goto("/sac/policy")
     await page.getByTestId("policy-idle").fill("240")
     await page.getByTestId("policy-save").click()

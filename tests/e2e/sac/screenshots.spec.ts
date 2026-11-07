@@ -33,7 +33,7 @@ const ADMIN_SCREENS: [string, string, string][] = [
   ["rbac-assignments", "/rbac/assignments", "assignment-row"],
   ["rbac-limits", "/rbac/limits", "limit-cell"],
   ["rbac-sod", "/rbac/sod", "sod-conflict"],
-  ["rbac-effective", "/rbac/effective?user=nayeem&key=stl.quote.create", "effective-roles"],
+  ["rbac-effective", "/rbac/effective?for=nayeem&key=stl.quote.create", "effective-roles"],
 ]
 const OWNER_SCREENS: [string, string, string][] = [
   ["irt-catalogue", "/irt", "report-card"],

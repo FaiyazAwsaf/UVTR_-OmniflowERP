@@ -225,11 +225,10 @@ export function PermissionMatrix({
         </table>
       </div>
 
-      {editable ? (
+      {editable && count > 0 ? (
         <div
           className={cn(
-            "sticky bottom-0 z-10 flex flex-wrap items-center gap-2 rounded-md bg-popover/95 p-3 shadow-lg ring-1 ring-foreground/5 backdrop-blur transition-opacity",
-            count ? "opacity-100" : "opacity-70"
+            "sticky bottom-0 z-10 flex flex-wrap items-center gap-2 rounded-md bg-popover/95 p-3 shadow-lg ring-1 ring-foreground/5 backdrop-blur"
           )}
         >
           <span className="text-[0.8125rem] font-medium" data-testid="matrix-pending" data-count={count}>
@@ -385,9 +384,7 @@ function ScopeToggle({
         "h-6 rounded-full px-2 text-[0.6875rem] font-medium transition-colors disabled:cursor-not-allowed",
         shown === value && scope !== null
           ? "bg-primary text-primary-foreground"
-          : shown === value
-            ? "bg-surface-raised text-foreground"
-            : "text-muted-foreground hover:text-foreground"
+          : "text-muted-foreground hover:text-foreground"
       )}
     >
       {label}
@@ -399,7 +396,11 @@ function ScopeToggle({
       data-app={app}
       data-scope={scope ?? "none"}
       title={scope === "mixed" ? t("rbac.scope.mixed") : t("rbac.matrix.scopeHint")}
-      className={cn("inline-flex items-center gap-0.5 rounded-full border border-border p-0.5", scope === "mixed" && "border-warning")}
+      className={cn(
+        "inline-flex items-center gap-0.5 rounded-full border border-border p-0.5",
+        scope === "mixed" && "border-warning",
+        scope === null && "opacity-50"
+      )}
     >
       {item("own-location", t("rbac.scope.ownShort"))}
       {item("all", t("rbac.scope.allShort"))}
