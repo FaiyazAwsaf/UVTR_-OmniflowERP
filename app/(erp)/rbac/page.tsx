@@ -1,6 +1,6 @@
-import { StubPage } from "@/components/shared/stub-page"
+import { RolesHome } from "@/modules/rbac/components/roles-home"
 
-/** /rbac: filled in Phase 2 (implementation_plan.md §9). */
+/** /rbac: roles (plan §9). */
 export default function Page() {
-  return <StubPage app="rbac" titleKey="rbac.pages.home" />
+  return <RolesHome />
 }

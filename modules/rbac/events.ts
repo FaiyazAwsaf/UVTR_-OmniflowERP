@@ -38,4 +38,17 @@ export const rbacEvents: EventCatalog = {
     consumers: ["consumers.security", "consumers.audit", "consumers.affectedUsers"],
     severity: "warning",
   },
+  /* Added by WS-CSC: role and SoD rule edits also show in the event stream. */
+  RoleSaved: {
+    module: "rbac",
+    labelKey: "rbac.events.RoleSaved",
+    consumers: ["consumers.security", "consumers.audit"],
+    severity: "info",
+  },
+  SodRuleSaved: {
+    module: "rbac",
+    labelKey: "rbac.events.SodRuleSaved",
+    consumers: ["consumers.security", "consumers.audit"],
+    severity: "info",
+  },
 }

@@ -1,6 +1,6 @@
-import { StubPage } from "@/components/shared/stub-page"
+import { SodScreen } from "@/modules/rbac/components/sod"
 
-/** /rbac/sod: filled in Phase 2 (implementation_plan.md §9). */
+/** /rbac/sod: segregation-of-duties rules and the conflicts report (plan §9). */
 export default function Page() {
-  return <StubPage app="rbac" titleKey="rbac.pages.sod" />
+  return <SodScreen />
 }

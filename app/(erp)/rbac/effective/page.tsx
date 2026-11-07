@@ -1,6 +1,12 @@
-import { StubPage } from "@/components/shared/stub-page"
+import * as React from "react"
 
-/** /rbac/effective: filled in Phase 2 (implementation_plan.md §9). */
+import { EffectiveScreen } from "@/modules/rbac/components/effective"
+
+/** /rbac/effective: the effective permissions checker (`?user=&key=` preselect, so Suspense). */
 export default function Page() {
-  return <StubPage app="rbac" titleKey="rbac.pages.effective" />
+  return (
+    <React.Suspense fallback={null}>
+      <EffectiveScreen />
+    </React.Suspense>
+  )
 }

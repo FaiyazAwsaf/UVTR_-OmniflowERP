@@ -1,6 +1,6 @@
-import { StubPage } from "@/components/shared/stub-page"
+import { PolicyScreen } from "@/modules/sac/components/policy"
 
-/** /sac/policy: filled in Phase 2 (implementation_plan.md §9). */
+/** /sac/policy: password and session policy (plan §9). */
 export default function Page() {
-  return <StubPage app="sac" titleKey="sac.pages.policy" />
+  return <PolicyScreen />
 }

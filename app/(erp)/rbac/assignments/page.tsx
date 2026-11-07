@@ -1,6 +1,12 @@
-import { StubPage } from "@/components/shared/stub-page"
+import * as React from "react"
 
-/** /rbac/assignments: filled in Phase 2 (implementation_plan.md §9). */
+import { Assignments } from "@/modules/rbac/components/assignments"
+
+/** /rbac/assignments: user-role assignment (`?user=` searches, so it sits in Suspense). */
 export default function Page() {
-  return <StubPage app="rbac" titleKey="rbac.pages.assignments" />
+  return (
+    <React.Suspense fallback={null}>
+      <Assignments />
+    </React.Suspense>
+  )
 }

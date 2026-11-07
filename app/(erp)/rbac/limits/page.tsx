@@ -1,6 +1,6 @@
-import { StubPage } from "@/components/shared/stub-page"
+import { LimitsScreen } from "@/modules/rbac/components/limits"
 
-/** /rbac/limits: filled in Phase 2 (implementation_plan.md §9). */
+/** /rbac/limits: approval limits per role and kind (plan §9). */
 export default function Page() {
-  return <StubPage app="rbac" titleKey="rbac.pages.limits" />
+  return <LimitsScreen />
 }

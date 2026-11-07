@@ -1,6 +1,12 @@
-import { StubPage } from "@/components/shared/stub-page"
+import * as React from "react"
 
-/** /sac/login-history: filled in Phase 2 (implementation_plan.md §9). */
+import { LoginHistory } from "@/modules/sac/components/login-history"
+
+/** /sac/login-history: every sign-in attempt (`?user=` preselects a user, so it sits in Suspense). */
 export default function Page() {
-  return <StubPage app="sac" titleKey="sac.pages.loginHistory" />
+  return (
+    <React.Suspense fallback={null}>
+      <LoginHistory />
+    </React.Suspense>
+  )
 }

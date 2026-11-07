@@ -1,6 +1,7 @@
-import { StubPage } from "@/components/shared/stub-page"
+import { RoleDetail } from "@/modules/rbac/components/role-detail"
 
-/** /rbac/roles/[id]: filled in Phase 2 (implementation_plan.md §9). */
-export default function Page() {
-  return <StubPage app="rbac" titleKey="rbac.pages.role" />
+/** /rbac/roles/[id]: the role and its permission matrix (plan §9). */
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  return <RoleDetail roleId={decodeURIComponent(id)} />
 }
