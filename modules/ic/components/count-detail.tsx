@@ -109,7 +109,7 @@ export function CountDetail({ id }: { id: string }) {
         amounts={[
           { label: t("ic.count.countedLines"), value: `${num(countedLines)} / ${num(count.lines.length)}` },
           { label: t("ic.count.varianceLines"), value: num(shown.filter((p) => p.varianceQty !== 0).length) },
-          { label: t("ic.count.variancesTotal"), value: <span data-testid="count-variance-total">{money(absTotal)}</span> },
+          { label: t("ic.count.variancesTotal"), value: <span data-testid="count-variance-total" data-total-p={absTotal}>{money(absTotal)}</span> },
         ]}
         actions={
           editable ? (
@@ -189,7 +189,7 @@ export function CountDetail({ id }: { id: string }) {
             const batch = line.batchId ? batches.get(line.batchId) : undefined
             const p = shown[i]
             return (
-              <tr key={i} data-testid="count-line" data-sku={item?.sku} data-index={i}>
+              <tr key={i} data-testid="count-line" data-sku={item?.sku} data-index={i} data-expected={line.expectedQty}>
                 <td>
                   <ItemCell item={item} href={item ? `/ic/items/${item.id}?location=${count.locationId}` : undefined} />
                 </td>

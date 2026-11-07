@@ -18,8 +18,22 @@ test("E9: a Gulshan count with variances goes to Shahriar and posts", async ({ p
   const countNo = await docNo(page)
   expect(countNo).toMatch(/^CNT-GUL-\d{4}-\d{3}$/)
   await page.getByTestId("count-fill").click()
-  // Three lines counted short: nothing of them on the shelf.
-  for (const i of [0, 1, 2]) await page.getByTestId("count-qty").nth(i).fill("0")
+  // Lines counted short (nothing on the shelf) until the variance is above
+  // Habib's ৳1,000 and within Shahriar's ৳5,000, like E9's ৳4,200.
+  const total = async () => Number(await page.getByTestId("count-variance-total").getAttribute("data-total-p"))
+  const lines = page.getByTestId("count-line")
+  const n = await lines.count()
+  for (let i = 0; i < n && (await total()) < 1_500_00; i++) {
+    const before = await total()
+    const expected = (await lines.nth(i).getAttribute("data-expected")) ?? "0"
+    await page.getByTestId("count-qty").nth(i).fill("0")
+    await page.waitForTimeout(150)
+    if ((await total()) > 4_900_00) {
+      await page.getByTestId("count-qty").nth(i).fill(expected)
+      await expect.poll(total).toBe(before)
+    }
+  }
+  expect(await total()).toBeGreaterThan(1_000_00)
   await expect(page.getByTestId("count-limit-note")).toContainText("wait for approval")
   await page.getByTestId("count-post").click()
   await expect(page.getByTestId("count-detail").locator('[data-status="pending-approval"]').first()).toBeVisible()
