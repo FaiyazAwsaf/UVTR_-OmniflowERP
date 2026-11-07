@@ -314,7 +314,8 @@ function payrollAndLoan(w: World, scale: number) {
 
 const PETTY: { loc: Id; account: Id; tag: "PETTY_HQ" | "PETTY_GUL" | "PETTY_UTT"; makers: [Id, number][]; perMonth: number; budget: number }[] = [
   { loc: LOC.HQ, account: CBA.PETTY_HQ, tag: "PETTY_HQ", makers: [[USR.mahbub, T(5_000)]], perMonth: 6, budget: T(10_000) },
-  { loc: LOC.GUL, account: CBA.PETTY_GUL, tag: "PETTY_GUL", makers: [[USR.tania, T(1_000)], [USR.shahriar, T(5_000)]], perMonth: 8, budget: T(7_000) },
+  // At most ৳6,000 a month, so the box always holds the planted ৳3,500 voucher Shahriar approves (seed_data §8), even on the last day before the top-up.
+  { loc: LOC.GUL, account: CBA.PETTY_GUL, tag: "PETTY_GUL", makers: [[USR.tania, T(1_000)], [USR.shahriar, T(5_000)]], perMonth: 8, budget: T(6_000) },
   { loc: LOC.UTT, account: CBA.PETTY_UTT, tag: "PETTY_UTT", makers: [[USR.sabbir, T(1_000)], [USR.arif, T(5_000)]], perMonth: 7, budget: T(6_500) },
 ]
 
