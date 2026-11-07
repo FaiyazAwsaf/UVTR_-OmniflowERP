@@ -3,7 +3,11 @@ import { chainAudit, GENESIS_HASH } from "@/core/audit/chain"
 import { applyClockOffset, now } from "@/core/clock/clock"
 import { atDhaka, dhakaDate } from "@/core/clock/dates"
 import { getControlDb } from "@/core/db/control"
-import { clearDatabase, getCentralDb, type OmniflowDb } from "@/core/db/database"
+import {
+  clearDatabase,
+  getCentralDb,
+  type OmniflowDb,
+} from "@/core/db/database"
 import { newId } from "@/core/db/ids"
 import type { EventRow } from "@/core/db/schema"
 import { toActorRef } from "@/core/engine/commit"
@@ -19,7 +23,10 @@ export const SEED_VERSION = 3
 const SEED_LOCK = "of:seed"
 
 /** The genesis audit row and the DemoReset event (plan §7). */
-export async function writeGenesis(db: OmniflowDb, summary: SeedSummary): Promise<void> {
+export async function writeGenesis(
+  db: OmniflowDb,
+  summary: SeedSummary
+): Promise<void> {
   const at = now()
   const commitId = newId("cm")
   const actor = toActorRef(SYSTEM_ACTOR)
@@ -70,6 +77,7 @@ async function resetUnlocked(): Promise<SeedSummary> {
   const central = getCentralDb()
   const control = getControlDb()
   return withLock(commitLockName(central.name), async () => {
+    const started = performance.now()
     await clearDatabase(central)
     // Anchor the demo clock to opening time today (rules.openingTime, 10:30 Dhaka).
     const wall = Date.now()
@@ -77,7 +85,10 @@ async function resetUnlocked(): Promise<SeedSummary> {
     await control.clock.put({ id: "clock", offsetMs, updatedAt: wall })
     applyClockOffset(offsetMs)
     const at = now()
-    const summary = await seedDatabase(central, { now: at, today: dhakaDate(at) })
+    const summary = await seedDatabase(central, {
+      now: at,
+      today: dhakaDate(at),
+    })
     await writeGenesis(central, summary)
     await control.demoMeta.put({
       id: "meta",
@@ -85,6 +96,7 @@ async function resetUnlocked(): Promise<SeedSummary> {
       seededAt: Date.now(),
       seedDate: dhakaDate(at),
       scale: "full",
+      seedMs: Math.round(performance.now() - started),
     })
     return summary
   })

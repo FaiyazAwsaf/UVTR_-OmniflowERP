@@ -173,7 +173,7 @@ export const cabBn: typeof cabEn = {
       completed: "সমন্বয় সম্পন্ন হয়েছে",
       lines: "বিবরণীর লাইন",
       colDate: "তারিখ",
-      colDescription: "বিবরণ",
+      colDescription: "ব্যাংকের বিবরণ",
       colRef: "রেফারেন্স",
       colAmount: "পরিমাণ",
       colMatch: "যার সাথে মিল",

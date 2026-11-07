@@ -1722,4 +1722,6 @@ export type DemoMetaRow = {
   /** Demo day the seed is anchored to */
   seedDate: ISODate
   scale: "full" | "small"
+  /** How long the last seed took (clear, generate, write, genesis), in ms (plan P4.5: under 5 s) */
+  seedMs?: number
 }

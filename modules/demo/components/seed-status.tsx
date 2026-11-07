@@ -113,6 +113,7 @@ export function SeedStatus({ className }: { className?: string }) {
     <div
       className={cn("flex flex-col gap-2", className)}
       data-testid="seed-status"
+      data-seed-ms={meta?.seedMs}
     >
       <div className="flex items-start gap-2.5">
         <span

@@ -171,7 +171,7 @@ export const cabEn = {
       completed: "Reconciliation completed",
       lines: "Statement lines",
       colDate: "Date",
-      colDescription: "Description",
+      colDescription: "Bank's narration",
       colRef: "Reference",
       colAmount: "Amount",
       colMatch: "Matched to",
