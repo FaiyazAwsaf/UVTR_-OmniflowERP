@@ -1,6 +1,6 @@
-import { StubPage } from "@/components/shared/stub-page"
+import { TransfersList } from "@/modules/st/components/transfers"
 
-/** /st/transfers: filled in Phase 2 (implementation_plan.md §9). */
+/** /st/transfers: transfers (implementation_plan.md §9). */
 export default function Page() {
-  return <StubPage app="st" titleKey="st.pages.transfers" />
+  return <TransfersList />
 }

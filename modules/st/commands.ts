@@ -261,8 +261,8 @@ export const cancelTransfer = defineCommand({
  * ------------------------------------------------------------------ */
 
 const ADJUST_REASONS = ["damage", "expiry", "loss", "found", "correction"] as const
-const ISSUE_TAGS = ["OFFICE", "WELFARE", "REPAIRS", "MARKETING", "CONSUMABLES_USED", "CONVEYANCE", "SECURITY"] as const
-export const INTERNAL_USE_TAGS: readonly ExpenseTag[] = ISSUE_TAGS
+export const ISSUE_TAGS = ["OFFICE", "WELFARE", "REPAIRS", "MARKETING", "CONSUMABLES_USED", "CONVEYANCE", "SECURITY"] as const
+export type IssueTag = (typeof ISSUE_TAGS)[number]
 
 /**
  * Post an adjustment (or internal use) now: the stock moves at today's
