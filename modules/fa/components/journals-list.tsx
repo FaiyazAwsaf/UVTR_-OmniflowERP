@@ -84,27 +84,32 @@ export function JournalsList() {
             data-journal-no={row.original.journalNo}
             data-status={row.original.status}
             lang="en"
-            className="font-mono font-medium text-link hover:underline"
+            className="font-mono font-medium whitespace-nowrap text-link hover:underline"
             onClick={(e) => e.stopPropagation()}
           >
             {row.original.journalNo}
           </Link>
         ),
       },
-      { id: "date", header: t("fa.common.date"), accessorKey: "date", cell: ({ row }) => <span className="nums">{dmy(row.original.date)}</span> },
       {
-        id: "type",
-        header: t("fa.common.type"),
-        accessorKey: "voucherType",
-        meta: { hideBelow: "md" },
-        cell: ({ row }) => <span className="text-muted-foreground">{tk(`fa.voucherTypes.${row.original.voucherType}`)}</span>,
+        id: "date",
+        header: t("fa.common.date"),
+        accessorKey: "date",
+        cell: ({ row }) => <span className="nums whitespace-nowrap">{dmy(row.original.date)}</span>,
       },
       {
         id: "narration",
         header: t("fa.common.narration"),
         accessorKey: "narration",
-        meta: { hideBelow: "lg" },
-        cell: ({ row }) => <span className="line-clamp-1 max-w-[28rem]">{row.original.narration}</span>,
+        meta: { hideBelow: "md" },
+        cell: ({ row }) => (
+          <span className="flex min-w-0 flex-col">
+            <span className="line-clamp-1 max-w-[28rem]">{row.original.narration}</span>
+            <span className="text-[0.6875rem] text-muted-foreground">
+              {tk(`fa.voucherTypes.${row.original.voucherType}`)} · {userName(users.get(row.original.preparedBy), locale)}
+            </span>
+          </span>
+        ),
       },
       {
         id: "source",
@@ -114,17 +119,16 @@ export function JournalsList() {
         cell: ({ row }) =>
           row.original.source && row.original.source.docType !== "journals" ? (
             <span onClick={(e) => e.stopPropagation()}>
-              <DocLink docType={row.original.source.docType} docId={row.original.source.docId} docNo={row.original.source.docNo} />
+              <DocLink
+                docType={row.original.source.docType}
+                docId={row.original.source.docId}
+                docNo={row.original.source.docNo}
+                className="whitespace-nowrap"
+              />
             </span>
           ) : (
             <span className="text-muted-foreground">{t("fa.common.manual")}</span>
           ),
-      },
-      {
-        id: "preparedBy",
-        header: t("fa.common.preparedBy"),
-        meta: { hideBelow: "lg" },
-        accessorFn: (j) => userName(users.get(j.preparedBy), locale),
       },
       {
         id: "amount",

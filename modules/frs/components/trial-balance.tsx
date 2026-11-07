@@ -150,7 +150,7 @@ export function TrialBalancePage() {
           <thead>
             <tr>
               <th className={cn(TH, "text-left")}>{t("frs.common.account")}</th>
-              <th className={cn(TH, "hidden text-right @[44rem]/st:table-cell")}>{t("frs.common.opening")}</th>
+              <th className={cn(TH, "hidden text-right @[60rem]/st:table-cell")}>{t("frs.common.opening")}</th>
               <th className={cn(TH, "text-right")}>{t("frs.common.debit")}</th>
               <th className={cn(TH, "text-right")}>{t("frs.common.credit")}</th>
               <th className={cn(TH, "text-right")}>{t("frs.common.closing")}</th>
@@ -175,7 +175,7 @@ export function TrialBalancePage() {
                       )}
                     </span>
                   </td>
-                  <td className={cn(TD, "hidden text-right font-mono @[44rem]/st:table-cell", group && "font-semibold")}>
+                  <td className={cn(TD, "hidden text-right font-mono @[60rem]/st:table-cell", group && "font-semibold")}>
                     <DrCr balanceP={n.sums.openingP} />
                   </td>
                   <td className={cn(TD, "text-right font-mono", group && "font-semibold")}>{n.sums.debitP ? money(n.sums.debitP) : ""}</td>
@@ -197,7 +197,7 @@ export function TrialBalancePage() {
                     <BalanceCheck debitP={tb.totalDebitP} creditP={tb.totalCreditP} balanced={tb.balanced} testId="tb-balanced" />
                   )}
                 </td>
-                <td className="hidden h-10 bg-surface-raised px-3 @[44rem]/st:table-cell" />
+                <td className="hidden h-10 bg-surface-raised px-3 @[60rem]/st:table-cell" />
                 <td className="h-10 bg-surface-raised px-3 text-right font-mono">{money(tb.totalDebitP)}</td>
                 <td className="h-10 bg-surface-raised px-3 text-right font-mono">{money(tb.totalCreditP)}</td>
                 <td className="h-10 rounded-r-md bg-surface-raised px-3 text-right font-mono">

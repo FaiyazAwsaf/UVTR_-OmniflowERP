@@ -121,7 +121,7 @@ export function LedgerPage() {
         cell: ({ row }) =>
           row.original.journal ? (
             <span data-testid="ledger-row" data-journal-no={row.original.journal.journalNo}>
-              <DocLink docType="journals" docId={row.original.journalId} docNo={row.original.journal.journalNo} showApp={false} />
+              <DocLink docType="journals" docId={row.original.journalId} docNo={row.original.journal.journalNo} showApp={false} className="whitespace-nowrap" />
             </span>
           ) : null,
       },
@@ -144,7 +144,7 @@ export function LedgerPage() {
           const s = row.original.journal?.source
           return s && s.docType !== "journals" ? (
             <span data-testid="drill-link">
-              <DocLink docType={s.docType} docId={s.docId} docNo={s.docNo} />
+              <DocLink docType={s.docType} docId={s.docId} docNo={s.docNo} className="whitespace-nowrap" />
             </span>
           ) : (
             <span className="text-muted-foreground">{t("fa.common.manual")}</span>
