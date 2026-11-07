@@ -291,71 +291,74 @@ function ChequeDetail({ row, actions }: { row: Row; actions: React.ReactNode }) 
     return { invoices: new Map(invoices.map((i) => [i.id, i])), notice }
   }, [db, cheque.id, cheque.status, cheque.version, receipt?.id, receipt?.version])
 
+  // The test id sits on a wrapper so the header's actions (deposit, bounce) are inside it.
   return (
-    <SectionCard
-      title={t("cab.cheques.detailTitle", { no: cheque.chequeNo })}
-      subtitle={`${nameOf(party, locale)} · ${cheque.bankName}`}
-      size="sm"
-      action={
-        <div className="flex flex-wrap items-center justify-end gap-3">
-          <DocStatus status={cheque.status} />
-          {actions}
-        </div>
-      }
-    >
-      <div className="flex flex-col gap-3" data-testid="cheque-detail" data-cheque-no={cheque.chequeNo} data-status={cheque.status}>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label={t("cab.cheques.colAmount")} value={<MoneyText poisha={cheque.amountP} />} />
-          <Stat label={t("cab.cheques.colDate")} value={dmy(cheque.chequeDate)} />
-          <Stat label={t("cab.cheques.receivedOn")} value={cheque.receivedOn ? dmy(cheque.receivedOn) : "-"} />
-          <Stat label={t("cab.cheques.colDoc")} value={receipt ? <DocLink docType="receipts" docId={receipt.id} docNo={receipt.receiptNo} showApp={false} /> : "-"} />
-        </div>
-        {receipt?.allocations.length ? (
-          <div className="min-w-0 overflow-x-auto">
-            <table className="w-full border-separate border-spacing-0 text-[0.8125rem]">
-              <thead>
-                <tr className="[&>th]:h-8 [&>th]:bg-surface-raised [&>th]:px-2 [&>th]:font-medium [&>th]:whitespace-nowrap">
-                  <th className="rounded-l-md text-left">{t("cab.cheques.colInvoice")}</th>
-                  <th className="text-right">{t("cab.cheques.colAllocated")}</th>
-                  <th className="text-right">{t("cab.cheques.colOutstanding")}</th>
-                  <th className="hidden text-right sm:table-cell">{t("cab.cheques.colReserved")}</th>
-                  <th className="rounded-r-md text-right">{t("cab.cheques.colAvailable")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {receipt.allocations.map((a) => {
-                  const inv = detail?.invoices.get(a.invoiceId)
-                  return (
-                    <tr key={a.invoiceId} data-testid="cheque-invoice" data-invoice-no={inv?.invoiceNo} data-available={inv ? invoiceAvailableP(inv) : undefined} className="[&>td]:border-b [&>td]:border-hairline [&>td]:px-2 [&>td]:py-1.5">
-                      <td>{inv ? <DocLink docType="salesInvoices" docId={inv.id} docNo={inv.invoiceNo} /> : null}</td>
-                      <td className="text-right">
-                        <MoneyText poisha={a.amountP} className="font-mono" />
-                      </td>
-                      <td className="text-right">{inv ? <MoneyText poisha={invoiceOpenP(inv)} className="font-mono font-semibold" /> : null}</td>
-                      <td className="hidden text-right sm:table-cell">{inv ? <MoneyText poisha={inv.reservedP} className="font-mono text-muted-foreground" /> : null}</td>
-                      <td className="text-right">{inv ? <MoneyText poisha={invoiceAvailableP(inv)} className="font-mono" /> : null}</td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+    <div data-testid="cheque-detail" data-cheque-no={cheque.chequeNo} data-status={cheque.status}>
+      <SectionCard
+        title={t("cab.cheques.detailTitle", { no: cheque.chequeNo })}
+        subtitle={`${nameOf(party, locale)} · ${cheque.bankName}`}
+        size="sm"
+        action={
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <DocStatus status={cheque.status} />
+            {actions}
           </div>
-        ) : null}
-        {cheque.status === "bounced" ? (
-          <div className="flex flex-col gap-1.5 rounded-lg bg-surface-raised/60 p-3" data-testid="cheque-notice">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <MessageSquare className="size-3.5" />
-              <span>{detail?.notice ? t("cab.cheques.noticeSent", { to: detail.notice.to }) : t("cab.cheques.noticeNone")}</span>
-              <SimulatedBadge className="ml-auto" />
+        }
+      >
+        <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <Stat label={t("cab.cheques.colAmount")} value={<MoneyText poisha={cheque.amountP} />} />
+            <Stat label={t("cab.cheques.colDate")} value={dmy(cheque.chequeDate)} />
+            <Stat label={t("cab.cheques.receivedOn")} value={cheque.receivedOn ? dmy(cheque.receivedOn) : "-"} />
+            <Stat label={t("cab.cheques.colDoc")} value={receipt ? <DocLink docType="receipts" docId={receipt.id} docNo={receipt.receiptNo} showApp={false} /> : "-"} />
+          </div>
+          {receipt?.allocations.length ? (
+            <div className="min-w-0 overflow-x-auto">
+              <table className="w-full border-separate border-spacing-0 text-[0.8125rem]">
+                <thead>
+                  <tr className="[&>th]:h-8 [&>th]:bg-surface-raised [&>th]:px-2 [&>th]:font-medium [&>th]:whitespace-nowrap">
+                    <th className="rounded-l-md text-left">{t("cab.cheques.colInvoice")}</th>
+                    <th className="text-right">{t("cab.cheques.colAllocated")}</th>
+                    <th className="text-right">{t("cab.cheques.colOutstanding")}</th>
+                    <th className="hidden text-right sm:table-cell">{t("cab.cheques.colReserved")}</th>
+                    <th className="rounded-r-md text-right">{t("cab.cheques.colAvailable")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {receipt.allocations.map((a) => {
+                    const inv = detail?.invoices.get(a.invoiceId)
+                    return (
+                      <tr key={a.invoiceId} data-testid="cheque-invoice" data-invoice-no={inv?.invoiceNo} data-available={inv ? invoiceAvailableP(inv) : undefined} className="[&>td]:border-b [&>td]:border-hairline [&>td]:px-2 [&>td]:py-1.5">
+                        <td>{inv ? <DocLink docType="salesInvoices" docId={inv.id} docNo={inv.invoiceNo} /> : null}</td>
+                        <td className="text-right">
+                          <MoneyText poisha={a.amountP} className="font-mono" />
+                        </td>
+                        <td className="text-right">{inv ? <MoneyText poisha={invoiceOpenP(inv)} className="font-mono font-semibold" /> : null}</td>
+                        <td className="hidden text-right sm:table-cell">{inv ? <MoneyText poisha={inv.reservedP} className="font-mono text-muted-foreground" /> : null}</td>
+                        <td className="text-right">{inv ? <MoneyText poisha={invoiceAvailableP(inv)} className="font-mono" /> : null}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
             </div>
-            {detail?.notice ? (
-              <p lang={detail.notice.lang} className="text-sm">
-                {detail.notice.text}
-              </p>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
-    </SectionCard>
+          ) : null}
+          {cheque.status === "bounced" ? (
+            <div className="flex flex-col gap-1.5 rounded-lg bg-surface-raised/60 p-3" data-testid="cheque-notice">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <MessageSquare className="size-3.5" />
+                <span>{detail?.notice ? t("cab.cheques.noticeSent", { to: detail.notice.to }) : t("cab.cheques.noticeNone")}</span>
+                <SimulatedBadge className="ml-auto" />
+              </div>
+              {detail?.notice ? (
+                <p lang={detail.notice.lang} className="text-sm">
+                  {detail.notice.text}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      </SectionCard>
+    </div>
   )
 }
