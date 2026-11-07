@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useLiveQuery } from "dexie-react-hooks"
 import { ArrowLeftRight } from "lucide-react"
 import { toast } from "sonner"
@@ -27,16 +27,46 @@ import { requestTransfer } from "../commands"
 
 type Row = TransferRow & { lines: number; valueP: number }
 
-/** /st/transfers: transfers between the Central Store and the studios, and "Request transfer". */
+/** What the new-transfer form starts with (a prefill from the URL or another screen). */
+export type TransferPrefill = {
+  fromLocationId?: string
+  toLocationId?: string
+  lines?: DraftLine[]
+  note?: string
+  /** Job order number the request is for (shown as a hint) */
+  orderNo?: string
+}
+
+/**
+ * The new-transfer prefill from the address (STL's order stock check links
+ * here): `?new=1&from=<locationId>&to=<locationId>&item=<itemId>&qty=<base qty>&order=<orderNo>`.
+ */
+function prefillFrom(params: URLSearchParams, forOrder: (order: string) => string): TransferPrefill | null {
+  if (params.get("new") !== "1") return null
+  const item = params.get("item")
+  const qty = Number(params.get("qty"))
+  const order = params.get("order")?.trim() || undefined
+  return {
+    fromLocationId: params.get("from") || undefined,
+    toLocationId: params.get("to") || undefined,
+    lines: [newLine({ itemId: item || null, qty: Number.isFinite(qty) && qty > 0 ? qty : null })],
+    note: order ? forOrder(order) : undefined,
+    orderNo: order,
+  }
+}
+
+/** /st/transfers: transfers between the Central Store and the studios, and "Request transfer" (prefilled by `?new=1&...`). */
 export function TransfersList() {
   const db = useDb()
   const router = useRouter()
+  const params = useSearchParams()
   const { t, tk, locale, num, dmy } = useLocale()
   const { can } = usePermissions()
   const lookups = useScmLookups()
   const [location, setLocation] = React.useState("all")
   const [status, setStatus] = React.useState("all")
-  const [creating, setCreating] = React.useState(false)
+  const [prefill] = React.useState(() => prefillFrom(params, (order) => t("st.transfers.forOrder", { order })))
+  const [creating, setCreating] = React.useState(prefill !== null)
 
   const data = useLiveQuery(async () => {
     const transfers = await db.transfers.orderBy("requestedAt").reverse().toArray()
@@ -63,8 +93,15 @@ export function TransfersList() {
         header: t("st.transfers.no"),
         accessorFn: (r) => r.transferNo,
         cell: ({ row }) => (
-          <span lang="en" className="font-mono text-link" data-testid="transfer-row" data-transfer-no={row.original.transferNo}>
-            {row.original.transferNo}
+          <span className="flex min-w-0 flex-col">
+            <span lang="en" className="font-mono text-link" data-testid="transfer-row" data-transfer-no={row.original.transferNo}>
+              {row.original.transferNo}
+            </span>
+            {row.original.note ? (
+              <span className="max-w-56 truncate text-[0.6875rem] text-muted-foreground" title={row.original.note} data-testid="transfer-row-note">
+                {row.original.note}
+              </span>
+            ) : null}
           </span>
         ),
       },
@@ -131,7 +168,16 @@ export function TransfersList() {
           </ListToolbar>
         }
       />
-      <RequestTransferDialog open={creating} onOpenChange={setCreating} onDone={(id) => router.push(`/st/transfers/${id}`)} />
+      <RequestTransferDialog
+        open={creating}
+        onOpenChange={(open) => {
+          setCreating(open)
+          // Leave the prefill address once the form closes, so a reload does not open it again.
+          if (!open && params.get("new")) router.replace("/st/transfers")
+        }}
+        onDone={(id) => router.push(`/st/transfers/${id}`)}
+        initial={prefill ?? undefined}
+      />
     </div>
   )
 }
@@ -146,7 +192,7 @@ export function RequestTransferDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
   onDone?: (id: string) => void
-  initial?: { toLocationId?: string; lines?: DraftLine[] }
+  initial?: TransferPrefill
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -157,7 +203,7 @@ export function RequestTransferDialog({
   )
 }
 
-function RequestForm({ initial, onClose, onDone }: { initial?: { toLocationId?: string; lines?: DraftLine[] }; onClose: () => void; onDone?: (id: string) => void }) {
+function RequestForm({ initial, onClose, onDone }: { initial?: TransferPrefill; onClose: () => void; onDone?: (id: string) => void }) {
   const db = useDb()
   const { t, num } = useLocale()
   const { can } = usePermissions()
@@ -168,10 +214,10 @@ function RequestForm({ initial, onClose, onDone }: { initial?: { toLocationId?: 
   const into = stock.filter((l) => can("st.transfer.request", l.id))
   const [to, setTo] = React.useState<string | null>(initial?.toLocationId ?? null)
   const toId = to ?? (into.find((l) => l.id === session.locationId && l.kind === "studio") ?? into.find((l) => l.kind === "studio") ?? into[0])?.id ?? ""
-  const [from, setFrom] = React.useState<string | null>(null)
+  const [from, setFrom] = React.useState<string | null>(initial?.fromLocationId ?? null)
   const fromId = from ?? (stock.find((l) => l.kind === "store" && l.id !== toId) ?? stock.find((l) => l.id !== toId))?.id ?? ""
   const [lines, setLines] = React.useState<DraftLine[]>(initial?.lines ?? [newLine()])
-  const [note, setNote] = React.useState("")
+  const [note, setNote] = React.useState(initial?.note ?? "")
   const available = useLiveQuery(async () => new Map((await db.stockValues.where("locationId").equals(fromId).toArray()).map((v) => [v.itemId, v.qtyBase])), [db, fromId])
   const valid = toId && fromId && toId !== fromId && lines.every((l) => l.itemId && l.qty && l.qty > 0)
 
@@ -196,7 +242,9 @@ function RequestForm({ initial, onClose, onDone }: { initial?: { toLocationId?: 
     >
       <DialogHeader>
         <DialogTitle>{t("st.transfers.newTitle")}</DialogTitle>
-        <DialogDescription>{t("st.transfers.newHint")}</DialogDescription>
+        <DialogDescription data-testid={initial?.orderNo ? "transfer-prefill-hint" : undefined}>
+          {initial?.orderNo ? t("st.transfers.prefilled", { order: initial.orderNo }) : t("st.transfers.newHint")}
+        </DialogDescription>
       </DialogHeader>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label={t("st.transfers.from")}>
@@ -217,7 +265,7 @@ function RequestForm({ initial, onClose, onDone }: { initial?: { toLocationId?: 
         hint={(line, item) => (item ? t("st.transfers.atSource", { qty: `${num(available?.get(item.id) ?? 0)} ${item.baseUom}` }) : null)}
       />
       <Field label={t("ic.ui.note")}>
-        <Textarea value={note} onChange={(e) => setNote(e.target.value)} className="min-h-16" />
+        <Textarea value={note} onChange={(e) => setNote(e.target.value)} className="min-h-16" data-testid="transfer-note" />
       </Field>
       <DialogFooter>
         <Button type="button" variant="neutral" onClick={onClose}>

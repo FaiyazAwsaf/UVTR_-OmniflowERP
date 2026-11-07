@@ -227,5 +227,16 @@ export const icEn = {
       COUNT_LINE_UNKNOWN: "That count line doesn't exist.",
       COUNT_NOT_PENDING: "Count {no} is not waiting for approval.",
     },
+    scenarios: {
+      e9: {
+        title: "Stock count variance",
+        summary: "A count at Gulshan finds 3 shortfalls above the store keeper's limit: the studio manager approves and the variance posts",
+        cue1: "Count {countNo} at Gulshan Studio is open. Click Counted = expected for the empty lines: every line takes its expected quantity.",
+        cue2: "Change three counts: {sku1} to {counted1} (expected {expected1}), {sku2} to {counted2} (expected {expected2}), {sku3} to {counted3} (expected {expected3}).",
+        cue3: "The variance reads {varianceP}, above your {limitP} limit. Click Post variances: the count waits for approval.",
+        cue4: "In Shahriar's window (Gulshan studio manager, limit {approverLimitP}) open Approvals and approve count {countNo}.",
+        cue5: "The count posts: stock falls by the three shortfalls and the R22 voucher moves {varianceP} to inventory loss. Open it from the count.",
+      },
+    },
   },
 }

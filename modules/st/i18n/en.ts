@@ -78,6 +78,8 @@ export const stEn = {
       atSource: "At source {qty}",
       submit: "Request transfer",
       requested: "Transfer {no} requested",
+      forOrder: "For job order {order}",
+      prefilled: "Filled from the stock check of job order {order}. Check the quantity and request it.",
     },
     transfer: {
       kind: "Transfer (Mushak 6.5 challan)",
@@ -179,6 +181,17 @@ export const stEn = {
       TRANSFER_OVER_RECEIPT: "More {item} received ({received}) than was sent ({sent}).",
       ADJUSTMENT_SIGN: "A {reason} adjustment can't move stock that way.",
       ADJUSTMENT_NOT_PENDING: "Adjustment {no} is not waiting for approval.",
+    },
+    scenarios: {
+      e3: {
+        title: "Stock-out for a job",
+        summary: "Uttara is short of ceramic coating for a booked SUV job: a transfer from the Central Store with the Mushak 6.5 challan",
+        cue1: "Order {orderNo} needs {needQty} ml of ceramic coating 2-year ({sku}); Uttara holds {onHandQty} ml. The stock check shows {shortQty} ml short: click Request transfer.",
+        cue2: "The request opens filled: Central Store to Uttara Studio, {transferQty} ml, noted for {orderNo}. Click Request transfer.",
+        cue3: "In Habib's window (store) open the request in Transfers and click Dispatch: print the Mushak 6.5 challan; the stock is in transit.",
+        cue4: "Back as Arif the transfer shows In transit: click Receive. Uttara now holds {afterQty} ml.",
+        cue5: "Open order {orderNo} again: nothing is short, so the technician can finish the job and its recipe takes {needQty} ml.",
+      },
     },
   },
 }
