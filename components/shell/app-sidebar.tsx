@@ -10,7 +10,7 @@ import { ScrollFade } from "@/components/motion/scroll-fade"
 import { activeHref, groupLabelKey, groupNav, navFor } from "@/components/shell/nav"
 import { useNavCounts } from "@/components/shell/nav-counts"
 import { useHomeRoute } from "@/components/shell/access"
-import { useSignOut } from "@/components/shell/user-menu"
+import { useSignOut } from "@/components/shell/use-sign-out"
 import {
   Tooltip,
   TooltipContent,

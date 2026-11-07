@@ -16,6 +16,7 @@ export const LANDING: Record<string, string> = {
   tania: "/si/counter",
   sabbir: "/si/counter",
   rakib: "/stl/my-jobs",
+  mahbub: "/fa",
 }
 
 /**

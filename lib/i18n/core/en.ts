@@ -350,6 +350,8 @@ export const coreEn = {
       mismatch: "The new passwords don't match.",
       changed: "Password changed",
       failed: "The password could not be changed.",
+      requiredTitle: "Choose a new password",
+      requiredHint: "Your password was reset by an administrator. Choose a new one to continue; the current password is the temporary one you were given.",
     },
     toasts: {
       open: "Open",

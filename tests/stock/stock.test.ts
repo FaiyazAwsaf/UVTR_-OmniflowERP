@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 
+import { now } from "@/core/clock/clock"
+import { dhakaDate } from "@/core/clock/dates"
 import type { OmniflowDb } from "@/core/db/database"
 import type { BatchRow, StockBalanceRow } from "@/core/db/schema"
 import { stockValueId } from "@/core/db/tables"
@@ -14,12 +16,15 @@ import {
   transferIn,
   transferOut,
 } from "@/core/stock/moves"
+import { addMonthsISO } from "@/core/seed/time"
 import { issueValue, scaleRecipeQty, standardValue } from "@/core/stock/value"
 
 import { foundationDb } from "../helpers/foundation"
 import { asSystem, seedTestItems } from "../helpers/fixtures"
 
 const ref = { docType: "test", docId: "t1", docNo: "T-1" }
+/** Expiry dates relative to the test clock, so FEFO tests hold on any TEST_DATE. */
+const monthsAhead = (n: number) => addMonthsISO(dhakaDate(now()), n)
 
 describe("stock math (plan §3.5)", () => {
   it("takes value pro rata and empties a location with exactly the remainder", () => {
@@ -97,8 +102,8 @@ describe("stock moves", () => {
 
   it("keeps a moving average across receipts and issues, and refuses going negative", async () => {
     await asSystem(db, async (tx) => {
-      await receiveStock(tx, { itemId: "itm_cc2", locationId: "loc_gul", qtyBase: 100, valueP: 13_000_00, type: "grn", ref, batch: { batchNo: "A", expiry: "2027-06-30" } })
-      await receiveStock(tx, { itemId: "itm_cc2", locationId: "loc_gul", qtyBase: 50, valueP: 7_000_00, type: "grn", ref, batch: { batchNo: "B", expiry: "2027-03-31" } })
+      await receiveStock(tx, { itemId: "itm_cc2", locationId: "loc_gul", qtyBase: 100, valueP: 13_000_00, type: "grn", ref, batch: { batchNo: "A", expiry: monthsAhead(8) } })
+      await receiveStock(tx, { itemId: "itm_cc2", locationId: "loc_gul", qtyBase: 50, valueP: 7_000_00, type: "grn", ref, batch: { batchNo: "B", expiry: monthsAhead(4) } })
     })
     expect(await value("itm_cc2", "loc_gul")).toMatchObject({ qtyBase: 150, valueP: 20_000_00 })
     const out = await asSystem(db, (tx) => issueStock(tx, { itemId: "itm_cc2", locationId: "loc_gul", qtyBase: 60, type: "issue-job", ref }))

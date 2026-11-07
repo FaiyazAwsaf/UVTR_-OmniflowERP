@@ -7,6 +7,7 @@ import { Check, ChevronDown, KeyRound, LayoutGrid, LogOut, MapPin } from "lucide
 import { UserAvatar } from "@/components/shared/avatars"
 import { ChangePasswordDialog } from "@/components/shell/change-password-dialog"
 import { switchLocation } from "@/components/shell/location-switcher"
+import { useSignOut } from "@/components/shell/use-sign-out"
 import { UiScaleStepper } from "@/components/shell/ui-scale"
 import {
   DropdownMenu,
@@ -17,33 +18,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { getCentralDb } from "@/core/db/database"
 import type { UserRow } from "@/core/db/schema"
-import { commit } from "@/core/engine/commit"
-import { signOut } from "@/core/security/signin"
 import { usePermissions } from "@/core/security/useCan"
 import { nameOf, useLocations, userName } from "@/core/security/users"
-import { useActor } from "@/core/session/actor"
-import { setSignedOut, useSession } from "@/core/session/session"
+import { useSession } from "@/core/session/session"
 import { cn } from "@/lib/utils"
 import { useLocale } from "@/lib/i18n/provider"
 
-/** Sign this window out: end its session row, then clear the window. */
-export function useSignOut() {
-  const router = useRouter()
-  const actor = useActor()
-  return React.useCallback(async () => {
-    if (actor) {
-      try {
-        await commit(signOut, {}, { db: getCentralDb(), actor })
-      } catch {
-        // An ended session is already signed out.
-      }
-    }
-    setSignedOut("sign-out")
-    router.push("/login")
-  }, [actor, router])
-}
 
 /**
  * The avatar block (name, role, chevron) opens the user menu

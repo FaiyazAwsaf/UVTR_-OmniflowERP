@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { KeyRound } from "lucide-react"
+import { KeyRound, LogOut } from "lucide-react"
 import { toast } from "sonner"
 
 import { ruleMessage } from "@/components/shared/rule-message"
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useSignOut } from "@/components/shell/use-sign-out"
 import { useDb } from "@/core/db/DbProvider"
 import { commit } from "@/core/engine/commit"
 import { RuleViolation } from "@/core/engine/errors"
@@ -32,25 +33,38 @@ import { useLocale } from "@/lib/i18n/provider"
 export function ChangePasswordDialog({
   open,
   onOpenChange,
+  required = false,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** The user must change it (after an administrator's reset): no cancel, only sign out. */
+  required?: boolean
 }) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm" data-testid="change-password-dialog">
+    <Dialog open={open} onOpenChange={(next) => (required ? undefined : onOpenChange(next))}>
+      <DialogContent className="sm:max-w-sm" data-testid="change-password-dialog" data-required={required ? "true" : undefined} showCloseButton={!required}>
         {/* The popup unmounts when closed, so the form starts empty each time. */}
-        <PasswordForm onDone={() => onOpenChange(false)} />
+        <PasswordForm onDone={() => onOpenChange(false)} required={required} />
       </DialogContent>
     </Dialog>
   )
 }
 
-function PasswordForm({ onDone }: { onDone: () => void }) {
+/**
+ * Opens the change-password dialog on its own while the signed-in user's
+ * `mustChangePassword` is set (a new user or an administrator's reset,
+ * `sac.saveUser`/`sac.resetPassword`); it closes once the command clears it.
+ */
+export function PasswordChangeGate({ mustChange }: { mustChange: boolean }) {
+  return <ChangePasswordDialog open={mustChange} onOpenChange={() => undefined} required />
+}
+
+function PasswordForm({ onDone, required }: { onDone: () => void; required: boolean }) {
   const { t, tk, num, money, dmy, locale } = useLocale()
   const db = useDb()
   const actor = useActor()
   const show = useEngineFeedback((state) => state.show)
+  const signOut = useSignOut()
   const [current, setCurrent] = React.useState("")
   const [next, setNext] = React.useState("")
   const [confirm, setConfirm] = React.useState("")
@@ -89,9 +103,9 @@ function PasswordForm({ onDone }: { onDone: () => void }) {
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2">
           <KeyRound className="size-4 text-primary" />
-          {t("shell.changePassword")}
+          {required ? t("shell.password.requiredTitle") : t("shell.changePassword")}
         </DialogTitle>
-        <DialogDescription>{t("shell.password.hint")}</DialogDescription>
+        <DialogDescription>{required ? `${t("shell.password.requiredHint")} ${t("shell.password.hint")}` : t("shell.password.hint")}</DialogDescription>
       </DialogHeader>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="pw-current">{t("shell.password.current")}</Label>
@@ -132,9 +146,16 @@ function PasswordForm({ onDone }: { onDone: () => void }) {
         </p>
       ) : null}
       <DialogFooter>
-        <Button type="button" variant="ghost" onClick={onDone}>
-          {t("common.cancel")}
-        </Button>
+        {required ? (
+          <Button type="button" variant="ghost" onClick={() => void signOut()} data-testid="password-sign-out">
+            <LogOut />
+            {t("shell.signOut")}
+          </Button>
+        ) : (
+          <Button type="button" variant="ghost" onClick={onDone}>
+            {t("common.cancel")}
+          </Button>
+        )}
         <Button type="submit" disabled={busy || !current || !next || !confirm} data-testid="password-submit">
           {busy ? t("common.saving") : t("shell.password.submit")}
         </Button>

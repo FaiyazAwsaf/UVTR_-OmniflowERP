@@ -18,8 +18,10 @@ export const LANDING: Record<string, RegExp> = {
 /** Quick sign-in (the launcher's one click) and wait for the shell on the landing route. */
 export async function signIn(page: Page, username: string, extra = ""): Promise<void> {
   await page.goto(`/?user=${username}${extra}`)
-  await expect(page).toHaveURL(LANDING[username] ?? /\/home/)
-  await expect(page.locator('[data-slot="erp-shell"]')).toBeVisible()
+  // The first window of a browser seeds the demo data; with other browsers
+  // sharing the machine that can take well over the default 10 s.
+  await expect(page).toHaveURL(LANDING[username] ?? /\/home/, { timeout: 30_000 })
+  await expect(page.locator('[data-slot="erp-shell"]')).toBeVisible({ timeout: 30_000 })
 }
 
 /** Open the demo panel on one of its tabs (Clock, Data, Scenarios), in English. */

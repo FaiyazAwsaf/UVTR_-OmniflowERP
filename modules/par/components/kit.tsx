@@ -109,7 +109,8 @@ export function ListTable<T>({
   return (
     <div className={cn("@container/list flex min-w-0 flex-col", className)} data-slot="list-table">
       <div className="min-w-0 overflow-x-auto">
-        <table className="w-full border-separate border-spacing-0 text-[0.8125rem]">
+        {/* Document numbers, codes and amounts (mono) never wrap mid-identifier. */}
+        <table className="w-full border-separate border-spacing-0 text-[0.8125rem] [&_td_.font-mono]:whitespace-nowrap">
           <thead>
             <tr>
               {columns.map((c) => {
