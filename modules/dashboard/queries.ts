@@ -535,7 +535,7 @@ export function primaryRole(roleCodes: readonly string[]): RoleCode | "NONE" {
 const STUDIO_BOUND: ReadonlySet<string> = new Set(["STUDIO_MGR", "ADVISOR", "CASHIER", "TECHNICIAN"])
 
 const CREDIT_SEGMENTS = new Set(["fleet", "dealer", "corporate"])
-/** Sign-ins and housekeeping that would crowd the auditor's recent activity. */
+/** Sign-ins, sweeper jobs and housekeeping that would crowd the auditor's recent activity (system rows show only when refused). */
 const QUIET_COMMANDS: ReadonlySet<string> = new Set(["sac.signIn", "sac.signOut", "sac.verifyMfa", "sac.timeoutSessions", "notifications.markRead", "irt.recordRun"])
 const QUIET_ENTITIES: ReadonlySet<string> = new Set(["sessions", "notifications", "reportRuns"])
 const bi = (row: { nameEn: string; nameBn: string } | undefined | null) => (row ? { en: row.nameEn, bn: row.nameBn || row.nameEn } : undefined)
@@ -940,7 +940,7 @@ export async function loadRoleHome(
       todos.push({ kind: "dashboard", id: "dashboard", href: "/dashboard", tone: "info" })
       const seen = new Set<string>()
       for (const a of recent) {
-        if (seen.has(a.commitId) || (a.action !== "blocked" && QUIET_COMMANDS.has(a.command)) || QUIET_ENTITIES.has(a.entity)) continue
+        if (seen.has(a.commitId) || (a.action !== "blocked" && (QUIET_COMMANDS.has(a.command) || a.actor.userId === "system")) || QUIET_ENTITIES.has(a.entity)) continue
         seen.add(a.commitId)
         todos.push({
           kind: "audit",
