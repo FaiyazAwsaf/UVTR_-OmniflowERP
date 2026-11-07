@@ -284,7 +284,7 @@ export const demoEn = {
         cue1: "Revenue and collections today include invoice {invoiceNo} ({invoiceP}).",
         cue2: "The cash and bank position moved by the card and cash taken.",
         cue3: "Click a revenue tile: the IRT report opens for the same period.",
-        cue4: "Jobs by status: the Corolla Cross is closed at Gulshan.",
+        cue4: "Jobs by status: the Corolla Cross counts among Gulshan's jobs delivered today.",
       },
     },
   },
