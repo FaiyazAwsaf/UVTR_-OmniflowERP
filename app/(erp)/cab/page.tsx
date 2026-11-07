@@ -1,6 +1,8 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /cab: filled in Phase 2 (implementation_plan.md §9). */
+import { CashPosition } from "@/modules/cab/components/cash-position"
+
+/** /cab: cash position (plan §9). */
 export default function Page() {
-  return <StubPage app="cab" titleKey="cab.pages.home" />
+  return <CashPosition />
 }

@@ -1,6 +1,14 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /cab/cheques: filled in Phase 2 (implementation_plan.md §9). */
+import * as React from "react"
+
+import { Cheques } from "@/modules/cab/components/cheques"
+
+/** /cab/cheques: the cheque register (plan §9). */
 export default function Page() {
-  return <StubPage app="cab" titleKey="cab.pages.cheques" />
+  return (
+    <React.Suspense fallback={null}>
+      <Cheques />
+    </React.Suspense>
+  )
 }

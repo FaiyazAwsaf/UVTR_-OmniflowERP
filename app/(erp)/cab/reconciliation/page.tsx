@@ -1,6 +1,14 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /cab/reconciliation: filled in Phase 2 (implementation_plan.md §9). */
+import * as React from "react"
+
+import { Reconciliation } from "@/modules/cab/components/reconciliation"
+
+/** /cab/reconciliation: bank reconciliation (plan §9, E7). */
 export default function Page() {
-  return <StubPage app="cab" titleKey="cab.pages.reconciliation" />
+  return (
+    <React.Suspense fallback={null}>
+      <Reconciliation />
+    </React.Suspense>
+  )
 }
