@@ -137,9 +137,10 @@ export function InvoiceNew() {
           </TabsTrigger>
         </TabsList>
       </Tabs>
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]">
-        <div className="flex min-w-0 flex-col gap-4">
-          <SectionCard title={t("common.customer")} size="sm">
+      {/* Narrow screens put the totals, credit check and issue button right
+          under the customer, before a long list of orders (E2 at 960x600). */}
+      <div className="grid gap-4 [grid-template-areas:'cust'_'side'_'list'] xl:grid-cols-[minmax(0,1fr)_24rem] xl:grid-rows-[auto_1fr] xl:[grid-template-areas:'cust_side'_'list_side']">
+          <SectionCard title={t("common.customer")} size="sm" className="min-w-0 [grid-area:cust]">
             <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
               <PartyPicker
                 value={partyId}
@@ -182,7 +183,11 @@ export function InvoiceNew() {
               </div>
             ) : null}
           </SectionCard>
-          <SectionCard title={mode === "orders" ? t("si.new.deliveredOrders") : t("si.new.ordersInPeriod", { count: num(inPeriod.length) })} size="sm">
+          <SectionCard
+            title={mode === "orders" ? t("si.new.deliveredOrders") : t("si.new.ordersInPeriod", { count: num(inPeriod.length) })}
+            size="sm"
+            className="min-w-0 self-start [grid-area:list]"
+          >
             {(mode === "orders" ? ofParty : inPeriod).length ? (
               <ul className="flex flex-col gap-1.5" data-testid="invoice-orders">
                 {(mode === "orders" ? ofParty : inPeriod).map((o) => (
@@ -200,8 +205,7 @@ export function InvoiceNew() {
               <p className="text-[0.8125rem] text-muted-foreground">{partyId ? t("si.new.noOrders") : t("si.new.pickCustomer")}</p>
             )}
           </SectionCard>
-        </div>
-        <aside className="flex min-w-0 flex-col gap-4">
+        <aside className="flex min-w-0 flex-col gap-4 self-start [grid-area:side]">
           <SectionCard title={t("si.new.summary")} size="sm">
             <TotalsBlock
               rows={[
