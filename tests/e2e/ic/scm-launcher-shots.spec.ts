@@ -20,24 +20,34 @@ const SIZES = [
 
 type Shot = { name: string; launch: string; user: string; ready: string; then?: (page: Page) => Promise<void> }
 
+/** The transfer form, prefilled the way the order's stock check links to it. */
+async function openPrefill(page: Page) {
+  const session = await page.evaluate(() => {
+    for (let i = 0; i < window.sessionStorage.length; i++) {
+      const key = window.sessionStorage.key(i)
+      if (key?.startsWith("of:session:")) return JSON.parse(window.sessionStorage.getItem(key) ?? "{}")
+    }
+    return {}
+  })
+  const orderNo = session?.cue?.params?.orderNo
+  await page.goto(`/st/transfers?new=1&from=loc_cst&to=loc_utt&item=itm_cc2_kit&qty=50&order=${orderNo}`)
+  await expect(page.getByTestId("transfer-dialog")).toBeVisible()
+}
+
 const SCREENS: Shot[] = [
   { name: "e3-order", launch: "E3", user: "arif", ready: '[data-testid="order-view"]' },
+  { name: "e3-transfer-prefill", launch: "E3", user: "arif", ready: '[data-testid="order-view"]', then: openPrefill },
   {
-    name: "e3-transfer-prefill",
+    name: "e3-transfers-list",
     launch: "E3",
     user: "arif",
     ready: '[data-testid="order-view"]',
     then: async (page) => {
-      const session = await page.evaluate(() => {
-        for (let i = 0; i < window.sessionStorage.length; i++) {
-          const key = window.sessionStorage.key(i)
-          if (key?.startsWith("of:session:")) return JSON.parse(window.sessionStorage.getItem(key) ?? "{}")
-        }
-        return {}
-      })
-      const orderNo = session?.cue?.params?.orderNo
-      await page.goto(`/st/transfers?new=1&from=loc_cst&to=loc_utt&item=itm_cc2_kit&qty=50&order=${orderNo}`)
-      await expect(page.getByTestId("transfer-dialog")).toBeVisible()
+      await openPrefill(page)
+      await page.getByTestId("transfer-submit").click()
+      await expect(page.getByTestId("transfer-detail")).toBeVisible()
+      await page.goto("/st/transfers")
+      await expect(page.getByTestId("transfer-row-note").first()).toBeVisible()
     },
   },
   { name: "e4-receive", launch: "E4", user: "habib", ready: '[data-testid="grn-receive-form"]' },
