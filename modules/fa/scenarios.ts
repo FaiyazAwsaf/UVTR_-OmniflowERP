@@ -68,8 +68,8 @@ const e10: ScenarioDef = {
         date: today,
         narration: "Electricity and water accrual, Gulshan and Uttara",
         lines: [
-          { account: "UTILITIES", debitP: 70_000_00, creditP: 0, costCentreId: CC.GUL, description: "Gulshan Studio" },
-          { account: "UTILITIES", debitP: 50_000_00, creditP: 0, costCentreId: CC.UTT, description: "Uttara Studio" },
+          { account: "UTILITIES", debitP: 70_000_00, creditP: 0, costCentreId: CC.GUL },
+          { account: "UTILITIES", debitP: 50_000_00, creditP: 0, costCentreId: CC.UTT },
           { account: "ACCRUED_EXP", debitP: 0, creditP: E10_ACCRUAL_P },
         ],
       },
