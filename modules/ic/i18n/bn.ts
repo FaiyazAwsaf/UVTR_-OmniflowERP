@@ -21,7 +21,8 @@ export const icBn: typeof icEn = {
       count_approve: "গণনার পার্থক্য অনুমোদন",
     },
     events: {
-      StockBelowReorder: "{location}-এ {sku} পুনঃক্রয় স্তরে বা তার নিচে ({qty}, সর্বনিম্ন {min})",
+      StockBelowReorder:
+        "{location}-এ {sku} পুনঃক্রয় স্তরে বা তার নিচে ({qty}, সর্বনিম্ন {min})",
       CountOpened: "গণনা {no} খোলা হয়েছে ({lines} লাইন)",
       CountPosted: "গণনা {no} পোস্ট হয়েছে ({variances}টি পার্থক্য)",
       ExpiryAlert: "{sku}-এর ব্যাচ {batch}-এর মেয়াদ {days} দিনে শেষ",
@@ -42,6 +43,7 @@ export const icBn: typeof icEn = {
       search: "SKU বা পণ্য খুঁজুন",
       date: "তারিখ",
       lines: "{count} লাইন",
+      lines_one: "{count} লাইন",
       total: "মোট",
       open: "খুলুন",
       by: "যিনি",
@@ -63,6 +65,7 @@ export const icBn: typeof icEn = {
       withinLimit: "আপনার সীমা {limit}-এর মধ্যে: সঙ্গে সঙ্গে পোস্ট হবে",
       estValue: "আনুমানিক মূল্য {value}",
       days: "{count} দিন",
+      days_one: "{count} দিন",
       perUnit: "প্রতি {unit}",
     },
     stock: {
@@ -74,6 +77,7 @@ export const icBn: typeof icEn = {
       kpiTransit: "পথে",
       kpiItemsCaption: "{count}টি পণ্য লাইন",
       kpiTransitCaption: "পথে {count}টি স্থানান্তর",
+      kpiTransitCaption_one: "পথে {count}টি স্থানান্তর",
       allCategories: "সব শ্রেণি",
       allStatus: "যেকোনো অবস্থা",
       item: "পণ্য",
@@ -114,7 +118,8 @@ export const icBn: typeof icEn = {
     },
     counts: {
       title: "মজুদ গণনা",
-      subtitle: "প্রত্যাশিত পরিমাণের স্ন্যাপশট, গণনা, পার্থক্য পর্যালোচনা ও পোস্ট",
+      subtitle:
+        "প্রত্যাশিত পরিমাণের স্ন্যাপশট, গণনা, পার্থক্য পর্যালোচনা ও পোস্ট",
       countNo: "গণনা",
       date: "তারিখ",
       location: "অবস্থান",
@@ -124,7 +129,8 @@ export const icBn: typeof icEn = {
       status: "অবস্থা",
       openCount: "গণনা খুলুন",
       openTitle: "মজুদ গণনা খুলুন",
-      openHint: "প্রত্যাশিত পরিমাণ এই মুহূর্তে স্থির হবে (ব্যবহারযোগ্য মজুদ, ব্যাচভিত্তিক)।",
+      openHint:
+        "প্রত্যাশিত পরিমাণ এই মুহূর্তে স্থির হবে (ব্যবহারযোগ্য মজুদ, ব্যাচভিত্তিক)।",
       scope: "পরিধি",
       allCategories: "সব শ্রেণি",
       open: "গণনা খুলুন",
@@ -156,11 +162,13 @@ export const icBn: typeof icEn = {
       countedLines: "গণিত",
       fillExpected: "খালি লাইনে গণিত = প্রত্যাশিত",
       notCounted: "গণনা হয়নি",
-      readOnly: "গণনা পোস্ট হলে বা অনুমোদনের অপেক্ষায় থাকলে গণিত পরিমাণ বদলানো যায় না।",
+      readOnly:
+        "গণনা পোস্ট হলে বা অনুমোদনের অপেক্ষায় থাকলে গণিত পরিমাণ বদলানো যায় না।",
     },
     reorder: {
       title: "পুনঃক্রয়ের পরামর্শ",
-      subtitle: "যেসব পণ্যের মজুদ ও আসন্ন পরিমাণ সর্বনিম্ন বা তার নিচে, সর্বোচ্চ পর্যন্ত পূরণ",
+      subtitle:
+        "যেসব পণ্যের মজুদ ও আসন্ন পরিমাণ সর্বনিম্ন বা তার নিচে, সর্বোচ্চ পর্যন্ত পূরণ",
       item: "পণ্য",
       location: "অবস্থান",
       onHand: "মজুদ",
@@ -181,9 +189,11 @@ export const icBn: typeof icEn = {
     },
     expiry: {
       title: "মেয়াদ পর্যবেক্ষণ",
-      subtitle: "ব্যাচগুলো আগে মেয়াদোত্তীর্ণ, আগে ব্যবহার ক্রমে; মেয়াদোত্তীর্ণ ব্যাচ ব্যবহার করা যায় না",
+      subtitle:
+        "ব্যাচগুলো আগে মেয়াদোত্তীর্ণ, আগে ব্যবহার ক্রমে; মেয়াদোত্তীর্ণ ব্যাচ ব্যবহার করা যায় না",
       window: "মেয়াদ শেষ হবে",
       within: "{count} দিনের মধ্যে",
+      within_one: "{count} দিনের মধ্যে",
       allBatches: "সব ব্যাচ",
       item: "পণ্য",
       batch: "ব্যাচ",
@@ -192,6 +202,7 @@ export const icBn: typeof icEn = {
       expiry: "মেয়াদ",
       daysLeft: "বাকি দিন",
       expiredDays: "{count} দিন আগে মেয়াদ শেষ",
+      expiredDays_one: "{count} দিন আগে মেয়াদ শেষ",
       status: "অবস্থা",
       writeOff: "বাদ দিন",
       empty: "এই সময়ে কোনো ব্যাচের মেয়াদ শেষ হচ্ছে না",
@@ -199,12 +210,14 @@ export const icBn: typeof icEn = {
     },
     consumption: {
       title: "ব্যবহারের পার্থক্য",
-      subtitle: "রেসিপির আদর্শ পরিমাণ বনাম টেকনিশিয়ানদের প্রকৃত ব্যবহার, কাজের ব্যবহার থেকে",
+      subtitle:
+        "রেসিপির আদর্শ পরিমাণ বনাম টেকনিশিয়ানদের প্রকৃত ব্যবহার, কাজের ব্যবহার থেকে",
       by: "ভাগ করুন",
       byService: "সেবা",
       byTechnician: "টেকনিশিয়ান",
       period: "সময়কাল",
       lastDays: "গত {count} দিন",
+      lastDays_one: "গত {count} দিন",
       service: "সেবা",
       technician: "টেকনিশিয়ান",
       item: "পণ্য",
@@ -231,7 +244,8 @@ export const icBn: typeof icEn = {
     scenarios: {
       e9: {
         title: "মজুদ গণনার পার্থক্য",
-        summary: "গুলশানের গণনায় স্টোরকিপারের সীমার বেশি ৩টি ঘাটতি: স্টুডিও ম্যানেজার অনুমোদন দেন, পার্থক্য পোস্ট হয়",
+        summary:
+          "গুলশানের গণনায় স্টোরকিপারের সীমার বেশি ৩টি ঘাটতি: স্টুডিও ম্যানেজার অনুমোদন দেন, পার্থক্য পোস্ট হয়",
         cue1: "গুলশান স্টুডিওতে গণনা {countNo} খোলা। খালি লাইনে গণিত = প্রত্যাশিত ক্লিক করুন: প্রতিটি লাইন প্রত্যাশিত পরিমাণ নেবে।",
         cue2: "তিনটি গণনা বদলান: {sku1} করুন {counted1} (প্রত্যাশিত {expected1}), {sku2} করুন {counted2} (প্রত্যাশিত {expected2}), {sku3} করুন {counted3} (প্রত্যাশিত {expected3})।",
         cue3: "পার্থক্য দেখাচ্ছে {varianceP}, আপনার সীমা {limitP}-এর বেশি। পার্থক্য পোস্ট করুন ক্লিক করুন: গণনা অনুমোদনের অপেক্ষায় যাবে।",

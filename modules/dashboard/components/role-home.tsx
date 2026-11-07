@@ -62,7 +62,13 @@ import { cn } from "@/lib/utils"
 
 import { loadRoleHome } from "../queries"
 import type { HomeKpi, TodoItem, TodoKind } from "../types"
-import { FormattedFigure, GradientKpi, ListRow, TONE_DOT, useDemoToday } from "./kit"
+import {
+  FormattedFigure,
+  GradientKpi,
+  ListRow,
+  TONE_DOT,
+  useDemoToday,
+} from "./kit"
 
 const VARIANTS = ["cyan", "yellow", "pink", "purple"] as const
 
@@ -169,11 +175,20 @@ export function RoleHome() {
   const { today, nowMs } = useDemoToday()
   const canDashboard = useCan("dashboard.app.view")
   const data = useLiveQuery(
-    async () => (userId && today ? loadRoleHome(db, { userId, today, nowMs, locationId }) : undefined),
+    async () =>
+      userId && today
+        ? loadRoleHome(db, { userId, today, nowMs, locationId })
+        : undefined,
     [db, userId, today, nowMs, locationId]
   )
   const role = data?.role
-  const roleRow = useLiveQuery(async () => (role && role !== "NONE" ? db.roles.where("code").equals(role).first() : undefined), [db, role])
+  const roleRow = useLiveQuery(
+    async () =>
+      role && role !== "NONE"
+        ? db.roles.where("code").equals(role).first()
+        : undefined,
+    [db, role]
+  )
   const scopeIds = data?.scopeIds ?? []
   const scope =
     !data || LOCATIONS.every((l) => scopeIds.includes(l.id))
@@ -183,16 +198,33 @@ export function RoleHome() {
           .join(", ")
   const approvals = (data?.todos ?? []).filter((x) => x.kind === "approval")
   const todos = (data?.todos ?? []).filter((x) => x.kind !== "approval")
-  const landing = role && role !== "NONE" ? ROLE_LANDING[role as RoleCode] : null
+  const landing =
+    role && role !== "NONE" ? ROLE_LANDING[role as RoleCode] : null
 
   return (
-    <div className="@container/home flex min-w-0 flex-col gap-5" data-testid="role-home" data-role={role} data-location={data?.locationId ?? "all"}>
+    <div
+      className="@container/home flex min-w-0 flex-col gap-5"
+      data-testid="role-home"
+      data-role={role}
+      data-location={data?.locationId ?? "all"}
+    >
       <PageHeader
         title={t("dashboard.home.title")}
-        subtitle={roleRow ? t("dashboard.home.subtitle", { role: locale === "bn" ? roleRow.nameBn : roleRow.nameEn, location: scope ?? "" }) : scope}
+        subtitle={
+          roleRow
+            ? t("dashboard.home.subtitle", {
+                role: locale === "bn" ? roleRow.nameBn : roleRow.nameEn,
+                location: scope ?? "",
+              })
+            : scope
+        }
         actions={
           canDashboard ? (
-            <Button nativeButton={false} render={<Link href="/dashboard" />} data-testid="home-open-dashboard">
+            <Button
+              nativeButton={false}
+              render={<Link href="/dashboard" />}
+              data-testid="home-open-dashboard"
+            >
               <LayoutDashboard />
               {t("dashboard.home.owner.open")}
             </Button>
@@ -202,50 +234,112 @@ export function RoleHome() {
 
       <div className="grid grid-cols-1 gap-4 @min-[30rem]/home:grid-cols-2 @min-[68rem]/home:grid-cols-4">
         {(data?.kpis ?? []).map((k, i) => (
-          <HomeKpiCard key={k.key} kpi={k} variant={VARIANTS[i % VARIANTS.length]} scope={scopeIds.join(",")} />
+          <HomeKpiCard
+            key={k.key}
+            kpi={k}
+            variant={VARIANTS[i % VARIANTS.length]}
+            scope={scopeIds.join(",")}
+          />
         ))}
       </div>
 
       <div className="grid grid-cols-1 items-start gap-5 @min-[68rem]/home:grid-cols-[minmax(0,1fr)_22rem]">
-        <SectionCard title={t("dashboard.home.todo.title")} subtitle={data ? t("dashboard.home.todo.subtitle", { count: num(todos.length) }) : undefined} icon={ListChecks}>
+        <SectionCard
+          title={t("dashboard.home.todo.title")}
+          subtitle={
+            data
+              ? t("dashboard.home.todo.subtitle", { count: num(todos.length) })
+              : undefined
+          }
+          icon={ListChecks}
+        >
           {data && !todos.length ? (
-            <EmptyState icon={BadgeCheck} title={t("dashboard.home.todo.empty")} size="sm" />
+            <EmptyState
+              icon={BadgeCheck}
+              title={t("dashboard.home.todo.empty")}
+              size="sm"
+            />
           ) : (
             <ul className="flex flex-col" data-testid="todo-list">
               {todos.map((item) => (
-                <TodoRow key={`${item.kind}:${item.id}`} item={item} today={today} />
+                <TodoRow
+                  key={`${item.kind}:${item.id}`}
+                  item={item}
+                  today={today}
+                />
               ))}
             </ul>
           )}
         </SectionCard>
 
         <div className="flex min-w-0 flex-col gap-5">
-          <SectionCard title={t("dashboard.home.approvals.title")} icon={Inbox} size="sm" seeAllHref="/approvals">
+          <SectionCard
+            title={t("dashboard.home.approvals.title")}
+            icon={Inbox}
+            size="sm"
+            seeAllHref="/approvals"
+          >
             {approvals.length ? (
-              <ul className="flex flex-col" data-testid="home-approvals" data-value={approvals.length}>
+              <ul
+                className="flex flex-col"
+                data-testid="home-approvals"
+                data-value={approvals.length}
+              >
                 {approvals.slice(0, 4).map((item) => (
                   <TodoRow key={item.id} item={item} today={today} compact />
                 ))}
               </ul>
             ) : (
-              <p className="py-3 text-center text-sm text-muted-foreground" data-testid="home-approvals" data-value={0}>
+              <p
+                className="py-3 text-center text-sm text-muted-foreground"
+                data-testid="home-approvals"
+                data-value={0}
+              >
                 {t("dashboard.home.approvals.empty")}
               </p>
             )}
           </SectionCard>
           {canDashboard ? (
-            <SectionCard title={t("dashboard.home.owner.title")} icon={LayoutDashboard} size="sm">
-              <p className="mb-3 text-[0.8125rem] text-muted-foreground">{t("dashboard.home.owner.body")}</p>
-              <Link href="/dashboard" data-testid="home-dashboard-link" className="text-[0.8125rem] font-medium text-link underline-offset-4 hover:underline">
+            <SectionCard
+              title={t("dashboard.home.owner.title")}
+              icon={LayoutDashboard}
+              size="sm"
+            >
+              <p className="mb-3 text-[0.8125rem] text-muted-foreground">
+                {t("dashboard.home.owner.body")}
+              </p>
+              <Link
+                href="/dashboard"
+                data-testid="home-dashboard-link"
+                className="text-[0.8125rem] font-medium text-link underline-offset-4 hover:underline"
+              >
                 {t("dashboard.home.owner.open")}
               </Link>
             </SectionCard>
           ) : null}
-          <SectionCard title={t("dashboard.home.links.title")} icon={LayoutGrid} size="sm">
+          <SectionCard
+            title={t("dashboard.home.links.title")}
+            icon={LayoutGrid}
+            size="sm"
+          >
             <ul className="flex flex-col">
-              {landing && landing !== "/home" ? <ListRow href={landing} icon={Gauge} title={tk(`${landing.split("/")[1]}.name`)} /> : null}
-              <ListRow href="/apps" icon={LayoutGrid} title={t("dashboard.home.links.apps")} />
-              <ListRow href="/approvals" icon={Inbox} title={t("dashboard.home.links.approvals")} />
+              {landing && landing !== "/home" ? (
+                <ListRow
+                  href={landing}
+                  icon={Gauge}
+                  title={tk(`${landing.split("/")[1]}.name`)}
+                />
+              ) : null}
+              <ListRow
+                href="/apps"
+                icon={LayoutGrid}
+                title={t("dashboard.home.links.apps")}
+              />
+              <ListRow
+                href="/approvals"
+                icon={Inbox}
+                title={t("dashboard.home.links.approvals")}
+              />
             </ul>
           </SectionCard>
         </div>
@@ -254,7 +348,15 @@ export function RoleHome() {
   )
 }
 
-function HomeKpiCard({ kpi, variant, scope }: { kpi: HomeKpi; variant: (typeof VARIANTS)[number]; scope: string }) {
+function HomeKpiCard({
+  kpi,
+  variant,
+  scope,
+}: {
+  kpi: HomeKpi
+  variant: (typeof VARIANTS)[number]
+  scope: string
+}) {
   const { t, tk } = useLocale()
   return (
     <GradientKpi
@@ -279,22 +381,70 @@ function HomeKpiCard({ kpi, variant, scope }: { kpi: HomeKpi; variant: (typeof V
  * rail) leads with the document number and its kind, so a narrow rail still
  * shows which document waits.
  */
-function TodoRow({ item, today, compact = false }: { item: TodoItem; today: string; compact?: boolean }) {
+function TodoRow({
+  item,
+  today,
+  compact = false,
+}: {
+  item: TodoItem
+  today: string
+  compact?: boolean
+}) {
   const { tk, num, money, time, dmy, locale } = useLocale()
-  const name = item.name ? (locale === "bn" ? item.name.bn : item.name.en) : undefined
-  const detail = item.detail ? (locale === "bn" ? item.detail.bn : item.detail.en) : undefined
-  const when = (ms: number) => (dhakaDate(ms) === today ? time(ms) : `${dmy(ms)} ${time(ms)}`)
+  const name = item.name
+    ? locale === "bn"
+      ? item.name.bn
+      : item.name.en
+    : undefined
+  const detail = item.detail
+    ? locale === "bn"
+      ? item.detail.bn
+      : item.detail.en
+    : undefined
+  const when = (ms: number) =>
+    dhakaDate(ms) === today ? time(ms) : `${dmy(ms)} ${time(ms)}`
   const parts: string[] = []
   if (compact && item.labelKey) parts.push(tk(item.labelKey))
   if (name) parts.push(name)
   if (detail) parts.push(detail)
   if (!compact && item.labelKey) parts.push(tk(item.labelKey))
-  if (item.at && !compact) parts.push(tk(`dashboard.home.todo.sub.${AT_KEY[item.kind] ?? "at"}`, { time: when(item.at) }))
-  if (item.day) parts.push(tk(`dashboard.home.todo.sub.${DAY_KEY[item.kind] ?? "dated"}`, { date: dmy(item.day) }))
-  if (item.kind === "overdue" && item.count) parts.push(tk("dashboard.home.todo.sub.daysPastDue", { days: num(item.count) }))
-  if (item.kind === "locked-user" && item.count) parts.push(tk("dashboard.home.todo.sub.attempts", { count: num(item.count) }))
-  if (item.kind === "dashboard" && item.amountP !== undefined) parts.push(tk("dashboard.home.todo.sub.revenueToday", { amount: money(item.amountP) }))
-  const title = compact && item.ref ? item.ref : tk(`dashboard.home.todo.kinds.${item.kind}`, { ref: item.ref ?? "", count: num(item.count ?? 0) })
+  if (item.at && !compact)
+    parts.push(
+      tk(`dashboard.home.todo.sub.${AT_KEY[item.kind] ?? "at"}`, {
+        time: when(item.at),
+      })
+    )
+  if (item.day)
+    parts.push(
+      tk(`dashboard.home.todo.sub.${DAY_KEY[item.kind] ?? "dated"}`, {
+        date: dmy(item.day),
+      })
+    )
+  if (item.kind === "overdue" && item.count)
+    parts.push(
+      tk("dashboard.home.todo.sub.daysPastDue", { days: num(item.count) })
+    )
+  if (item.kind === "locked-user" && item.count)
+    parts.push(
+      tk("dashboard.home.todo.sub.attempts", { count: num(item.count) })
+    )
+  if (item.kind === "dashboard" && item.amountP !== undefined)
+    parts.push(
+      tk("dashboard.home.todo.sub.revenueToday", {
+        amount: money(item.amountP),
+      })
+    )
+  const title =
+    compact && item.ref
+      ? item.ref
+      : tk(`dashboard.home.todo.kinds.${item.kind}`, {
+          // A locked user reads by name ("Unlock Polash Sarkar"), not by login id.
+          ref:
+            item.kind === "locked-user" && item.name
+              ? item.name[locale]
+              : (item.ref ?? ""),
+          count: num(item.count ?? 0),
+        })
   return (
     <ListRow
       testId="todo-item"
@@ -304,14 +454,28 @@ function TodoRow({ item, today, compact = false }: { item: TodoItem; today: stri
       tone={item.tone}
       title={
         <span className="flex min-w-0 items-center gap-2">
-          {item.tone ? <span className={cn("size-1.5 shrink-0 rounded-full", TONE_DOT[item.tone])} /> : null}
-          <span className={cn("truncate", compact && "font-mono text-[0.8125rem]")} lang={compact ? "en" : undefined}>
+          {item.tone ? (
+            <span
+              className={cn(
+                "size-1.5 shrink-0 rounded-full",
+                TONE_DOT[item.tone]
+              )}
+            />
+          ) : null}
+          <span
+            className={cn("truncate", compact && "font-mono text-[0.8125rem]")}
+            lang={compact ? "en" : undefined}
+          >
             {title}
           </span>
         </span>
       }
       sub={parts.join(" · ")}
-      right={item.amountP !== undefined && item.kind !== "dashboard" ? <MoneyText poisha={item.amountP} className="font-mono" /> : undefined}
+      right={
+        item.amountP !== undefined && item.kind !== "dashboard" ? (
+          <MoneyText poisha={item.amountP} className="font-mono" />
+        ) : undefined
+      }
     />
   )
 }

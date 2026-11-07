@@ -90,6 +90,7 @@ export const dashboardBn: typeof dashboardEn = {
         subtitle: "আজ নির্ধারিত, সকাল ৯টা থেকে রাত ৯টা",
         detail: "{total} বে মিনিটের মধ্যে {minutes}",
         bayCount: "{count}টি বে",
+        bayCount_one: "{count}টি বে",
       },
       top: {
         title: "শীর্ষ সেবা",

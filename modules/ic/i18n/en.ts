@@ -19,7 +19,8 @@ export const icEn = {
       count_approve: "Approve count variances",
     },
     events: {
-      StockBelowReorder: "{sku} at or below its reorder level at {location} ({qty} of minimum {min})",
+      StockBelowReorder:
+        "{sku} at or below its reorder level at {location} ({qty} of minimum {min})",
       CountOpened: "Count {no} opened ({lines} lines)",
       CountPosted: "Count {no} posted ({variances} variances)",
       ExpiryAlert: "Batch {batch} of {sku} expires in {days} days",
@@ -41,6 +42,7 @@ export const icEn = {
       search: "Search SKU or item",
       date: "Date",
       lines: "{count} lines",
+      lines_one: "{count} line",
       total: "Total",
       open: "Open",
       by: "By",
@@ -62,17 +64,20 @@ export const icEn = {
       withinLimit: "Within your limit of {limit}: it posts at once",
       estValue: "Estimated value {value}",
       days: "{count} days",
+      days_one: "{count} day",
       perUnit: "per {unit}",
     },
     stock: {
       title: "Stock by location",
-      subtitle: "On hand, value at moving average cost, reorder status and stock in transit",
+      subtitle:
+        "On hand, value at moving average cost, reorder status and stock in transit",
       kpiValue: "Stock value",
       kpiLow: "Low stock",
       kpiOut: "Out of stock",
       kpiTransit: "In transit",
       kpiItemsCaption: "{count} item lines",
       kpiTransitCaption: "{count} transfers on the road",
+      kpiTransitCaption_one: "{count} transfer on the road",
       allCategories: "All categories",
       allStatus: "Any status",
       item: "Item",
@@ -113,7 +118,8 @@ export const icEn = {
     },
     counts: {
       title: "Stock counts",
-      subtitle: "Snapshot the expected quantities, count, review the variance and post it",
+      subtitle:
+        "Snapshot the expected quantities, count, review the variance and post it",
       countNo: "Count",
       date: "Date",
       location: "Location",
@@ -123,7 +129,8 @@ export const icEn = {
       status: "Status",
       openCount: "Open count",
       openTitle: "Open a stock count",
-      openHint: "Expected quantities are frozen at this moment (usable stock, per batch).",
+      openHint:
+        "Expected quantities are frozen at this moment (usable stock, per batch).",
       scope: "Scope",
       allCategories: "All categories",
       open: "Open count",
@@ -155,11 +162,13 @@ export const icEn = {
       countedLines: "Counted",
       fillExpected: "Counted = expected for the empty lines",
       notCounted: "Not counted",
-      readOnly: "Counted quantities can't change once the count is posted or waiting for approval.",
+      readOnly:
+        "Counted quantities can't change once the count is posted or waiting for approval.",
     },
     reorder: {
       title: "Reorder suggestions",
-      subtitle: "Items whose stock plus what is coming is at or below the minimum, filled up to the maximum",
+      subtitle:
+        "Items whose stock plus what is coming is at or below the minimum, filled up to the maximum",
       item: "Item",
       location: "Location",
       onHand: "On hand",
@@ -180,9 +189,11 @@ export const icEn = {
     },
     expiry: {
       title: "Expiry watch",
-      subtitle: "Batches in FEFO order: the earliest expiry is issued first; expired batches can't be issued",
+      subtitle:
+        "Batches in FEFO order: the earliest expiry is issued first; expired batches can't be issued",
       window: "Expiring within",
       within: "{count} days",
+      within_one: "{count} day",
       allBatches: "All batches",
       item: "Item",
       batch: "Batch",
@@ -191,6 +202,7 @@ export const icEn = {
       expiry: "Expiry",
       daysLeft: "Days left",
       expiredDays: "Expired {count} days ago",
+      expiredDays_one: "Expired {count} day ago",
       status: "Status",
       writeOff: "Write off",
       empty: "No batches expire in this window",
@@ -198,12 +210,14 @@ export const icEn = {
     },
     consumption: {
       title: "Consumption variance",
-      subtitle: "Standard recipe quantity against what technicians actually used, from job consumption",
+      subtitle:
+        "Standard recipe quantity against what technicians actually used, from job consumption",
       by: "Group by",
       byService: "Service",
       byTechnician: "Technician",
       period: "Period",
       lastDays: "Last {count} days",
+      lastDays_one: "Last {count} day",
       service: "Service",
       technician: "Technician",
       item: "Item",
@@ -221,7 +235,8 @@ export const icEn = {
     rules: {
       NOT_STOCK_LOCATION: "{location} doesn't hold stock.",
       ITEM_INACTIVE: "Item {item} is inactive.",
-      COUNT_EMPTY: "There is no stock to count at this location for that scope.",
+      COUNT_EMPTY:
+        "There is no stock to count at this location for that scope.",
       COUNT_NOT_OPEN: "Count {no} is no longer open.",
       COUNT_NOT_COUNTED: "Count every line of {no} before posting it.",
       COUNT_LINE_UNKNOWN: "That count line doesn't exist.",
@@ -230,7 +245,8 @@ export const icEn = {
     scenarios: {
       e9: {
         title: "Stock count variance",
-        summary: "A count at Gulshan finds 3 shortfalls above the store keeper's limit: the studio manager approves and the variance posts",
+        summary:
+          "A count at Gulshan finds 3 shortfalls above the store keeper's limit: the studio manager approves and the variance posts",
         cue1: "Count {countNo} at Gulshan Studio is open. Click Counted = expected for the empty lines: every line takes its expected quantity.",
         cue2: "Change three counts: {sku1} to {counted1} (expected {expected1}), {sku2} to {counted2} (expected {expected2}), {sku3} to {counted3} (expected {expected3}).",
         cue3: "The variance reads {varianceP}, above your {limitP} limit. Click Post variances: the count waits for approval.",

@@ -29,7 +29,11 @@ function read(): WindowSession {
   let session: WindowSession = DEFAULT_SESSION
   try {
     const raw = window.sessionStorage.getItem(storageKey())
-    if (raw) session = { ...DEFAULT_SESSION, ...(JSON.parse(raw) as Partial<WindowSession>) }
+    if (raw)
+      session = {
+        ...DEFAULT_SESSION,
+        ...(JSON.parse(raw) as Partial<WindowSession>),
+      }
   } catch {
     // Storage unavailable or corrupt: fall back to defaults.
   }
@@ -37,8 +41,8 @@ function read(): WindowSession {
 }
 
 /**
- * `?user=<username>&lang=bn&scale=0.9` sets this window's session (the
- * launcher, Demo Wall and scenario launchers use it). `user` asks the session
+ * `?user=<username>&lang=bn&theme=light&scale=0.9` sets this window's session
+ * (the launcher, Demo Wall and scenario launchers use it). `user` asks the session
  * gate for a quick demo sign-in. The params are then removed from the address
  * so a later reload keeps any change made in the window.
  */
@@ -47,15 +51,19 @@ function applyUrlOverrides(session: WindowSession): WindowSession {
   const user = url.searchParams.get("user")
   const lang = url.searchParams.get("lang")
   const scale = url.searchParams.get("scale")
-  if (!user && !lang && !scale) return session
+  const theme = url.searchParams.get("theme")
+  if (!user && !lang && !scale && !theme) return session
   const next = { ...session }
   if (user) {
     next.pendingQuickSignIn = user
     next.pendingRoute = null
   }
-  if (lang && (LOCALES as readonly string[]).includes(lang)) next.lang = lang as Locale
+  if (lang && (LOCALES as readonly string[]).includes(lang))
+    next.lang = lang as Locale
   if (scale && Number.isFinite(Number(scale))) next.uiScale = Number(scale)
-  for (const param of ["user", "lang", "scale"]) url.searchParams.delete(param)
+  if (theme === "light" || theme === "dark") next.theme = theme
+  for (const param of ["user", "lang", "scale", "theme"])
+    url.searchParams.delete(param)
   window.history.replaceState(window.history.state, "", url.toString())
   write(next)
   return next
@@ -90,7 +98,11 @@ export function subscribeSession(listener: () => void): () => void {
 
 /** This window's session. Defaults during server render and hydration. */
 export function useSession(): WindowSession {
-  return React.useSyncExternalStore(subscribeSession, getSession, () => DEFAULT_SESSION)
+  return React.useSyncExternalStore(
+    subscribeSession,
+    getSession,
+    () => DEFAULT_SESSION
+  )
 }
 
 /** Record a successful sign-in in this window. */
@@ -107,7 +119,9 @@ export function setSignedIn(signIn: {
 }
 
 /** Clear this window's sign-in (sign-out, forced end, timeout). */
-export function setSignedOut(reason: WindowSession["signedOutReason"] = "sign-out"): void {
+export function setSignedOut(
+  reason: WindowSession["signedOutReason"] = "sign-out"
+): void {
   updateSession({
     userId: null,
     sessionId: null,

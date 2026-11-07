@@ -18,7 +18,8 @@ export const pmEn = {
     events: {
       ItemCreated: "Item {sku} created",
       ItemUpdated: "Item {sku} updated",
-      ReorderRuleChanged: "Reorder rule for {sku} changed (minimum {min}, maximum {max})",
+      ReorderRuleChanged:
+        "Reorder rule for {sku} changed (minimum {min}, maximum {max})",
     },
     kind: {
       chemical: "Chemical",
@@ -46,7 +47,8 @@ export const pmEn = {
     },
     list: {
       title: "Item master",
-      subtitle: "Chemicals, consumables and retail products with their units, batches and reorder rules",
+      subtitle:
+        "Chemicals, consumables and retail products with their units, batches and reorder rules",
       search: "Search SKU, name or barcode",
       allCategories: "All categories",
       allKinds: "All kinds",
@@ -62,6 +64,7 @@ export const pmEn = {
       perUnit: "per {unit}",
       empty: "No items match",
       count: "{count} items",
+      count_one: "{count} item",
     },
     item: {
       kindLabel: "Item",
@@ -82,6 +85,7 @@ export const pmEn = {
       notTracked: "Not tracked",
       shelfLife: "Shelf life",
       days: "{count} days",
+      days_one: "{count} day",
       costs: "Costs and price",
       standardCost: "Standard cost (per {unit})",
       movingAverage: "Average at {location} (per {unit})",
@@ -146,7 +150,8 @@ export const pmEn = {
     },
     categories: {
       title: "Item categories",
-      subtitle: "Each category posts to its inventory account and its cost account",
+      subtitle:
+        "Each category posts to its inventory account and its cost account",
       code: "Code",
       name: "Name",
       inventoryTag: "Inventory account",
@@ -163,12 +168,14 @@ export const pmEn = {
     },
     uom: {
       title: "Units of measure",
-      subtitle: "Base units carry stock; purchase and sales units convert to them",
+      subtitle:
+        "Base units carry stock; purchase and sales units convert to them",
       code: "Code",
       name: "Name",
       dimension: "Dimension",
       usedBy: "Used by",
       itemsCount: "{count} items",
+      itemsCount_one: "{count} item",
       new: "New unit",
       edit: "Edit",
       newTitle: "New unit of measure",
@@ -183,11 +190,15 @@ export const pmEn = {
       SKU_FORMAT: "A SKU uses capital letters, digits and dashes only ({sku}).",
       UOM_UNKNOWN: "Unknown unit {uom}. Add it under Units of measure first.",
       UOM_FORMAT: "A unit code is lower-case letters and digits ({uom}).",
-      RETAIL_PRICE_REQUIRED: "A retail item needs a sales unit and a retail price ({sku}).",
-      BASE_UOM_LOCKED: "{sku} already has stock, so its base unit can't change.",
-      ITEM_TAG_LOCKED: "{sku} already has stock, so it can't move to a category with another inventory account.",
+      RETAIL_PRICE_REQUIRED:
+        "A retail item needs a sales unit and a retail price ({sku}).",
+      BASE_UOM_LOCKED:
+        "{sku} already has stock, so its base unit can't change.",
+      ITEM_TAG_LOCKED:
+        "{sku} already has stock, so it can't move to a category with another inventory account.",
       CATEGORY_CODE_TAKEN: "Category code {code} is already in use.",
-      CATEGORY_TAG_LOCKED: "Items of {code} have stock, so its inventory account can't change.",
+      CATEGORY_TAG_LOCKED:
+        "Items of {code} have stock, so its inventory account can't change.",
       REORDER_MAX_BELOW_MIN: "The maximum can't be below the minimum.",
     },
   },

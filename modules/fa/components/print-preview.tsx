@@ -7,7 +7,14 @@ import { toast } from "sonner"
 import { PrintLayout, type PaperSize } from "@/components/shared/print-layout"
 import { SimulatedBadge } from "@/components/shared/simulated-badge"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { sendToPrinter } from "@/core/connectors/printer"
 import { useLocale } from "@/lib/i18n/provider"
 
@@ -37,24 +44,45 @@ export function PrintPreview({
 }) {
   const { t } = useLocale()
   const [open, setOpen] = React.useState(false)
+  // Focus the paper (its top), not the first footer button, so a tall sheet opens at its header.
+  const paperRef = React.useRef<HTMLDivElement>(null)
   return (
     <>
       {trigger ? (
         trigger(() => setOpen(true))
       ) : (
-        <Button variant="neutral" size="sm" onClick={() => setOpen(true)} data-testid={testId}>
+        <Button
+          variant="neutral"
+          size="sm"
+          onClick={() => setOpen(true)}
+          data-testid={testId}
+        >
           <Printer />
           {t("fa.common.print")}
         </Button>
       )}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[92svh] sm:max-w-[min(62rem,calc(100vw-2rem))]" data-testid={`${testId}-dialog`}>
+        <DialogContent
+          initialFocus={paperRef}
+          className="max-h-[92svh] sm:max-w-[min(62rem,calc(100vw-2rem))]"
+          data-testid={`${testId}-dialog`}
+        >
           <DialogHeader>
             <DialogTitle>{t("fa.common.printPreview")}</DialogTitle>
             <DialogDescription>{title}</DialogDescription>
           </DialogHeader>
-          <div className="overflow-x-auto rounded-md bg-surface-raised p-3">
-            <PrintLayout size={size} title={title} docNo={docNo} meta={meta} showBrand={showBrand}>
+          <div
+            ref={paperRef}
+            tabIndex={-1}
+            className="max-h-[calc(92svh-12rem)] overflow-auto rounded-md bg-surface-raised p-3 outline-none"
+          >
+            <PrintLayout
+              size={size}
+              title={title}
+              docNo={docNo}
+              meta={meta}
+              showBrand={showBrand}
+            >
               {children}
             </PrintLayout>
           </div>
@@ -64,7 +92,9 @@ export function PrintPreview({
               variant="neutral"
               onClick={() => {
                 const result = sendToPrinter(docNo ?? title)
-                toast.success(t("fa.common.sentToPrinter", { what: result.message }))
+                toast.success(
+                  t("fa.common.sentToPrinter", { what: result.message })
+                )
               }}
             >
               <Send />
@@ -94,7 +124,8 @@ export function PaperTable({
   /** Per column: "r" right-aligns (money) */
   align?: ("l" | "r")[]
 }) {
-  const cls = (i: number) => (align?.[i] === "r" ? "text-right font-mono tabular-nums" : "text-left")
+  const cls = (i: number) =>
+    align?.[i] === "r" ? "text-right font-mono tabular-nums" : "text-left"
   return (
     <table className="w-full border-collapse text-[0.75rem]">
       <thead>

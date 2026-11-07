@@ -12,7 +12,14 @@ import { nameOf } from "@/core/security/users"
 import { useLocale } from "@/lib/i18n/provider"
 import { cn } from "@/lib/utils"
 
-import { CsvButton, ListTable, Pills, SearchBox, useToday, type Column } from "@/modules/par/components/kit"
+import {
+  CsvButton,
+  ListTable,
+  Pills,
+  SearchBox,
+  useToday,
+  type Column,
+} from "@/modules/par/components/kit"
 
 import { BUCKETS, type Bucket } from "../lib"
 import { loadAging, type AgingRow } from "../queries"
@@ -29,16 +36,24 @@ export function AgingView({ side }: { side: "ar" | "ap" }) {
   const { t, tk, locale, num, money, dmy } = useLocale()
   const [query, setQuery] = React.useState("")
   const [filter, setFilter] = React.useState("all")
-  const data = useLiveQuery(async () => (today ? loadAging(db, today, side) : undefined), [db, today, side])
+  const data = useLiveQuery(
+    async () => (today ? loadAging(db, today, side) : undefined),
+    [db, today, side]
+  )
   const ns = side === "ar" ? "ar" : "ap"
 
   const rows = React.useMemo(() => {
     const q = query.trim().toLowerCase()
     return (data?.rows ?? []).filter((r) => {
-      if (filter === "overdue" && r.buckets.total - r.buckets.current <= 0) return false
+      if (filter === "overdue" && r.buckets.total - r.buckets.current <= 0)
+        return false
       if (side === "ap" && r.buckets.total === 0) return false
       if (!q) return true
-      return (r.party?.nameEn.toLowerCase().includes(q) ?? false) || (r.party?.code.toLowerCase().includes(q) ?? false) || (r.party?.nameBn.includes(query.trim()) ?? false)
+      return (
+        (r.party?.nameEn.toLowerCase().includes(q) ?? false) ||
+        (r.party?.code.toLowerCase().includes(q) ?? false) ||
+        (r.party?.nameBn.includes(query.trim()) ?? false)
+      )
     })
   }, [data, query, filter, side])
 
@@ -46,11 +61,18 @@ export function AgingView({ side }: { side: "ar" | "ap" }) {
     key: b,
     header: tk(`reports.enum.bucket.${b}`),
     align: "right",
-    hide: b === "current" ? "md" : b === "d0_30" ? "sm" : "lg",
+    // In a narrow window keep every overdue bucket (the aging story); "not yet due" goes first.
+    hide: b === "current" ? "lg" : undefined,
     sortValue: (r) => r.buckets[b],
     cell: (r) =>
       r.buckets[b] ? (
-        <MoneyText poisha={r.buckets[b]} className={cn("font-mono", b === "over90" || b === "d61_90" ? "text-destructive" : undefined)} />
+        <MoneyText
+          poisha={r.buckets[b]}
+          className={cn(
+            "font-mono",
+            b === "over90" || b === "d61_90" ? "text-destructive" : undefined
+          )}
+        />
       ) : (
         <span className="text-muted-foreground">-</span>
       ),
@@ -61,8 +83,13 @@ export function AgingView({ side }: { side: "ar" | "ap" }) {
       header: t(`${ns}.aging.colParty` as "ar.aging.colParty"),
       sortValue: (r) => r.party?.nameEn ?? "",
       cell: (r) => (
-        <Link href={side === "ar" ? `/par/${r.partyId}` : `/par/${r.partyId}`} className="flex min-w-0 flex-col">
-          <span className="truncate font-medium text-link hover:underline">{nameOf(r.party, locale)}</span>
+        <Link
+          href={side === "ar" ? `/par/${r.partyId}` : `/par/${r.partyId}`}
+          className="flex min-w-0 flex-col"
+        >
+          <span className="truncate font-medium text-link hover:underline">
+            {nameOf(r.party, locale)}
+          </span>
           <span lang="en" className="font-mono text-xs text-muted-foreground">
             {r.party?.code}
           </span>
@@ -75,7 +102,12 @@ export function AgingView({ side }: { side: "ar" | "ap" }) {
       header: t("ar.aging.colTotal"),
       align: "right",
       sortValue: (r) => r.buckets.total,
-      cell: (r) => <MoneyText poisha={r.buckets.total} className="font-mono font-semibold" />,
+      cell: (r) => (
+        <MoneyText
+          poisha={r.buckets.total}
+          className="font-mono font-semibold"
+        />
+      ),
     },
     ...(side === "ar"
       ? [
@@ -83,23 +115,37 @@ export function AgingView({ side }: { side: "ar" | "ap" }) {
             key: "advance",
             header: t("ar.aging.colAdvance"),
             align: "right" as const,
-            hide: "md" as const,
+            hide: "lg" as const,
             sortValue: (r: AgingRow) => r.advanceP,
-            cell: (r: AgingRow) => (r.advanceP ? <MoneyText poisha={r.advanceP} className="font-mono text-info" /> : <span className="text-muted-foreground">-</span>),
+            cell: (r: AgingRow) =>
+              r.advanceP ? (
+                <MoneyText
+                  poisha={r.advanceP}
+                  className="font-mono text-info"
+                />
+              ) : (
+                <span className="text-muted-foreground">-</span>
+              ),
           },
         ]
       : []),
   ]
 
-  const footer: Partial<Record<string, React.ReactNode>> = { party: t("ar.aging.total") }
+  const footer: Partial<Record<string, React.ReactNode>> = {
+    party: t("ar.aging.total"),
+  }
   if (data) {
-    for (const b of BUCKETS) footer[b] = <MoneyText poisha={data.totals[b]} className="font-mono" />
+    for (const b of BUCKETS)
+      footer[b] = <MoneyText poisha={data.totals[b]} className="font-mono" />
     footer.total = (
       <span data-testid="aging-total" data-total={data.totals.total}>
         <MoneyText poisha={data.totals.total} className="font-mono" />
       </span>
     )
-    if (side === "ar") footer.advance = <MoneyText poisha={data.advancesP} className="font-mono" />
+    if (side === "ar")
+      footer.advance = (
+        <MoneyText poisha={data.advancesP} className="font-mono" />
+      )
   }
   const tie = data ? data.totals.total - data.controlP : 0
   const advTie = data ? data.advancesP - data.advanceGlP : 0
@@ -127,26 +173,60 @@ export function AgingView({ side }: { side: "ar" | "ap" }) {
             columns={[
               { key: "party", label: t("ar.aging.colParty") },
               { key: "code", label: "Code" },
-              ...BUCKETS.map((b) => ({ key: `${b}P`, label: tk(`reports.enum.bucket.${b}`) })),
+              ...BUCKETS.map((b) => ({
+                key: `${b}P`,
+                label: tk(`reports.enum.bucket.${b}`),
+              })),
               { key: "totalP", label: t("ar.aging.colTotal") },
-              ...(side === "ar" ? [{ key: "advanceP", label: t("ar.aging.colAdvance") }] : []),
+              ...(side === "ar"
+                ? [{ key: "advanceP", label: t("ar.aging.colAdvance") }]
+                : []),
             ]}
           />
         }
       />
       <section className="surface-card flex flex-col gap-4 p-4 md:p-5">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-          <span className="text-muted-foreground">{today ? t("ar.aging.asOf", { date: dmy(today) }) : null}</span>
+          <span className="text-muted-foreground">
+            {today ? t("ar.aging.asOf", { date: dmy(today) }) : null}
+          </span>
           {data ? (
-            <span className={cn("flex items-center gap-1.5", tie === 0 ? "text-success" : "text-destructive")} data-testid="aging-tie" data-tie={tie === 0}>
-              {tie === 0 ? <CheckCircle2 className="size-4" /> : <XCircle className="size-4" />}
-              {tie === 0 ? t(`${ns}.aging.ties` as "ar.aging.ties") : t(`${ns}.aging.tiesNot` as "ar.aging.tiesNot", { amount: money(tie) })}
+            <span
+              className={cn(
+                "flex items-center gap-1.5",
+                tie === 0 ? "text-success" : "text-destructive"
+              )}
+              data-testid="aging-tie"
+              data-tie={tie === 0}
+            >
+              {tie === 0 ? (
+                <CheckCircle2 className="size-4" />
+              ) : (
+                <XCircle className="size-4" />
+              )}
+              {tie === 0
+                ? t(`${ns}.aging.ties` as "ar.aging.ties")
+                : t(`${ns}.aging.tiesNot` as "ar.aging.tiesNot", {
+                    amount: money(tie),
+                  })}
             </span>
           ) : null}
           {data && side === "ar" ? (
-            <span className={cn("flex items-center gap-1.5", advTie === 0 ? "text-success" : "text-destructive")} data-testid="advance-tie">
-              {advTie === 0 ? <CheckCircle2 className="size-4" /> : <XCircle className="size-4" />}
-              {advTie === 0 ? t("ar.aging.advancesTie") : t("ar.aging.advancesNot", { amount: money(advTie) })}
+            <span
+              className={cn(
+                "flex items-center gap-1.5",
+                advTie === 0 ? "text-success" : "text-destructive"
+              )}
+              data-testid="advance-tie"
+            >
+              {advTie === 0 ? (
+                <CheckCircle2 className="size-4" />
+              ) : (
+                <XCircle className="size-4" />
+              )}
+              {advTie === 0
+                ? t("ar.aging.advancesTie")
+                : t("ar.aging.advancesNot", { amount: money(advTie) })}
             </span>
           ) : null}
         </div>
@@ -160,9 +240,20 @@ export function AgingView({ side }: { side: "ar" | "ap" }) {
               { value: "overdue", label: t("ar.aging.onlyOverdue") },
             ]}
           />
-          <span className="ml-auto text-xs text-muted-foreground">{t("ar.aging.count", { count: num(rows.length) })}</span>
+          <span className="ml-auto text-xs text-muted-foreground">
+            {t(side === "ap" ? "ar.aging.countVendors" : "ar.aging.count", {
+              count: num(rows.length),
+            })}
+          </span>
         </div>
-        <ListTable rows={data ? rows : undefined} columns={columns} rowKey={(r) => r.partyId} rowTestId="aging-row" footer={footer} pageSize={40} />
+        <ListTable
+          rows={data ? rows : undefined}
+          columns={columns}
+          rowKey={(r) => r.partyId}
+          rowTestId="aging-row"
+          footer={footer}
+          pageSize={40}
+        />
       </section>
     </div>
   )

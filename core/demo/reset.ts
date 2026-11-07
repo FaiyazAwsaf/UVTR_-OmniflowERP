@@ -19,7 +19,7 @@ import { seedDatabase } from "@/core/seed"
 import type { SeedSummary } from "@/core/seed/types"
 
 /** Bump when the seed changes shape, so stale browsers re-seed on load. */
-export const SEED_VERSION = 3
+export const SEED_VERSION = 4
 const SEED_LOCK = "of:seed"
 
 /** The genesis audit row and the DemoReset event (plan §7). */

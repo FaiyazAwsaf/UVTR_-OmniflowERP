@@ -62,8 +62,14 @@ function Pairs({
 }
 
 /** One event in full: payload, links, commit and the audit rows it wrote. */
-export function EventDetail({ seq, onBack }: { seq: number; onBack: () => void }) {
-  const { t, tk, num, locale, dateTime, relative } = useLocale()
+export function EventDetail({
+  seq,
+  onBack,
+}: {
+  seq: number
+  onBack: () => void
+}) {
+  const { t, tk, num, locale, dateTime, relative, dmy } = useLocale()
   const db = useDb()
   const event = useLiveQuery(
     async () => (await db.events.get(seq)) ?? null,
@@ -98,7 +104,7 @@ export function EventDetail({ seq, onBack }: { seq: number; onBack: () => void }
   if (event === null) return <div className="flex flex-col p-4">{back}</div>
 
   const def = eventDef(event.type)
-  const label = eventLabel(event, tk, num)
+  const label = eventLabel(event, tk, num, locale, dmy)
   const consumers = (event.consumers ?? []).map((key) => consumerLabel(key, tk))
   const none = t("demo.stream.details.none")
 
@@ -186,7 +192,6 @@ export function EventDetail({ seq, onBack }: { seq: number; onBack: () => void }
           </ul>
         )}
       </section>
-
     </div>
   )
 }

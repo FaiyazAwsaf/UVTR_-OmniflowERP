@@ -23,6 +23,7 @@ import {
 
 import { Checkbox } from "@/components/ui/checkbox"
 import { EmptyState } from "@/components/motion/card-shell"
+import { keepShort, ScrollX } from "@/components/shared/scroll-x"
 import { cn } from "@/lib/utils"
 import { useLocale } from "@/lib/i18n/provider"
 
@@ -41,12 +42,14 @@ export type DataTableColumnMeta = {
   className?: string
 }
 
-const HIDE_BELOW: Record<NonNullable<DataTableColumnMeta["hideBelow"]>, string> =
-  {
-    sm: "hidden @min-[32rem]/table:table-cell",
-    md: "hidden @min-[42rem]/table:table-cell",
-    lg: "hidden @min-[52rem]/table:table-cell",
-  }
+const HIDE_BELOW: Record<
+  NonNullable<DataTableColumnMeta["hideBelow"]>,
+  string
+> = {
+  sm: "hidden @min-[32rem]/table:table-cell",
+  md: "hidden @min-[42rem]/table:table-cell",
+  lg: "hidden @min-[52rem]/table:table-cell",
+}
 
 function metaOf(meta: unknown): DataTableColumnMeta {
   return (meta ?? {}) as DataTableColumnMeta
@@ -127,7 +130,8 @@ export function DataTable<T>({
       data-slot="data-table"
       className={cn(
         "@container/table flex min-h-0 flex-col",
-        !bare && "rounded-lg bg-card p-4 shadow-(--card-shadow) @min-[48rem]/table:p-5",
+        !bare &&
+          "rounded-lg bg-card p-4 shadow-(--card-shadow) @min-[48rem]/table:p-5",
         className
       )}
     >
@@ -146,8 +150,9 @@ export function DataTable<T>({
         </div>
       ) : null}
 
-      <div className="min-h-0 flex-1 overflow-auto">
-        <table className="w-full border-separate border-spacing-0 text-[0.8125rem]">
+      <ScrollX className="min-h-0 flex-1 overflow-auto">
+        {/* Document numbers and codes (mono) and short cell text never wrap mid-identifier. */}
+        <table className="w-full border-separate border-spacing-0 text-[0.8125rem] [&_td_.font-mono]:whitespace-nowrap [&_td_.nums]:whitespace-nowrap">
           <thead className="sticky top-0 z-10">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
@@ -189,7 +194,8 @@ export function DataTable<T>({
                         "bg-surface-raised px-3 font-medium whitespace-nowrap text-foreground first:rounded-l-md last:rounded-r-md",
                         rowHeight,
                         meta.align === "right" ? "text-right" : "text-left",
-                        sortable && "cursor-pointer select-none hover:text-link",
+                        sortable &&
+                          "cursor-pointer select-none hover:text-link",
                         meta.hideBelow && HIDE_BELOW[meta.hideBelow]
                       )}
                     >
@@ -259,14 +265,17 @@ export function DataTable<T>({
                       className={cn(
                         "border-b border-hairline px-3 align-middle",
                         rowHeight,
-                        meta.align === "right" && "nums text-right tabular-nums",
+                        meta.align === "right" &&
+                          "nums text-right tabular-nums",
                         meta.hideBelow && HIDE_BELOW[meta.hideBelow],
                         meta.className
                       )}
                     >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
+                      {keepShort(
+                        flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )
                       )}
                     </td>
                   )
@@ -279,10 +288,14 @@ export function DataTable<T>({
           <EmptyState
             icon={emptyIcon ?? <Search />}
             title={emptyTitle ?? t("common.noResults")}
-            hint={emptyHint ?? t("common.noResultsHint")}
+            // "Try a different search" only when a search is in effect; an empty list is just empty.
+            hint={
+              emptyHint ??
+              (globalFilter?.trim() ? t("common.noResultsHint") : undefined)
+            }
           />
         ) : null}
-      </div>
+      </ScrollX>
 
       {table.getPageCount() > 1 ? (
         <div className="flex h-11 shrink-0 items-center gap-2 pt-3">

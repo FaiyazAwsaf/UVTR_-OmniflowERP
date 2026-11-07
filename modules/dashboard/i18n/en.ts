@@ -2,7 +2,8 @@
 export const dashboardEn = {
   dashboard: {
     name: "Executive dashboard",
-    description: "Revenue, cash, receivables, payables, jobs and stock at a glance",
+    description:
+      "Revenue, cash, receivables, payables, jobs and stock at a glance",
     pages: {
       home: "Executive dashboard",
       roleHome: "Home",
@@ -88,6 +89,7 @@ export const dashboardEn = {
         subtitle: "Scheduled today, 09:00 to 21:00",
         detail: "{minutes} of {total} bay minutes",
         bayCount: "{count} bays",
+        bayCount_one: "{count} bay",
       },
       top: {
         title: "Top services",

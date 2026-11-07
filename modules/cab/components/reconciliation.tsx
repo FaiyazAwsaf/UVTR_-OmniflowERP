@@ -582,7 +582,7 @@ function MatchDialog({
   onClose: () => void
 }) {
   const db = useDb()
-  const { t, dmy, money } = useLocale()
+  const { t, dmy, money, narration } = useLocale()
   const match = useCommand(matchLine)
   const [picked, setPicked] = React.useState<Set<Id>>(new Set())
   const candidates = useLiveQuery(async () => {
@@ -663,7 +663,7 @@ function MatchDialog({
                         {c.journal?.source?.docNo || c.journal?.journalNo}
                       </span>
                       <span className="truncate text-xs text-muted-foreground">
-                        {c.journal?.narration}
+                        {narration(c.journal?.narration ?? "")}
                       </span>
                     </span>
                     <MoneyText

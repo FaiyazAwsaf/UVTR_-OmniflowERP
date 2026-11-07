@@ -2,10 +2,18 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { ArrowDownRight, ArrowUpRight, ChevronRight, Lock, type LucideIcon } from "lucide-react"
+import {
+  ArrowDownRight,
+  ArrowUpRight,
+  ChevronRight,
+  Lock,
+  type LucideIcon,
+} from "lucide-react"
 
 import { NumberTicker } from "@/components/motion/number-ticker"
 import type { KpiVariant } from "@/components/shared/kpi-card"
+import { MoneyText } from "@/components/shared/money-text"
+import { Skeleton } from "@/components/ui/skeleton"
 import { dhakaDate } from "@/core/clock/dates"
 import { useNow } from "@/core/clock/useNow"
 import { routeAllowed } from "@/core/security/routes"
@@ -53,13 +61,32 @@ export function useMayOpen(): (href: string) => boolean {
  * When the user cannot open the target it stays visible but muted, with a
  * lock, so the figure never points at an access-denied page.
  */
-export function DrillLink({ href, label, className, tone = "link" }: { href: string; label?: React.ReactNode; className?: string; tone?: "link" | "inherit" }) {
+export function DrillLink({
+  href,
+  label,
+  className,
+  tone = "link",
+}: {
+  href: string
+  label?: React.ReactNode
+  className?: string
+  tone?: "link" | "inherit"
+}) {
   const { t } = useLocale()
   const mayOpen = useMayOpen()
   const text = label ?? t("dashboard.common.drill")
   if (!mayOpen(href)) {
     return (
-      <span data-testid="drill-link" data-href={href} aria-disabled="true" title={t("dashboard.common.drillLocked")} className={cn("inline-flex items-center gap-1 text-xs opacity-60", className)}>
+      <span
+        data-testid="drill-link"
+        data-href={href}
+        aria-disabled="true"
+        title={t("dashboard.common.drillLocked")}
+        className={cn(
+          "inline-flex items-center gap-1 text-xs opacity-60",
+          className
+        )}
+      >
         <Lock className="size-3" />
         {text}
       </span>
@@ -88,8 +115,16 @@ export function DrillLink({ href, label, className, tone = "link" }: { href: str
  * after `scope` (the period and location) changes, a new value only becomes
  * the baseline. The first loaded value never flashes.
  */
-export function useScopedFlash(value: unknown, scope: string, durationMs = 1200): string {
-  const last = React.useRef<{ scope: string; value: unknown; scopedAt: number } | null>(null)
+export function useScopedFlash(
+  value: unknown,
+  scope: string,
+  durationMs = 1200
+): string {
+  const last = React.useRef<{
+    scope: string
+    value: unknown
+    scopedAt: number
+  } | null>(null)
   const [flashKey, setFlashKey] = React.useState(0)
   React.useEffect(() => {
     if (value === undefined) return
@@ -118,15 +153,62 @@ export function useScopedFlash(value: unknown, scope: string, durationMs = 1200)
 }
 
 /** Whole taka for a big animated figure (exact poisha stay in `data-amount`). */
-export function MoneyFigure({ poisha, className }: { poisha: number; className?: string }) {
-  return <NumberTicker value={Math.round(poisha / 100)} prefix={poisha < 0 ? "-৳" : "৳"} format={{ maximumFractionDigits: 0 }} className={className} />
+/** A figure whose data is still loading: a bar the size of a number, never a misleading 0. */
+export function FigureSkeleton({ className }: { className?: string }) {
+  return (
+    <Skeleton
+      className={cn("inline-block h-[0.9em] w-[5.5ch] align-middle", className)}
+      data-testid="figure-loading"
+    />
+  )
+}
+
+export function MoneyFigure({
+  poisha,
+  className,
+}: {
+  poisha: number | undefined
+  className?: string
+}) {
+  if (poisha === undefined) return <FigureSkeleton className={className} />
+  return (
+    <NumberTicker
+      value={Math.round(poisha / 100)}
+      prefix={poisha < 0 ? "-৳" : "৳"}
+      format={{ maximumFractionDigits: 0 }}
+      className={className}
+    />
+  )
+}
+
+/** A calm tile's amount (no ticker), with the loading bar until it is known. */
+export function MoneyValue({
+  poisha,
+  className,
+}: {
+  poisha: number | undefined
+  className?: string
+}) {
+  if (poisha === undefined) return <FigureSkeleton className={className} />
+  return <MoneyText poisha={poisha} className={className} />
 }
 
 /** A KPI's value in its format. */
-export function FormattedFigure({ value, format, className }: { value: number; format: HomeKpiFormat; className?: string }) {
+export function FormattedFigure({
+  value,
+  format,
+  className,
+}: {
+  value: number | undefined
+  format: HomeKpiFormat
+  className?: string
+}) {
   const { pct } = useLocale()
-  if (format === "money") return <MoneyFigure poisha={value} className={className} />
-  if (format === "pct") return <span className={cn("nums", className)}>{pct(value, 1)}</span>
+  if (value === undefined) return <FigureSkeleton className={className} />
+  if (format === "money")
+    return <MoneyFigure poisha={value} className={className} />
+  if (format === "pct")
+    return <span className={cn("nums", className)}>{pct(value, 1)}</span>
   return <NumberTicker value={value} className={className} />
 }
 
@@ -202,15 +284,26 @@ export function GradientKpi({
         <span className="kpi-well flex size-9 shrink-0 items-center justify-center [&_svg]:size-[1.125rem]">
           <Icon />
         </span>
-        <span className="min-w-0 truncate text-[0.9375rem] leading-snug font-semibold">{title}</span>
+        <span className="min-w-0 truncate text-[0.9375rem] leading-snug font-semibold">
+          {title}
+        </span>
       </div>
       <div className="flex min-w-0 items-end justify-between gap-2">
-        <span className="figure min-w-0 truncate text-[1.625rem] leading-none @min-[17rem]/kpi:text-[1.75rem]">{value}</span>
-        {typeof delta === "number" && Number.isFinite(delta) ? <DeltaChip value={delta} /> : null}
+        <span className="figure min-w-0 truncate text-[1.625rem] leading-none @min-[17rem]/kpi:text-[1.75rem]">
+          {value}
+        </span>
+        {typeof delta === "number" && Number.isFinite(delta) ? (
+          <DeltaChip value={delta} />
+        ) : null}
       </div>
       <div className="flex min-w-0 items-center justify-between gap-2 text-xs">
         <span className="min-w-0 truncate opacity-80">{caption}</span>
-        <DrillLink href={href} label={drillLabel} tone="inherit" className="font-semibold" />
+        <DrillLink
+          href={href}
+          label={drillLabel}
+          tone="inherit"
+          className="font-semibold"
+        />
       </div>
     </div>
   )
@@ -259,14 +352,29 @@ export function FigureTile({
           <span className="icon-well flex size-8 shrink-0 items-center justify-center text-link">
             <Icon className="size-4" />
           </span>
-          <span className="truncate text-[0.8125rem] font-medium text-muted-foreground">{title}</span>
+          <span className="truncate text-[0.8125rem] font-medium text-muted-foreground">
+            {title}
+          </span>
         </span>
-        {note ? <span className="shrink-0 rounded-full bg-surface-raised px-2 py-0.5 text-[0.625rem] text-muted-foreground">{note}</span> : null}
+        {note ? (
+          <span className="shrink-0 rounded-full bg-surface-raised px-2 py-0.5 text-[0.625rem] text-muted-foreground">
+            {note}
+          </span>
+        ) : null}
       </header>
-      <div className={cn("figure truncate text-[1.375rem] leading-tight", tone && TONE_TEXT[tone])}>{value}</div>
+      <div
+        className={cn(
+          "figure truncate text-[1.375rem] leading-tight",
+          tone && TONE_TEXT[tone]
+        )}
+      >
+        {value}
+      </div>
       {children}
       <footer className="mt-auto flex min-w-0 items-center justify-between gap-2">
-        <span className="min-w-0 truncate text-xs text-muted-foreground">{caption}</span>
+        <span className="min-w-0 truncate text-xs text-muted-foreground">
+          {caption}
+        </span>
         <DrillLink href={href} />
       </footer>
     </section>
@@ -304,7 +412,13 @@ export function Pills<T extends string>({
   label: string
 }) {
   return (
-    <div role="group" aria-label={label} data-testid={testId} data-value={value} className="flex items-center gap-1 rounded-full bg-surface-raised p-1">
+    <div
+      role="group"
+      aria-label={label}
+      data-testid={testId}
+      data-value={value}
+      className="flex items-center gap-1 rounded-full bg-surface-raised p-1"
+    >
       {options.map((o) => {
         const active = o.value === value
         return (
@@ -316,7 +430,9 @@ export function Pills<T extends string>({
             onClick={() => onChange(o.value)}
             className={cn(
               "h-7 shrink-0 rounded-full px-3 text-xs font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40",
-              active ? "bg-primary text-primary-foreground" : "text-foreground/80 hover:text-foreground"
+              active
+                ? "bg-primary text-primary-foreground"
+                : "text-foreground/80 hover:text-foreground"
             )}
           >
             {o.label}
@@ -348,31 +464,54 @@ export function ListRow({
   data?: Record<string, string | number | undefined>
 }) {
   const mayOpen = useMayOpen()
-  const attrs = Object.fromEntries(Object.entries(data ?? {}).map(([k, v]) => [`data-${k}`, v]))
+  const attrs = Object.fromEntries(
+    Object.entries(data ?? {}).map(([k, v]) => [`data-${k}`, v])
+  )
   const body = (
     <>
-      <span className={cn("icon-well flex size-9 shrink-0 items-center justify-center", TONE_TEXT[tone])}>
+      <span
+        className={cn(
+          "icon-well flex size-9 shrink-0 items-center justify-center",
+          TONE_TEXT[tone]
+        )}
+      >
         <Icon className="size-4" />
       </span>
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate text-[0.875rem] font-semibold">{title}</span>
-        {sub ? <span className="truncate text-xs text-muted-foreground">{sub}</span> : null}
+        {sub ? (
+          <span className="truncate text-xs text-muted-foreground">{sub}</span>
+        ) : null}
       </span>
-      {right ? <span className="shrink-0 text-right text-[0.8125rem]">{right}</span> : null}
+      {right ? (
+        <span className="shrink-0 text-right text-[0.8125rem]">{right}</span>
+      ) : null}
       <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
     </>
   )
-  const cls = "flex min-w-0 items-center gap-3 border-b border-hairline px-1 py-2.5 last:border-b-0"
+  const cls =
+    "flex min-w-0 items-center gap-3 border-b border-hairline px-1 py-2.5 last:border-b-0"
   if (!mayOpen(href)) {
     return (
-      <li data-testid={testId} {...attrs} data-href={href} className={cn(cls, "opacity-70")}>
+      <li
+        data-testid={testId}
+        {...attrs}
+        data-href={href}
+        className={cn(cls, "opacity-70")}
+      >
         {body}
       </li>
     )
   }
   return (
     <li data-testid={testId} {...attrs} data-href={href}>
-      <Link href={href} className={cn(cls, "rounded-md outline-none hover:bg-primary-soft focus-visible:ring-[3px] focus-visible:ring-ring/40")}>
+      <Link
+        href={href}
+        className={cn(
+          cls,
+          "rounded-md outline-none hover:bg-primary-soft focus-visible:ring-[3px] focus-visible:ring-ring/40"
+        )}
+      >
         {body}
       </Link>
     </li>
@@ -380,11 +519,27 @@ export function ListRow({
 }
 
 /** A thin horizontal share bar (0 to 100). */
-export function ShareBar({ pct, className, color = "var(--primary)" }: { pct: number; className?: string; color?: string }) {
+export function ShareBar({
+  pct,
+  className,
+  color = "var(--primary)",
+}: {
+  pct: number
+  className?: string
+  color?: string
+}) {
   const width = Math.max(0, Math.min(100, pct))
   return (
-    <span className={cn("block h-1.5 w-full overflow-hidden rounded-full bg-surface-raised", className)}>
-      <span className="block h-full rounded-full transition-[width] duration-500" style={{ width: `${width}%`, background: color }} />
+    <span
+      className={cn(
+        "block h-1.5 w-full overflow-hidden rounded-full bg-surface-raised",
+        className
+      )}
+    >
+      <span
+        className="block h-full rounded-full transition-[width] duration-500"
+        style={{ width: `${width}%`, background: color }}
+      />
     </span>
   )
 }

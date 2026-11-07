@@ -18,7 +18,10 @@ import { fiscalYearBounds } from "@/config/brand.config"
 import { addDaysISO } from "@/core/clock/dates"
 import { useDb } from "@/core/db/DbProvider"
 import type { JournalLineRow, JournalRow } from "@/core/db/schema"
-import { ledgerWithRunningBalance, trialBalance } from "@/core/ledger/statements"
+import {
+  ledgerWithRunningBalance,
+  trialBalance,
+} from "@/core/ledger/statements"
 import { nameOf } from "@/core/security/users"
 import { useLocale } from "@/lib/i18n/provider"
 
@@ -26,7 +29,11 @@ import { useAccounts, useToday } from "../queries"
 import { CsvButton, DrCr, Field, LocationFilter, Toolbar } from "./common"
 import { PaperTable, PrintPreview } from "./print-preview"
 
-type LedgerRow = JournalLineRow & { runningP: number; journal?: JournalRow; party?: string }
+type LedgerRow = JournalLineRow & {
+  runningP: number
+  journal?: JournalRow
+  party?: string
+}
 
 function monthStart(day: string) {
   return `${day.slice(0, 7)}-01`
@@ -49,7 +56,7 @@ export function LedgerPage() {
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
-  const { t, dmy, num, money, locale } = useLocale()
+  const { t, dmy, num, money, locale, narration } = useLocale()
   const today = useToday()
   const accounts = useAccounts()
   const ready = today > "2000"
@@ -75,7 +82,10 @@ export function LedgerPage() {
 
   const data = useLiveQuery(async () => {
     if (!accountId || !to) return null
-    const all = await db.journalLines.where("accountId").equals(accountId).toArray()
+    const all = await db.journalLines
+      .where("accountId")
+      .equals(accountId)
+      .toArray()
     const scoped = location ? all.filter((l) => l.locationId === location) : all
     let openingP = 0
     const inRange: JournalLineRow[] = []
@@ -84,44 +94,73 @@ export function LedgerPage() {
       else if (l.date <= to) inRange.push(l)
     }
     const journals = new Map(
-      (await db.journals.bulkGet([...new Set(inRange.map((l) => l.journalId))])).filter(Boolean).map((j) => [j!.id, j!])
+      (await db.journals.bulkGet([...new Set(inRange.map((l) => l.journalId))]))
+        .filter(Boolean)
+        .map((j) => [j!.id, j!])
     )
     inRange.sort(
       (a, b) =>
         a.date.localeCompare(b.date) ||
-        (journals.get(a.journalId)?.postedAt ?? 0) - (journals.get(b.journalId)?.postedAt ?? 0) ||
+        (journals.get(a.journalId)?.postedAt ?? 0) -
+          (journals.get(b.journalId)?.postedAt ?? 0) ||
         a.lineNo - b.lineNo
     )
     const parties = new Map(
-      (await db.parties.bulkGet([...new Set(inRange.flatMap((l) => (l.partyId ? [l.partyId] : [])))]))
+      (
+        await db.parties.bulkGet([
+          ...new Set(inRange.flatMap((l) => (l.partyId ? [l.partyId] : []))),
+        ])
+      )
         .filter(Boolean)
         .map((p) => [p!.id, p!])
     )
-    const rows: LedgerRow[] = ledgerWithRunningBalance(openingP, inRange).map((l) => ({
-      ...l,
-      journal: journals.get(l.journalId),
-      party: l.partyId ? nameOf(parties.get(l.partyId), locale) : undefined,
-    }))
+    const rows: LedgerRow[] = ledgerWithRunningBalance(openingP, inRange).map(
+      (l) => ({
+        ...l,
+        journal: journals.get(l.journalId),
+        party: l.partyId ? nameOf(parties.get(l.partyId), locale) : undefined,
+      })
+    )
     return { openingP, rows }
   }, [db, accountId, from, to, location, locale])
 
   const general = useLiveQuery(async () => {
     if (accountId || !to || !accounts) return null
     const lines = await db.journalLines.where("date").belowOrEqual(to).toArray()
-    const scoped = location ? lines.filter((l) => l.locationId === location) : lines
-    return trialBalance(accounts, scoped, { from, to }).rows.filter((r) => r.openingP || r.debitP || r.creditP)
+    const scoped = location
+      ? lines.filter((l) => l.locationId === location)
+      : lines
+    return trialBalance(accounts, scoped, { from, to }).rows.filter(
+      (r) => r.openingP || r.debitP || r.creditP
+    )
   }, [db, accountId, from, to, location, accounts])
 
   const columns = React.useMemo<ColumnDef<LedgerRow, unknown>[]>(
     () => [
-      { id: "date", header: t("fa.common.date"), accessorKey: "date", cell: ({ row }) => <span className="nums">{dmy(row.original.date)}</span> },
+      {
+        id: "date",
+        header: t("fa.common.date"),
+        accessorKey: "date",
+        cell: ({ row }) => (
+          <span className="nums">{dmy(row.original.date)}</span>
+        ),
+      },
       {
         id: "voucher",
         header: t("fa.ledger.voucher"),
         cell: ({ row }) =>
           row.original.journal ? (
-            <span data-testid="ledger-row" data-journal-no={row.original.journal.journalNo}>
-              <DocLink docType="journals" docId={row.original.journalId} docNo={row.original.journal.journalNo} showApp={false} className="whitespace-nowrap" />
+            <span
+              data-testid="ledger-row"
+              data-journal-no={row.original.journal.journalNo}
+            >
+              <DocLink
+                docType="journals"
+                docId={row.original.journalId}
+                docNo={row.original.journal.journalNo}
+                showApp={false}
+                className="whitespace-nowrap"
+              />
             </span>
           ) : null,
       },
@@ -131,8 +170,14 @@ export function LedgerPage() {
         meta: { hideBelow: "lg" },
         cell: ({ row }) => (
           <span className="line-clamp-1 max-w-[24rem]">
-            {row.original.description || row.original.journal?.narration}
-            {row.original.party ? <span className="text-muted-foreground"> · {row.original.party}</span> : null}
+            {row.original.description ||
+              narration(row.original.journal?.narration ?? "")}
+            {row.original.party ? (
+              <span className="text-muted-foreground">
+                {" "}
+                · {row.original.party}
+              </span>
+            ) : null}
           </span>
         ),
       },
@@ -144,10 +189,17 @@ export function LedgerPage() {
           const s = row.original.journal?.source
           return s && s.docType !== "journals" ? (
             <span data-testid="drill-link">
-              <DocLink docType={s.docType} docId={s.docId} docNo={s.docNo} className="whitespace-nowrap" />
+              <DocLink
+                docType={s.docType}
+                docId={s.docId}
+                docNo={s.docNo}
+                className="whitespace-nowrap"
+              />
             </span>
           ) : (
-            <span className="text-muted-foreground">{t("fa.common.manual")}</span>
+            <span className="text-muted-foreground">
+              {t("fa.common.manual")}
+            </span>
           )
         },
       },
@@ -156,14 +208,20 @@ export function LedgerPage() {
         header: t("fa.common.debit"),
         accessorKey: "debitP",
         meta: { align: "right", className: "font-mono" },
-        cell: ({ row }) => (row.original.debitP ? <MoneyText poisha={row.original.debitP} /> : null),
+        cell: ({ row }) =>
+          row.original.debitP ? (
+            <MoneyText poisha={row.original.debitP} />
+          ) : null,
       },
       {
         id: "credit",
         header: t("fa.common.credit"),
         accessorKey: "creditP",
         meta: { align: "right", className: "font-mono" },
-        cell: ({ row }) => (row.original.creditP ? <MoneyText poisha={row.original.creditP} /> : null),
+        cell: ({ row }) =>
+          row.original.creditP ? (
+            <MoneyText poisha={row.original.creditP} />
+          ) : null,
       },
       {
         id: "running",
@@ -174,7 +232,7 @@ export function LedgerPage() {
         cell: ({ row }) => <DrCr balanceP={row.original.runningP} />,
       },
     ],
-    [t, dmy]
+    [t, dmy, narration]
   )
 
   const rows = data?.rows ?? []
@@ -183,13 +241,20 @@ export function LedgerPage() {
   const closingP = (data?.openingP ?? 0) + debitP - creditP
   const fy = ready ? fiscalYearBounds(today) : null
 
-  const quick = (range: [string, string]) => setParams({ from: range[0], to: range[1] })
+  const quick = (range: [string, string]) =>
+    setParams({ from: range[0], to: range[1] })
 
   return (
     <div className="flex flex-col gap-5" data-testid="fa-ledger">
       <PageHeader
-        title={account ? `${account.code} ${nameOf(account, locale)}` : t("fa.ledger.general")}
-        subtitle={account ? t("fa.ledger.subtitle") : t("fa.ledger.generalHint")}
+        title={
+          account
+            ? `${account.code} ${nameOf(account, locale)}`
+            : t("fa.ledger.general")
+        }
+        subtitle={
+          account ? t("fa.ledger.subtitle") : t("fa.ledger.generalHint")
+        }
         actions={
           account && data ? (
             <>
@@ -206,11 +271,20 @@ export function LedgerPage() {
                   { key: "runningP", label: t("fa.ledger.running") },
                 ]}
                 rows={() => [
-                  { date: from, voucher: "", narration: t("fa.ledger.opening"), source: "", debitP: "", creditP: "", runningP: data.openingP },
+                  {
+                    date: from,
+                    voucher: "",
+                    narration: t("fa.ledger.opening"),
+                    source: "",
+                    debitP: "",
+                    creditP: "",
+                    runningP: data.openingP,
+                  },
                   ...rows.map((r) => ({
                     date: r.date,
                     voucher: r.journal?.journalNo ?? "",
-                    narration: r.description || r.journal?.narration || "",
+                    narration:
+                      r.description || narration(r.journal?.narration ?? ""),
                     source: r.journal?.source?.docNo ?? "",
                     debitP: r.debitP,
                     creditP: r.creditP,
@@ -224,10 +298,24 @@ export function LedgerPage() {
                 testId="ledger-print"
               >
                 <PaperTable
-                  head={[t("fa.common.date"), t("fa.ledger.voucher"), t("fa.common.narration"), t("fa.common.debit"), t("fa.common.credit"), t("fa.ledger.running")]}
+                  head={[
+                    t("fa.common.date"),
+                    t("fa.ledger.voucher"),
+                    t("fa.common.narration"),
+                    t("fa.common.debit"),
+                    t("fa.common.credit"),
+                    t("fa.ledger.running"),
+                  ]}
                   align={["l", "l", "l", "r", "r", "r"]}
                   rows={[
-                    ["", "", t("fa.ledger.opening"), "", "", money(data.openingP)],
+                    [
+                      "",
+                      "",
+                      t("fa.ledger.opening"),
+                      "",
+                      "",
+                      money(data.openingP),
+                    ],
                     ...rows.map((r) => [
                       dmy(r.date),
                       <span key="n" lang="en" className="font-mono">
@@ -239,7 +327,14 @@ export function LedgerPage() {
                       money(r.runningP),
                     ]),
                   ]}
-                  foot={["", "", t("fa.ledger.closing"), money(debitP), money(creditP), money(closingP)]}
+                  foot={[
+                    "",
+                    "",
+                    t("fa.ledger.closing"),
+                    money(debitP),
+                    money(creditP),
+                    money(closingP),
+                  ]}
                 />
               </PrintPreview>
             </>
@@ -249,34 +344,70 @@ export function LedgerPage() {
 
       <section className="surface-card @container flex flex-col gap-3 p-4 sm:p-5">
         <Toolbar className="items-end">
-          <Field label={t("fa.common.account")} className="w-full max-w-[26rem] min-w-56 flex-1">
-            <AccountPicker value={accountId} onChange={(id) => setParams({ account: id })} testId="ledger-account" />
+          <Field
+            label={t("fa.common.account")}
+            className="w-full max-w-[26rem] min-w-56 flex-1"
+          >
+            <AccountPicker
+              value={accountId}
+              onChange={(id) => setParams({ account: id })}
+              testId="ledger-account"
+            />
           </Field>
           <Field label={t("fa.common.from")} className="w-36">
-            <DateField value={from} onChange={(iso) => iso && setParams({ from: iso })} data-testid="ledger-from" />
+            <DateField
+              value={from}
+              onChange={(iso) => iso && setParams({ from: iso })}
+              data-testid="ledger-from"
+            />
           </Field>
           <Field label={t("fa.common.to")} className="w-36">
-            <DateField value={to} onChange={(iso) => iso && setParams({ to: iso })} data-testid="ledger-to" />
+            <DateField
+              value={to}
+              onChange={(iso) => iso && setParams({ to: iso })}
+              data-testid="ledger-to"
+            />
           </Field>
           <Field label={t("fa.common.location")}>
-            <LocationFilter value={location} onChange={(id) => setParams({ location: id || null })} testId="ledger-location" />
+            <LocationFilter
+              value={location}
+              onChange={(id) => setParams({ location: id || null })}
+              testId="ledger-location"
+            />
           </Field>
         </Toolbar>
         {ready ? (
           <div className="flex flex-wrap gap-1.5">
-            <Button variant="ghost" size="xs" onClick={() => quick([monthStart(today), today])}>
+            <Button
+              variant="ghost"
+              size="xs"
+              onClick={() => quick([monthStart(today), today])}
+            >
               {t("fa.ledger.thisMonth")}
             </Button>
-            <Button variant="ghost" size="xs" onClick={() => quick(lastMonthRange(today))}>
+            <Button
+              variant="ghost"
+              size="xs"
+              onClick={() => quick(lastMonthRange(today))}
+            >
               {t("fa.ledger.lastMonth")}
             </Button>
             {fy ? (
-              <Button variant="ghost" size="xs" onClick={() => quick([fy.startsOn, today])}>
+              <Button
+                variant="ghost"
+                size="xs"
+                onClick={() => quick([fy.startsOn, today])}
+              >
                 {t("fa.ledger.fiscalYear")}
               </Button>
             ) : null}
             {accountId ? (
-              <Button variant="ghost" size="xs" className="ml-auto" onClick={() => setParams({ account: null })}>
+              <Button
+                variant="ghost"
+                size="xs"
+                className="ml-auto"
+                onClick={() => setParams({ account: null })}
+              >
                 {t("fa.ledger.general")}
               </Button>
             ) : null}
@@ -286,16 +417,25 @@ export function LedgerPage() {
 
       {accountId ? (
         <>
-          <div className="grid grid-cols-2 gap-3 @container min-[1100px]:grid-cols-4">
+          <div className="@container grid grid-cols-2 gap-3 min-[1100px]:grid-cols-4">
             {[
-              [t("fa.ledger.opening"), <DrCr key="o" balanceP={data?.openingP ?? 0} />],
+              [
+                t("fa.ledger.opening"),
+                <DrCr key="o" balanceP={data?.openingP ?? 0} />,
+              ],
               [t("fa.common.debit"), <MoneyText key="d" poisha={debitP} />],
               [t("fa.common.credit"), <MoneyText key="c" poisha={creditP} />],
               [t("fa.ledger.closing"), <DrCr key="cl" balanceP={closingP} />],
             ].map(([label, value], i) => (
-              <div key={i} className="surface-card flex flex-col gap-1 p-4" data-testid={i === 3 ? "ledger-closing" : undefined}>
+              <div
+                key={i}
+                className="surface-card flex flex-col gap-1 p-4"
+                data-testid={i === 3 ? "ledger-closing" : undefined}
+              >
                 <span className="text-xs text-muted-foreground">{label}</span>
-                <span className="font-mono text-base font-semibold">{value}</span>
+                <span className="font-mono text-base font-semibold">
+                  {value}
+                </span>
               </div>
             ))}
           </div>
@@ -307,19 +447,36 @@ export function LedgerPage() {
             pageSize={100}
             emptyIcon={<BookOpenText />}
             emptyTitle={t("fa.ledger.noLines")}
-            toolbar={<span className="text-xs text-muted-foreground">{t("fa.ledger.lines", { count: num(rows.length) })}</span>}
+            toolbar={
+              <span className="text-xs text-muted-foreground">
+                {t("fa.ledger.lines", { count: num(rows.length) })}
+              </span>
+            }
           />
         </>
       ) : general && general.length ? (
         <section className="surface-card @container overflow-x-auto p-4 sm:p-5">
-          <table className="w-full border-separate border-spacing-0 text-[0.8125rem]" data-testid="general-ledger">
+          <table
+            className="w-full border-separate border-spacing-0 text-[0.8125rem]"
+            data-testid="general-ledger"
+          >
             <thead>
               <tr>
-                <th className="h-9 rounded-l-md bg-surface-raised px-3 text-left font-medium">{t("fa.common.account")}</th>
-                <th className="hidden h-9 bg-surface-raised px-3 text-right font-medium @[44rem]:table-cell">{t("fa.ledger.opening")}</th>
-                <th className="h-9 bg-surface-raised px-3 text-right font-medium">{t("fa.common.debit")}</th>
-                <th className="h-9 bg-surface-raised px-3 text-right font-medium">{t("fa.common.credit")}</th>
-                <th className="h-9 rounded-r-md bg-surface-raised px-3 text-right font-medium">{t("fa.ledger.closing")}</th>
+                <th className="h-9 rounded-l-md bg-surface-raised px-3 text-left font-medium">
+                  {t("fa.common.account")}
+                </th>
+                <th className="hidden h-9 bg-surface-raised px-3 text-right font-medium @[44rem]:table-cell">
+                  {t("fa.ledger.opening")}
+                </th>
+                <th className="h-9 bg-surface-raised px-3 text-right font-medium">
+                  {t("fa.common.debit")}
+                </th>
+                <th className="h-9 bg-surface-raised px-3 text-right font-medium">
+                  {t("fa.common.credit")}
+                </th>
+                <th className="h-9 rounded-r-md bg-surface-raised px-3 text-right font-medium">
+                  {t("fa.ledger.closing")}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -331,7 +488,10 @@ export function LedgerPage() {
                       className="hover:text-link hover:underline"
                       data-testid="drill-link"
                     >
-                      <span lang="en" className="font-mono text-muted-foreground">
+                      <span
+                        lang="en"
+                        className="font-mono text-muted-foreground"
+                      >
                         {r.account.code}
                       </span>{" "}
                       {nameOf(r.account, locale)}
@@ -340,8 +500,12 @@ export function LedgerPage() {
                   <td className="hidden h-9 border-b border-hairline px-3 text-right font-mono @[44rem]:table-cell">
                     <DrCr balanceP={r.openingP} />
                   </td>
-                  <td className="h-9 border-b border-hairline px-3 text-right font-mono">{r.debitP ? <MoneyText poisha={r.debitP} /> : null}</td>
-                  <td className="h-9 border-b border-hairline px-3 text-right font-mono">{r.creditP ? <MoneyText poisha={r.creditP} /> : null}</td>
+                  <td className="h-9 border-b border-hairline px-3 text-right font-mono">
+                    {r.debitP ? <MoneyText poisha={r.debitP} /> : null}
+                  </td>
+                  <td className="h-9 border-b border-hairline px-3 text-right font-mono">
+                    {r.creditP ? <MoneyText poisha={r.creditP} /> : null}
+                  </td>
                   <td className="h-9 border-b border-hairline px-3 text-right font-mono">
                     <DrCr balanceP={r.closingP} />
                   </td>
@@ -351,7 +515,12 @@ export function LedgerPage() {
           </table>
         </section>
       ) : (
-        <EmptyState icon={BookOpenText} title={general ? t("fa.ledger.noLines") : t("fa.ledger.chooseAccount")} />
+        <EmptyState
+          icon={BookOpenText}
+          title={
+            general ? t("fa.ledger.noLines") : t("fa.ledger.chooseAccount")
+          }
+        />
       )}
     </div>
   )

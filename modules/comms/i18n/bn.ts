@@ -8,5 +8,6 @@ export const commsBn: typeof commsEn = {
     queued: "সারিতে",
     delivered: "পৌঁছেছে",
     parts: "{count} অংশ",
+    parts_one: "{count} অংশ",
   },
 }

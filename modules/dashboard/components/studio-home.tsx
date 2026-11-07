@@ -3,7 +3,18 @@
 import * as React from "react"
 import Link from "next/link"
 import { useLiveQuery } from "dexie-react-hooks"
-import { AlarmClock, CalendarClock, CarFront, ClipboardList, Gauge, HandCoins, KanbanSquare, ShoppingCart, Store, TrendingUp } from "lucide-react"
+import {
+  AlarmClock,
+  CalendarClock,
+  CarFront,
+  ClipboardList,
+  Gauge,
+  HandCoins,
+  KanbanSquare,
+  ShoppingCart,
+  Store,
+  TrendingUp,
+} from "lucide-react"
 
 import { DocStatus } from "@/components/shared/doc-status"
 import { EmptyState } from "@/components/shared/empty-state"
@@ -38,7 +49,13 @@ export function StudioHome() {
   const { today, nowMs } = useDemoToday()
   const canBook = useCan("stl.order.create", loc)
   const canCounter = useCan("si.counter.checkout", loc)
-  const data = useLiveQuery(async () => (loc && today ? loadStudioHome(db, { locationId: loc, today, nowMs }) : undefined), [db, loc, today, nowMs])
+  const data = useLiveQuery(
+    async () =>
+      loc && today
+        ? loadStudioHome(db, { locationId: loc, today, nowMs })
+        : undefined,
+    [db, loc, today, nowMs]
+  )
   const location = LOCATIONS.find((l) => l.id === loc)
   const todayRange = today ? { from: today, to: today } : null
 
@@ -52,25 +69,52 @@ export function StudioHome() {
   }
 
   return (
-    <div className="@container/studio flex min-w-0 flex-col gap-5" data-testid="studio-home" data-location={loc ?? undefined} data-code={location?.code}>
+    <div
+      className="@container/studio flex min-w-0 flex-col gap-5"
+      data-testid="studio-home"
+      data-location={loc ?? undefined}
+      data-code={location?.code}
+    >
       <PageHeader
         title={t("dashboard.studio.title")}
-        subtitle={location ? t("dashboard.studio.subtitle", { studio: location.name[locale] }) : null}
+        subtitle={
+          location
+            ? t("dashboard.studio.subtitle", { studio: location.name[locale] })
+            : null
+        }
         actions={
           <>
-            <StudioSelect value={loc} onChange={studio.setLocationId} studios={studio.studios} />
-            <Button variant="outline" nativeButton={false} render={<Link href="/stl/board" />} data-testid="studio-link-board">
+            <StudioSelect
+              value={loc}
+              onChange={studio.setLocationId}
+              studios={studio.studios}
+            />
+            <Button
+              variant="outline"
+              nativeButton={false}
+              render={<Link href="/stl/board" />}
+              data-testid="studio-link-board"
+            >
               <KanbanSquare data-icon="inline-start" />
               {t("dashboard.studio.links.board")}
             </Button>
             {canCounter ? (
-              <Button variant="outline" nativeButton={false} render={<Link href="/si/counter" />} data-testid="studio-link-counter">
+              <Button
+                variant="outline"
+                nativeButton={false}
+                render={<Link href="/si/counter" />}
+                data-testid="studio-link-counter"
+              >
                 <ShoppingCart data-icon="inline-start" />
                 {t("dashboard.studio.links.counter")}
               </Button>
             ) : null}
             {canBook ? (
-              <Button nativeButton={false} render={<Link href="/stl/orders/new" />} data-testid="studio-link-booking">
+              <Button
+                nativeButton={false}
+                render={<Link href="/stl/orders/new" />}
+                data-testid="studio-link-booking"
+              >
                 <ClipboardList data-icon="inline-start" />
                 {t("dashboard.studio.links.newBooking")}
               </Button>
@@ -86,10 +130,16 @@ export function StudioHome() {
           variant="cyan"
           icon={CarFront}
           title={t("dashboard.studio.kpi.jobs")}
-          value={<FormattedFigure value={data?.orders.length ?? 0} format="count" />}
+          value={<FormattedFigure value={data?.orders.length} format="count" />}
           dataValue={data?.orders.length}
           flashKey={data?.orders.length}
-          caption={t("dashboard.studio.caption.jobs", { count: num(data?.late.length ?? 0) })}
+          caption={
+            data
+              ? t("dashboard.studio.caption.jobs", {
+                  count: num(data.late.length),
+                })
+              : "\u00a0"
+          }
           href="/stl/board"
           drillLabel={t("dashboard.common.open")}
           scope={loc ?? ""}
@@ -100,7 +150,7 @@ export function StudioHome() {
           variant="yellow"
           icon={TrendingUp}
           title={t("dashboard.studio.kpi.revenue")}
-          value={<FormattedFigure value={data?.revenueTodayP ?? 0} format="money" />}
+          value={<FormattedFigure value={data?.revenueTodayP} format="money" />}
           amount={data?.revenueTodayP}
           scope={loc ?? ""}
           flashKey={data?.revenueTodayP}
@@ -113,11 +163,22 @@ export function StudioHome() {
           variant="pink"
           icon={Gauge}
           title={t("dashboard.studio.kpi.bayUse")}
-          value={<FormattedFigure value={data?.ops.utilisationPct ?? 0} format="pct" />}
-          dataValue={data ? Math.round(data.ops.utilisationPct * 10) / 10 : undefined}
+          value={
+            <FormattedFigure value={data?.ops.utilisationPct} format="pct" />
+          }
+          dataValue={
+            data ? Math.round(data.ops.utilisationPct * 10) / 10 : undefined
+          }
           scope={loc ?? ""}
           flashKey={data?.ops.scheduledMinutes}
-          caption={t("dashboard.studio.caption.bayUse", { minutes: num(data?.ops.scheduledMinutes ?? 0), total: num(data?.ops.bayMinutes ?? 0) })}
+          caption={
+            data
+              ? t("dashboard.studio.caption.bayUse", {
+                  minutes: num(data.ops.scheduledMinutes),
+                  total: num(data.ops.bayMinutes),
+                })
+              : "\u00a0"
+          }
           href={irtHref("IRT-21", todayRange, loc)}
         />
         <GradientKpi
@@ -126,28 +187,60 @@ export function StudioHome() {
           variant="purple"
           icon={HandCoins}
           title={t("dashboard.studio.kpi.deposits")}
-          value={<FormattedFigure value={data?.depositsTodayP ?? 0} format="money" />}
+          value={
+            <FormattedFigure value={data?.depositsTodayP} format="money" />
+          }
           amount={data?.depositsTodayP}
           scope={loc ?? ""}
           flashKey={data?.depositsTodayP}
-          caption={t("dashboard.studio.caption.deposits", { count: num(data?.depositsCount ?? 0) })}
+          caption={
+            data
+              ? t("dashboard.studio.caption.deposits", {
+                  count: num(data.depositsCount),
+                })
+              : "\u00a0"
+          }
           href={irtHref("IRT-07", todayRange, loc)}
         />
       </div>
 
       <div className="grid grid-cols-1 gap-5 @min-[68rem]/studio:grid-cols-[minmax(0,1fr)_21rem]">
-        <SectionCard title={t("dashboard.studio.orders.title")} icon={KanbanSquare} size="sm" seeAllHref="/stl/board">
+        <SectionCard
+          title={t("dashboard.studio.orders.title")}
+          icon={KanbanSquare}
+          size="sm"
+          seeAllHref="/stl/board"
+        >
           {data && !data.orders.length ? (
-            <EmptyState icon={CarFront} title={t("dashboard.studio.orders.empty")} size="sm" />
+            <EmptyState
+              icon={CarFront}
+              title={t("dashboard.studio.orders.empty")}
+              size="sm"
+            />
           ) : (
-            <div className="grid grid-cols-1 gap-3 @min-[34rem]/studio:grid-cols-2 @min-[52rem]/studio:grid-cols-3 @min-[80rem]/studio:grid-cols-5" data-testid="studio-orders">
+            <div
+              className="grid grid-cols-1 gap-3 @min-[34rem]/studio:grid-cols-2 @min-[52rem]/studio:grid-cols-3 @min-[80rem]/studio:grid-cols-5"
+              data-testid="studio-orders"
+            >
               {STUDIO_STATUSES.map((s) => {
                 const list = (data?.orders ?? []).filter((o) => o.status === s)
                 return (
-                  <section key={s} className="flex min-w-0 flex-col gap-1.5 rounded-lg bg-surface-raised/40 p-2" data-testid="studio-column" data-status={s} data-value={list.length}>
+                  <section
+                    key={s}
+                    className="flex min-w-0 flex-col gap-1.5 rounded-lg bg-surface-raised/40 p-2"
+                    data-testid="studio-column"
+                    data-status={s}
+                    data-value={list.length}
+                  >
                     <header className="flex items-center justify-between px-1">
-                      <span className="text-[0.8125rem] font-semibold">{t(`dashboard.exec.jobs.status.${s}` as "dashboard.exec.jobs.status.booked")}</span>
-                      <span className="count-badge nums min-w-6 px-1.5 text-center text-xs font-semibold">{num(list.length)}</span>
+                      <span className="text-[0.8125rem] font-semibold">
+                        {t(
+                          `dashboard.exec.jobs.status.${s}` as "dashboard.exec.jobs.status.booked"
+                        )}
+                      </span>
+                      <span className="count-badge nums min-w-6 px-1.5 text-center text-xs font-semibold">
+                        {num(list.length)}
+                      </span>
                     </header>
                     <ul className="flex max-h-72 flex-col gap-1.5 overflow-y-auto">
                       {list.map((o) => (
@@ -161,9 +254,16 @@ export function StudioHome() {
           )}
         </SectionCard>
 
-        <SectionCard title={t("dashboard.studio.late.title")} subtitle={t("dashboard.studio.late.subtitle")} icon={AlarmClock} size="sm">
+        <SectionCard
+          title={t("dashboard.studio.late.title")}
+          subtitle={t("dashboard.studio.late.subtitle")}
+          icon={AlarmClock}
+          size="sm"
+        >
           {data && !data.late.length ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">{t("dashboard.studio.late.empty")}</p>
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              {t("dashboard.studio.late.empty")}
+            </p>
           ) : (
             <ul className="flex flex-col" data-testid="late-jobs">
               {(data?.late ?? []).map((o) => (
@@ -174,9 +274,16 @@ export function StudioHome() {
         </SectionCard>
       </div>
 
-      <SectionCard title={t("dashboard.studio.bookings.title")} subtitle={t("dashboard.studio.bookings.subtitle")} icon={CalendarClock} size="sm">
+      <SectionCard
+        title={t("dashboard.studio.bookings.title")}
+        subtitle={t("dashboard.studio.bookings.subtitle")}
+        icon={CalendarClock}
+        size="sm"
+      >
         {data && !data.bookings.length ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">{t("dashboard.studio.bookings.empty")}</p>
+          <p className="py-6 text-center text-sm text-muted-foreground">
+            {t("dashboard.studio.bookings.empty")}
+          </p>
         ) : (
           <BookingsTable rows={data?.bookings ?? []} />
         )}
@@ -188,19 +295,43 @@ export function StudioHome() {
 function OrderChip({ order }: { order: StudioOrder }) {
   const { t, time } = useLocale()
   return (
-    <li data-testid="studio-order" data-status={order.status} data-order-no={order.orderNo} data-late={order.late || undefined}>
-      <Link href={`/stl/orders/${order.id}`} className="flex min-w-0 flex-col gap-1 rounded-md bg-card p-2 shadow-(--card-shadow) outline-none hover:bg-primary-soft focus-visible:ring-[3px] focus-visible:ring-ring/40">
+    <li
+      data-testid="studio-order"
+      data-status={order.status}
+      data-order-no={order.orderNo}
+      data-late={order.late || undefined}
+    >
+      <Link
+        href={`/stl/orders/${order.id}`}
+        className="flex min-w-0 flex-col gap-1 rounded-md bg-card p-2 shadow-(--card-shadow) outline-none hover:bg-primary-soft focus-visible:ring-[3px] focus-visible:ring-ring/40"
+      >
         <span className="flex min-w-0 items-center justify-between gap-1.5">
-          {order.regNo ? <RegPlate regNo={order.regNo} className="min-w-0" /> : <span className="truncate text-xs">{order.partyEn}</span>}
-          <span lang="en" className="font-mono text-[0.625rem] text-muted-foreground">
+          {order.regNo ? (
+            <RegPlate regNo={order.regNo} className="min-w-0" />
+          ) : (
+            <span className="truncate text-xs">{order.partyEn}</span>
+          )}
+          <span
+            lang="en"
+            className="font-mono text-[0.625rem] text-muted-foreground"
+          >
             {order.bayCode ?? ""}
           </span>
         </span>
         <span lang="en" className="truncate font-mono text-[0.6875rem]">
           {order.orderNo}
         </span>
-        <span className={cn("text-[0.6875rem] nums", order.late ? "font-semibold text-destructive" : "text-muted-foreground")}>
-          {t("dashboard.studio.late.promised", { time: time(order.promisedAt) })}
+        <span
+          className={cn(
+            "nums text-[0.6875rem]",
+            order.late
+              ? "font-semibold text-destructive"
+              : "text-muted-foreground"
+          )}
+        >
+          {t("dashboard.studio.late.promised", {
+            time: time(order.promisedAt),
+          })}
         </span>
       </Link>
     </li>
@@ -210,13 +341,24 @@ function OrderChip({ order }: { order: StudioOrder }) {
 function LateRow({ order }: { order: StudioOrder }) {
   const { t, time, locale } = useLocale()
   return (
-    <li data-testid="late-job" data-order-no={order.orderNo} data-status={order.status} className="border-b border-hairline last:border-b-0">
-      <Link href={`/stl/orders/${order.id}`} className="flex min-w-0 items-center gap-3 rounded-md px-1 py-2.5 outline-none hover:bg-primary-soft focus-visible:ring-[3px] focus-visible:ring-ring/40">
+    <li
+      data-testid="late-job"
+      data-order-no={order.orderNo}
+      data-status={order.status}
+      className="border-b border-hairline last:border-b-0"
+    >
+      <Link
+        href={`/stl/orders/${order.id}`}
+        className="flex min-w-0 items-center gap-3 rounded-md px-1 py-2.5 outline-none hover:bg-primary-soft focus-visible:ring-[3px] focus-visible:ring-ring/40"
+      >
         <span className="icon-well flex size-9 shrink-0 items-center justify-center text-destructive">
           <AlarmClock className="size-4" />
         </span>
         <span className="flex min-w-0 flex-1 flex-col">
-          <span lang="en" className="truncate font-mono text-[0.8125rem] font-semibold">
+          <span
+            lang="en"
+            className="truncate font-mono text-[0.8125rem] font-semibold"
+          >
             {order.orderNo}
           </span>
           <span className="truncate text-xs text-muted-foreground">
@@ -225,8 +367,14 @@ function LateRow({ order }: { order: StudioOrder }) {
           </span>
         </span>
         <span className="flex shrink-0 flex-col items-end gap-0.5">
-          <span className="text-xs font-semibold text-destructive nums">{t("dashboard.studio.late.promised", { time: time(order.promisedAt) })}</span>
-          <DocStatus status={order.status === "delivered" ? "delivered" : order.status} />
+          <span className="nums text-xs font-semibold text-destructive">
+            {t("dashboard.studio.late.promised", {
+              time: time(order.promisedAt),
+            })}
+          </span>
+          <DocStatus
+            status={order.status === "delivered" ? "delivered" : order.status}
+          />
         </span>
       </Link>
     </li>
@@ -235,44 +383,88 @@ function LateRow({ order }: { order: StudioOrder }) {
 
 function BookingsTable({ rows }: { rows: StudioOrder[] }) {
   const { t, time, locale } = useLocale()
-  const th = "h-9 bg-surface-raised px-3 text-left font-medium whitespace-nowrap first:rounded-l-md last:rounded-r-md"
+  const th =
+    "h-9 bg-surface-raised px-3 text-left font-medium whitespace-nowrap first:rounded-l-md last:rounded-r-md"
   const td = "h-11 border-b border-hairline px-3"
   return (
     <div className="@container/bk overflow-x-auto">
-      <table className="w-full border-separate border-spacing-0 text-[0.8125rem]" data-testid="studio-bookings">
+      <table
+        className="w-full border-separate border-spacing-0 text-[0.8125rem]"
+        data-testid="studio-bookings"
+      >
         <thead>
           <tr>
             <th className={th}>{t("dashboard.studio.bookings.time")}</th>
             <th className={th}>{t("dashboard.studio.bookings.order")}</th>
-            <th className={cn(th, "hidden @min-[40rem]/bk:table-cell")}>{t("dashboard.studio.bookings.customer")}</th>
+            <th className={cn(th, "hidden @min-[40rem]/bk:table-cell")}>
+              {t("dashboard.studio.bookings.customer")}
+            </th>
             <th className={th}>{t("dashboard.studio.bookings.vehicle")}</th>
             <th className={th}>{t("dashboard.studio.bookings.bay")}</th>
-            <th className={cn(th, "hidden @min-[48rem]/bk:table-cell")}>{t("dashboard.studio.bookings.technicians")}</th>
-            <th className={cn(th, "hidden @min-[56rem]/bk:table-cell")}>{t("dashboard.studio.bookings.promised")}</th>
+            <th className={cn(th, "hidden @min-[48rem]/bk:table-cell")}>
+              {t("dashboard.studio.bookings.technicians")}
+            </th>
+            <th className={cn(th, "hidden @min-[56rem]/bk:table-cell")}>
+              {t("dashboard.studio.bookings.promised")}
+            </th>
             <th className={th}>{t("dashboard.studio.bookings.status")}</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((o) => (
-            <tr key={o.id} data-testid="studio-booking" data-order-no={o.orderNo} className="hover:bg-primary-soft">
-              <td className={cn(td, "font-mono nums")}>{time(o.scheduledAt)}</td>
+            <tr
+              key={o.id}
+              data-testid="studio-booking"
+              data-order-no={o.orderNo}
+              className="hover:bg-primary-soft"
+            >
+              <td className={cn(td, "nums font-mono")}>
+                {time(o.scheduledAt)}
+              </td>
               <td className={td}>
-                <Link href={`/stl/orders/${o.id}`} lang="en" className="font-mono text-link hover:underline">
+                <Link
+                  href={`/stl/orders/${o.id}`}
+                  lang="en"
+                  className="font-mono text-link hover:underline"
+                >
                   {o.orderNo}
                 </Link>
               </td>
-              <td className={cn(td, "hidden max-w-48 truncate @min-[40rem]/bk:table-cell")}>{locale === "bn" ? o.partyBn : o.partyEn}</td>
+              <td
+                className={cn(
+                  td,
+                  "hidden max-w-48 truncate @min-[40rem]/bk:table-cell"
+                )}
+              >
+                {locale === "bn" ? o.partyBn : o.partyEn}
+              </td>
               <td className={td}>
                 <span className="flex min-w-0 items-center gap-2">
                   {o.regNo ? <RegPlate regNo={o.regNo} /> : null}
-                  <span className="hidden truncate text-xs text-muted-foreground @min-[34rem]/bk:inline">{o.vehicle}</span>
+                  <span className="hidden truncate text-xs text-muted-foreground @min-[34rem]/bk:inline">
+                    {o.vehicle}
+                  </span>
                 </span>
               </td>
               <td className={cn(td, "font-mono")} lang="en">
                 {o.bayCode ?? "-"}
               </td>
-              <td className={cn(td, "hidden text-xs @min-[48rem]/bk:table-cell")}>{o.technicians.map((x) => (locale === "bn" ? x.bn : x.en).split(" ")[0]).join(", ") || "-"}</td>
-              <td className={cn(td, "hidden nums @min-[56rem]/bk:table-cell", o.late && "font-semibold text-destructive")}>{time(o.promisedAt)}</td>
+              <td
+                className={cn(td, "hidden text-xs @min-[48rem]/bk:table-cell")}
+              >
+                {o.technicians
+                  .map((x) => (locale === "bn" ? x.bn : x.en).split(" ")[0])
+                  .join(", ") || "-"}
+              </td>
+              <td
+                className={cn(
+                  td,
+                  "nums hidden @min-[56rem]/bk:table-cell",
+                  o.late && "font-semibold text-destructive"
+                )}
+              >
+                {time(o.promisedAt)}
+              </td>
               <td className={td}>
                 <DocStatus status={o.status} />
               </td>

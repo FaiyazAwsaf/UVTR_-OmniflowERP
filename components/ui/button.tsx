@@ -17,7 +17,8 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary font-semibold text-primary-foreground hover:bg-primary/88 focus-visible:ring-primary/40",
+          // Disabled: a neutral raised surface with muted text, legible in both themes (faded turquoise is not).
+          "bg-primary font-semibold text-primary-foreground hover:bg-primary/88 focus-visible:ring-primary/40 disabled:bg-surface-raised disabled:text-muted-foreground disabled:opacity-100",
         outline:
           "border-primary bg-transparent text-link hover:bg-primary-soft aria-expanded:bg-primary-soft",
         neutral:

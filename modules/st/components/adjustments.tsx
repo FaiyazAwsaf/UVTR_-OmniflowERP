@@ -12,7 +12,13 @@ import { DocStatus } from "@/components/shared/doc-status"
 import { MoneyText } from "@/components/shared/money-text"
 import { PageHeader } from "@/components/shared/page-header"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { addDaysISO, dhakaDate } from "@/core/clock/dates"
 import { useNow } from "@/core/clock/useNow"
@@ -22,65 +28,134 @@ import { usePermissions } from "@/core/security/useCan"
 import { nameOf, userName } from "@/core/security/users"
 import { useLocale } from "@/lib/i18n/provider"
 import { JournalLink } from "@/modules/ic/components/count-detail"
-import { ItemCell, LinesTable, ListToolbar, LocationSelect, QtyText, useScmLookups } from "@/modules/ic/components/scm-ui"
+import {
+  ItemCell,
+  LinesTable,
+  ListToolbar,
+  LocationSelect,
+  QtyText,
+  useScmLookups,
+} from "@/modules/ic/components/scm-ui"
 
 import { AdjustmentForm, type AdjustmentPrefill } from "./adjustment-form"
 
 function useAdjustments(internal: boolean) {
   const db = useDb()
   return useLiveQuery(
-    async () => (await db.stockAdjustments.orderBy("date").reverse().toArray()).filter((a) => (a.reason === "internal-use") === internal),
+    async () =>
+      (await db.stockAdjustments.orderBy("date").reverse().toArray()).filter(
+        (a) => (a.reason === "internal-use") === internal
+      ),
     [db, internal]
   )
 }
 
 /** The adjustments table shared by /st/adjustments and the internal-use tab of /st/issues. */
-function AdjustmentTable({ rows, onOpen, internal }: { rows: StockAdjustmentRow[]; onOpen: (a: StockAdjustmentRow) => void; internal: boolean }) {
+function AdjustmentTable({
+  rows,
+  onOpen,
+  internal,
+}: {
+  rows: StockAdjustmentRow[]
+  onOpen: (a: StockAdjustmentRow) => void
+  internal: boolean
+}) {
   const { t, tk, locale, num, dmy } = useLocale()
   const lookups = useScmLookups()
   const columns = React.useMemo<ColumnDef<StockAdjustmentRow, unknown>[]>(
     () => [
       {
         id: "no",
-        header: t("st.adjustments.no"),
+        header: internal ? t("st.issues.voucherNo") : t("st.adjustments.no"),
         accessorFn: (a) => a.adjustmentNo,
         cell: ({ row }) => (
-          <span lang="en" className="font-mono text-link" data-testid="adjustment-row" data-adjustment-no={row.original.adjustmentNo}>
+          <span
+            lang="en"
+            className="font-mono text-link"
+            data-testid="adjustment-row"
+            data-adjustment-no={row.original.adjustmentNo}
+          >
             {row.original.adjustmentNo}
           </span>
         ),
       },
-      { id: "date", header: t("st.adjustments.date"), accessorFn: (a) => a.createdAt, cell: ({ row }) => <span className="nums">{dmy(row.original.date)}</span>, meta: { hideBelow: "sm" } },
+      {
+        id: "date",
+        header: t("st.adjustments.date"),
+        accessorFn: (a) => a.createdAt,
+        cell: ({ row }) => (
+          <span className="nums">{dmy(row.original.date)}</span>
+        ),
+        meta: { hideBelow: "sm" },
+      },
       {
         id: "location",
         header: t("st.adjustments.location"),
         accessorFn: (a) => a.locationId,
-        cell: ({ row }) => nameOf(lookups?.locations.get(row.original.locationId), locale),
+        cell: ({ row }) =>
+          nameOf(lookups?.locations.get(row.original.locationId), locale),
         meta: { hideBelow: "md" },
       },
       {
         id: "reason",
         header: internal ? t("st.issues.expense") : t("st.adjustments.reason"),
         accessorFn: (a) => a.reason,
-        cell: ({ row }) => (internal ? tk(`st.expense.${row.original.expenseTag}`) : tk(`st.reason.${row.original.reason}`)),
+        cell: ({ row }) =>
+          internal
+            ? tk(`st.expense.${row.original.expenseTag}`)
+            : tk(`st.reason.${row.original.reason}`),
       },
-      { id: "lines", header: t("st.adjustments.lines"), accessorFn: (a) => a.lines.length, cell: ({ row }) => num(row.original.lines.length), meta: { align: "right", hideBelow: "lg" } },
+      {
+        id: "lines",
+        header: t("st.adjustments.lines"),
+        accessorFn: (a) => a.lines.length,
+        cell: ({ row }) => num(row.original.lines.length),
+        meta: { align: "right", hideBelow: "lg" },
+      },
       {
         id: "value",
         header: t("st.adjustments.value"),
         accessorFn: (a) => a.lines.reduce((s, l) => s + l.valueP, 0),
-        cell: ({ row }) => <MoneyText poisha={row.original.lines.reduce((s, l) => s + l.valueP, 0)} signed colorize />,
+        cell: ({ row }) => (
+          <MoneyText
+            poisha={row.original.lines.reduce((s, l) => s + l.valueP, 0)}
+            signed
+            colorize
+          />
+        ),
         meta: { align: "right" },
       },
-      { id: "status", header: t("st.adjustments.status"), accessorFn: (a) => a.status, cell: ({ row }) => <DocStatus status={row.original.status} /> },
+      {
+        id: "status",
+        header: t("st.adjustments.status"),
+        accessorFn: (a) => a.status,
+        cell: ({ row }) => <DocStatus status={row.original.status} />,
+      },
     ],
     [t, tk, locale, num, dmy, lookups, internal]
   )
-  return <DataTable data={rows} columns={columns} rowId={(a) => a.id} onRowClick={onOpen} emptyTitle={t("st.adjustments.empty")} bare />
+  return (
+    <DataTable
+      data={rows}
+      columns={columns}
+      rowId={(a) => a.id}
+      onRowClick={onOpen}
+      emptyTitle={
+        internal ? t("st.issues.internalEmpty") : t("st.adjustments.empty")
+      }
+      bare
+    />
+  )
 }
 
 /** One adjustment: lines with values, approval and journal. */
-function AdjustmentView({ adjustment, onClose }: { adjustment: StockAdjustmentRow | null; onClose: () => void }) {
+function AdjustmentView({
+  adjustment,
+  onClose,
+}: {
+  adjustment: StockAdjustmentRow | null
+  onClose: () => void
+}) {
   const { t, tk, locale, dmy } = useLocale()
   const lookups = useScmLookups()
   return (
@@ -96,13 +171,25 @@ function AdjustmentView({ adjustment, onClose }: { adjustment: StockAdjustmentRo
                 <DocStatus status={adjustment.status} />
               </DialogTitle>
               <DialogDescription>
-                {nameOf(lookups?.locations.get(adjustment.locationId), locale)} · {dmy(adjustment.date)} ·{" "}
-                {adjustment.reason === "internal-use" ? tk(`st.expense.${adjustment.expenseTag}`) : tk(`st.reason.${adjustment.reason}`)} · {t("st.adjustments.preparedBy")}{" "}
+                {nameOf(lookups?.locations.get(adjustment.locationId), locale)}{" "}
+                · {dmy(adjustment.date)} ·{" "}
+                {adjustment.reason === "internal-use"
+                  ? tk(`st.expense.${adjustment.expenseTag}`)
+                  : tk(`st.reason.${adjustment.reason}`)}{" "}
+                · {t("st.adjustments.preparedBy")}{" "}
                 {userName(lookups?.users.get(adjustment.preparedBy), locale)}
               </DialogDescription>
             </DialogHeader>
-            {adjustment.note ? <p className="text-[0.8125rem]">{adjustment.note}</p> : null}
-            <LinesTable head={[{ label: t("ic.ui.item") }, { label: t("ic.ui.qty"), align: "right" }, { label: t("ic.ui.value"), align: "right" }]}>
+            {adjustment.note ? (
+              <p className="text-[0.8125rem]">{adjustment.note}</p>
+            ) : null}
+            <LinesTable
+              head={[
+                { label: t("ic.ui.item") },
+                { label: t("ic.ui.qty"), align: "right" },
+                { label: t("ic.ui.value"), align: "right" },
+              ]}
+            >
               {adjustment.lines.map((l, i) => {
                 const item = lookups?.items.get(l.itemId)
                 return (
@@ -121,8 +208,12 @@ function AdjustmentView({ adjustment, onClose }: { adjustment: StockAdjustmentRo
               })}
             </LinesTable>
             <div className="flex flex-wrap items-center gap-3 text-[0.8125rem]">
-              {adjustment.approvalId ? <ApprovalChip approvalId={adjustment.approvalId} /> : null}
-              {adjustment.journalId ? <JournalLink journalId={adjustment.journalId} /> : null}
+              {adjustment.approvalId ? (
+                <ApprovalChip approvalId={adjustment.approvalId} />
+              ) : null}
+              {adjustment.journalId ? (
+                <JournalLink journalId={adjustment.journalId} />
+              ) : null}
             </div>
           </>
         ) : null}
@@ -140,21 +231,27 @@ export function AdjustmentsScreen() {
   const lookups = useScmLookups()
   const rows = useAdjustments(false)
   const [location, setLocation] = React.useState("all")
-  const [creating, setCreating] = React.useState<AdjustmentPrefill | null>(() => {
-    const reason = params.get("new")
-    if (!reason) return null
-    return {
-      reason: reason === "expiry" ? "expiry" : "damage",
-      locationId: params.get("location") ?? undefined,
-      itemId: params.get("item") ?? undefined,
-      batchId: params.get("batch") ?? undefined,
-      qty: params.get("qty") ? Number(params.get("qty")) : undefined,
+  const [creating, setCreating] = React.useState<AdjustmentPrefill | null>(
+    () => {
+      const reason = params.get("new")
+      if (!reason) return null
+      return {
+        reason: reason === "expiry" ? "expiry" : "damage",
+        locationId: params.get("location") ?? undefined,
+        itemId: params.get("item") ?? undefined,
+        batchId: params.get("batch") ?? undefined,
+        qty: params.get("qty") ? Number(params.get("qty")) : undefined,
+      }
     }
-  })
+  )
   const [openId, setOpenId] = React.useState<string | null>(params.get("id"))
   const open = rows?.find((a) => a.id === openId) ?? null
-  const shown = (rows ?? []).filter((a) => location === "all" || a.locationId === location)
-  const canCreate = (lookups?.stockLocations ?? []).some((l) => can("st.adjust.create", l.id))
+  const shown = (rows ?? []).filter(
+    (a) => location === "all" || a.locationId === location
+  )
+  const canCreate = (lookups?.stockLocations ?? []).some((l) =>
+    can("st.adjust.create", l.id)
+  )
 
   return (
     <div className="flex flex-col gap-5">
@@ -163,7 +260,10 @@ export function AdjustmentsScreen() {
         subtitle={t("st.adjustments.subtitle")}
         actions={
           canCreate ? (
-            <Button onClick={() => setCreating({})} data-testid="adjustment-new">
+            <Button
+              onClick={() => setCreating({})}
+              data-testid="adjustment-new"
+            >
               <ClipboardMinus />
               {t("st.adjustments.new")}
             </Button>
@@ -172,9 +272,17 @@ export function AdjustmentsScreen() {
       />
       <section className="surface-card flex flex-col gap-4 p-5">
         <ListToolbar>
-          <LocationSelect value={location} onChange={setLocation} locations={lookups?.stockLocations ?? []} />
+          <LocationSelect
+            value={location}
+            onChange={setLocation}
+            locations={lookups?.stockLocations ?? []}
+          />
         </ListToolbar>
-        <AdjustmentTable rows={shown} onOpen={(a) => setOpenId(a.id)} internal={false} />
+        <AdjustmentTable
+          rows={shown}
+          onOpen={(a) => setOpenId(a.id)}
+          internal={false}
+        />
       </section>
       <Dialog open={!!creating} onOpenChange={(o) => !o && setCreating(null)}>
         <DialogContent className="sm:max-w-3xl" data-testid="adjustment-dialog">
@@ -208,9 +316,20 @@ export function IssuesScreen() {
   const [creating, setCreating] = React.useState(false)
   const [openId, setOpenId] = React.useState<string | null>(null)
   const since = addDaysISO(dhakaDate(nowMs), -6)
-  const jobs = useLiveQuery(async () => (await db.stockMoves.where("date").aboveOrEqual(since).toArray()).filter((m) => m.type === "issue-job").sort((a, b) => b.at - a.at), [db, since])
-  const canCreate = (lookups?.stockLocations ?? []).some((l) => can("st.adjust.create", l.id))
-  const byLocation = <T extends { locationId: string }>(rows: T[] | undefined) => (rows ?? []).filter((r) => location === "all" || r.locationId === location)
+  const jobs = useLiveQuery(
+    async () =>
+      (await db.stockMoves.where("date").aboveOrEqual(since).toArray())
+        .filter((m) => m.type === "issue-job")
+        .sort((a, b) => b.at - a.at),
+    [db, since]
+  )
+  const canCreate = (lookups?.stockLocations ?? []).some((l) =>
+    can("st.adjust.create", l.id)
+  )
+  const byLocation = <T extends { locationId: string }>(
+    rows: T[] | undefined
+  ) =>
+    (rows ?? []).filter((r) => location === "all" || r.locationId === location)
 
   const jobColumns = React.useMemo<ColumnDef<StockMoveRow, unknown>[]>(
     () => [
@@ -224,23 +343,53 @@ export function IssuesScreen() {
           </span>
         ),
       },
-      { id: "order", header: t("st.issues.order"), enableSorting: false, cell: ({ row }) => <DocLink docType={row.original.ref.docType} docId={row.original.ref.docId} docNo={row.original.ref.docNo} /> },
-      { id: "item", header: t("ic.ui.item"), accessorFn: (m) => m.itemId, cell: ({ row }) => <ItemCell item={lookups?.items.get(row.original.itemId)} /> },
+      {
+        id: "order",
+        header: t("st.issues.order"),
+        enableSorting: false,
+        cell: ({ row }) => (
+          <DocLink
+            docType={row.original.ref.docType}
+            docId={row.original.ref.docId}
+            docNo={row.original.ref.docNo}
+          />
+        ),
+      },
+      {
+        id: "item",
+        header: t("ic.ui.item"),
+        accessorFn: (m) => m.itemId,
+        cell: ({ row }) => (
+          <ItemCell item={lookups?.items.get(row.original.itemId)} />
+        ),
+      },
       {
         id: "location",
         header: t("ic.ui.location"),
         accessorFn: (m) => m.locationId,
-        cell: ({ row }) => nameOf(lookups?.locations.get(row.original.locationId), locale),
+        cell: ({ row }) =>
+          nameOf(lookups?.locations.get(row.original.locationId), locale),
         meta: { hideBelow: "md" },
       },
       {
         id: "qty",
         header: t("ic.ui.qty"),
         accessorFn: (m) => -m.qtyBase,
-        cell: ({ row }) => <QtyText value={-row.original.qtyBase} uom={lookups?.items.get(row.original.itemId)?.baseUom} />,
+        cell: ({ row }) => (
+          <QtyText
+            value={-row.original.qtyBase}
+            uom={lookups?.items.get(row.original.itemId)?.baseUom}
+          />
+        ),
         meta: { align: "right" },
       },
-      { id: "value", header: t("ic.ui.value"), accessorFn: (m) => -m.valueP, cell: ({ row }) => <MoneyText poisha={-row.original.valueP} />, meta: { align: "right", hideBelow: "sm" } },
+      {
+        id: "value",
+        header: t("ic.ui.value"),
+        accessorFn: (m) => -m.valueP,
+        cell: ({ row }) => <MoneyText poisha={-row.original.valueP} />,
+        meta: { align: "right", hideBelow: "sm" },
+      },
     ],
     [t, dmy, time, locale, lookups]
   )
@@ -263,18 +412,36 @@ export function IssuesScreen() {
         <Tabs defaultValue="internal">
           <div className="flex flex-wrap items-center gap-3">
             <TabsList>
-              <TabsTrigger value="internal">{t("st.issues.internal")}</TabsTrigger>
+              <TabsTrigger value="internal">
+                {t("st.issues.internal")}
+              </TabsTrigger>
               <TabsTrigger value="jobs" data-testid="tab-jobs">
                 {t("st.issues.jobs")}
               </TabsTrigger>
             </TabsList>
-            <LocationSelect value={location} onChange={setLocation} locations={lookups?.stockLocations ?? []} className="ml-auto" />
+            <LocationSelect
+              value={location}
+              onChange={setLocation}
+              locations={lookups?.stockLocations ?? []}
+              className="ml-auto"
+            />
           </div>
           <TabsContent value="internal" className="pt-4">
-            <AdjustmentTable rows={byLocation(internal)} onOpen={(a) => setOpenId(a.id)} internal />
+            <AdjustmentTable
+              rows={byLocation(internal)}
+              onOpen={(a) => setOpenId(a.id)}
+              internal
+            />
           </TabsContent>
           <TabsContent value="jobs" className="pt-4">
-            <DataTable data={byLocation(jobs)} columns={jobColumns} rowId={(m) => m.id} density="compact" emptyTitle={t("st.issues.empty")} bare />
+            <DataTable
+              data={byLocation(jobs)}
+              columns={jobColumns}
+              rowId={(m) => m.id}
+              density="compact"
+              emptyTitle={t("st.issues.empty")}
+              bare
+            />
           </TabsContent>
         </Tabs>
       </section>
@@ -291,7 +458,10 @@ export function IssuesScreen() {
           ) : null}
         </DialogContent>
       </Dialog>
-      <AdjustmentView adjustment={internal?.find((a) => a.id === openId) ?? null} onClose={() => setOpenId(null)} />
+      <AdjustmentView
+        adjustment={internal?.find((a) => a.id === openId) ?? null}
+        onClose={() => setOpenId(null)}
+      />
     </div>
   )
 }

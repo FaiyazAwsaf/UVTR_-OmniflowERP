@@ -3,7 +3,14 @@
 import * as React from "react"
 import Link from "next/link"
 import { useLiveQuery } from "dexie-react-hooks"
-import { Camera, CheckCircle2, KeySquare, Printer, Receipt, Truck } from "lucide-react"
+import {
+  Camera,
+  CheckCircle2,
+  KeySquare,
+  Printer,
+  Receipt,
+  Truck,
+} from "lucide-react"
 import { toast } from "sonner"
 
 import { DateText } from "@/components/shared/date-text"
@@ -19,7 +26,14 @@ import { Input } from "@/components/ui/input"
 import { locationById } from "@/config/brand.config"
 import { placeholderPhoto } from "@/core/connectors/capture"
 import { useDb } from "@/core/db/DbProvider"
-import type { DeliveryRow, Id, PartyRow, SalesOrderRow, UserRow, VehicleRow } from "@/core/db/schema"
+import type {
+  DeliveryRow,
+  Id,
+  PartyRow,
+  SalesOrderRow,
+  UserRow,
+  VehicleRow,
+} from "@/core/db/schema"
 import { useCommand } from "@/core/engine/useCommand"
 import { useCan } from "@/core/security/useCan"
 import { nameOf, userName } from "@/core/security/users"
@@ -27,7 +41,13 @@ import { useLocale } from "@/lib/i18n/provider"
 import { cn } from "@/lib/utils"
 import { isTaskLine } from "@/modules/stl/orders"
 import { QcPanel } from "@/modules/stl/components/job-parts"
-import { ClassTag, DocHeader, PrintDialog, useUserMap, VehicleCell } from "@/modules/stl/components/kit"
+import {
+  ClassTag,
+  DocHeader,
+  PrintDialog,
+  useUserMap,
+  VehicleCell,
+} from "@/modules/stl/components/kit"
 
 import { handover, HANDOVER_KEYS } from "../commands"
 import { SignaturePad, SignatureView } from "./signature-pad"
@@ -60,21 +80,43 @@ export function Handover({ id }: { id: Id }) {
       db.qcChecks.where("orderId").equals(order.id).sortBy("at"),
       db.deliveries.where("orderId").equals(order.id).toArray(),
     ])
-    return { order, lines, party, vehicle, qcs, delivery: deliveries.find((d) => d.kind === "vehicle-handover") }
+    return {
+      order,
+      lines,
+      party,
+      vehicle,
+      qcs,
+      delivery: deliveries.find((d) => d.kind === "vehicle-handover"),
+    }
   }, [db, id])
   const canHandover = useCan("sd.delivery.handover", data?.order.locationId)
   const canCheckout = useCan("si.counter.checkout", data?.order.locationId)
 
   if (data === undefined) return null
-  if (data === null) return <EmptyState icon={Truck} title={t("stl.order.notFound")} action={{ label: t("sd.pages.home"), href: "/sd" }} />
+  if (data === null)
+    return (
+      <EmptyState
+        icon={Truck}
+        title={t("stl.order.notFound")}
+        action={{ label: t("sd.pages.home"), href: "/sd" }}
+      />
+    )
   const { order, lines, party, vehicle, qcs, delivery } = data
   const lastPass = [...qcs].reverse().find((q) => q.result === "pass")
   const taskLines = lines.filter(isTaskLine)
-  const allDone = taskLines.length > 0 && taskLines.every((l) => l.status === "done")
-  const goods = lines.filter((l) => l.kind === "item" && l.status !== "cancelled")
+  const allDone =
+    taskLines.length > 0 && taskLines.every((l) => l.status === "done")
+  const goods = lines.filter(
+    (l) => l.kind === "item" && l.status !== "cancelled"
+  )
   const checklistDone = HANDOVER_KEYS.every((k) => checks[k])
   const signatureName = name || nameOf(party, "en")
-  const canSubmit = order.status === "ready" && canHandover && checklistDone && !!signature && signatureName.trim().length >= 2
+  const canSubmit =
+    order.status === "ready" &&
+    canHandover &&
+    checklistDone &&
+    !!signature &&
+    signatureName.trim().length >= 2
 
   const doSubmit = async () => {
     const out = await submit.run({
@@ -86,7 +128,9 @@ export function Handover({ id }: { id: Id }) {
       photoCount: ANGLES.length,
     })
     if (out) {
-      toast.success(t("sd.handover.done", { no: order.orderNo, gp: out.gatePassNo }))
+      toast.success(
+        t("sd.handover.done", { no: order.orderNo, gp: out.gatePassNo })
+      )
       setPrinting(true)
     }
   }
@@ -99,32 +143,52 @@ export function Handover({ id }: { id: Id }) {
         status={order.status}
         lines={[
           <>
-            <span className="font-medium text-foreground">{nameOf(party, locale)}</span>
-            <span lang="en" className="font-mono">{party?.phone}</span>
+            <span className="font-medium text-foreground">
+              {nameOf(party, locale)}
+            </span>
+            <span lang="en" className="font-mono">
+              {party?.phone}
+            </span>
           </>,
           vehicle ? (
             <>
-              <VehicleCell vehicle={vehicle} /> <ClassTag cls={vehicle.vehicleClass} />
+              <VehicleCell vehicle={vehicle} />{" "}
+              <ClassTag cls={vehicle.vehicleClass} />
             </>
           ) : null,
         ].filter(Boolean)}
         amounts={[
           { label: t("common.total"), valueP: order.totalP, strong: true },
-          { label: t("stl.order.advance"), valueP: order.advanceP, tone: "success" },
+          {
+            label: t("stl.order.advance"),
+            valueP: order.advanceP,
+            tone: "success",
+          },
         ]}
         actions={
           <>
-            <Button variant="ghost" nativeButton={false} render={<Link href={`/stl/orders/${order.id}`} />}>
+            <Button
+              variant="ghost"
+              nativeButton={false}
+              render={<Link href={`/stl/orders/${order.id}`} />}
+            >
               {t("sd.handover.openOrder")}
             </Button>
             {delivery ? (
-              <Button onClick={() => setPrinting(true)} data-testid="gate-pass-print">
+              <Button
+                onClick={() => setPrinting(true)}
+                data-testid="gate-pass-print"
+              >
                 <Printer data-icon="inline-start" />
                 {t("sd.handover.gatePass")}
               </Button>
             ) : null}
             {delivery && order.status === "delivered" && canCheckout ? (
-              <Button variant="outline" nativeButton={false} render={<Link href={`/si/counter?order=${order.id}`} />}>
+              <Button
+                variant="outline"
+                nativeButton={false}
+                render={<Link href={`/si/counter?order=${order.id}`} />}
+              >
                 <Receipt data-icon="inline-start" />
                 {t("stl.order.checkout")}
               </Button>
@@ -139,13 +203,27 @@ export function Handover({ id }: { id: Id }) {
         </SectionCard>
       ) : null}
 
-      {!["qc", "ready", "delivered", "invoiced", "closed"].includes(order.status) && !(order.status === "in-progress" && allDone) ? (
-        <EmptyState icon={Truck} title={t("sd.handover.notReady")} description={t("sd.handover.notReadyHint")} action={{ label: t("sd.handover.openOrder"), href: `/stl/orders/${order.id}` }} />
+      {!["qc", "ready", "delivered", "invoiced", "closed"].includes(
+        order.status
+      ) && !(order.status === "in-progress" && allDone) ? (
+        <EmptyState
+          icon={Truck}
+          title={t("sd.handover.notReady")}
+          description={t("sd.handover.notReadyHint")}
+          action={{
+            label: t("sd.handover.openOrder"),
+            href: `/stl/orders/${order.id}`,
+          }}
+        />
       ) : null}
 
       {lastPass || delivery ? (
         <div className="grid gap-4 xl:grid-cols-2">
-          <SectionCard title={t("sd.handover.qcSummary")} icon={CheckCircle2} size="sm">
+          <SectionCard
+            title={t("sd.handover.qcSummary")}
+            icon={CheckCircle2}
+            size="sm"
+          >
             {lastPass ? (
               <div className="flex flex-col gap-2 text-[0.8125rem]">
                 <ul className="grid grid-cols-2 gap-1.5">
@@ -157,19 +235,39 @@ export function Handover({ id }: { id: Id }) {
                   ))}
                 </ul>
                 <p className="text-xs text-muted-foreground">
-                  {t("sd.handover.passedBy", { name: userName(users.get(lastPass.checkedBy), locale) })} · <DateText value={lastPass.at} variant="dmyTime" />
-                  {qcs.length > 1 ? ` · ${t("sd.handover.attempts", { count: qcs.length })}` : ""}
+                  {t("sd.handover.passedBy", {
+                    name: userName(users.get(lastPass.checkedBy), locale),
+                  })}{" "}
+                  · <DateText value={lastPass.at} variant="dmyTime" />
+                  {qcs.length > 1
+                    ? ` · ${t("sd.handover.attempts", { count: qcs.length })}`
+                    : ""}
                 </p>
               </div>
             ) : (
               <p className="text-[0.8125rem] text-muted-foreground">-</p>
             )}
           </SectionCard>
-          <SectionCard title={t("sd.handover.photos")} icon={Camera} size="sm" action={<SimulatedBadge />}>
+          <SectionCard
+            title={t("sd.handover.photos")}
+            icon={Camera}
+            size="sm"
+            action={<SimulatedBadge />}
+          >
             <div className="grid grid-cols-4 gap-2">
               {ANGLES.map((a) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img key={a} src={placeholderPhoto(order.id, t(`sd.handover.angles.${a}`))} alt={t(`sd.handover.angles.${a}`)} className="aspect-[16/11] w-full rounded-md object-cover" />
+                <figure key={a} className="relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={placeholderPhoto(`${order.id}:${a}`, "")}
+                    alt={t(`sd.handover.angles.${a}`)}
+                    className="aspect-[16/11] w-full rounded-md object-cover"
+                  />
+                  {/* The caption as page text, so Bangla renders in the page's font. */}
+                  <figcaption className="absolute inset-x-0 bottom-1 truncate px-1 text-center text-[0.6875rem] text-white/90">
+                    {t(`sd.handover.angles.${a}`)}
+                  </figcaption>
+                </figure>
               ))}
             </div>
           </SectionCard>
@@ -178,12 +276,25 @@ export function Handover({ id }: { id: Id }) {
 
       {order.status === "ready" ? (
         <div className="grid gap-4 xl:grid-cols-2">
-          <SectionCard title={t("sd.handover.checklist")} icon={KeySquare} size="sm">
-            <ul className="flex flex-col gap-2" data-testid="handover-checklist">
+          <SectionCard
+            title={t("sd.handover.checklist")}
+            icon={KeySquare}
+            size="sm"
+          >
+            <ul
+              className="flex flex-col gap-2"
+              data-testid="handover-checklist"
+            >
               {HANDOVER_KEYS.map((k) => (
                 <li key={k}>
                   <label className="flex items-center gap-3 rounded-md bg-surface-raised/60 px-3 py-2.5 text-[0.8125rem]">
-                    <Checkbox checked={!!checks[k]} onCheckedChange={(v) => setChecks((c) => ({ ...c, [k]: !!v }))} data-testid={`handover-item-${k}`} />
+                    <Checkbox
+                      checked={!!checks[k]}
+                      onCheckedChange={(v) =>
+                        setChecks((c) => ({ ...c, [k]: !!v }))
+                      }
+                      data-testid={`handover-item-${k}`}
+                    />
                     {t(`sd.checklist.${k}`)}
                   </label>
                 </li>
@@ -191,21 +302,50 @@ export function Handover({ id }: { id: Id }) {
             </ul>
             {goods.length ? (
               <p className="mt-3 text-xs text-muted-foreground">
-                {t("sd.handover.goodsOut", { items: goods.map((g) => `${g.qty} × ${locale === "bn" ? g.descriptionBn : g.descriptionEn}`).join(", ") })}
+                {t("sd.handover.goodsOut", {
+                  items: goods
+                    .map(
+                      (g) =>
+                        `${g.qty} × ${locale === "bn" ? g.descriptionBn : g.descriptionEn}`
+                    )
+                    .join(", "),
+                })}
               </p>
             ) : null}
           </SectionCard>
-          <SectionCard title={t("sd.handover.signature")} size="sm" action={<SimulatedBadge />}>
+          <SectionCard
+            title={t("sd.handover.signature")}
+            size="sm"
+            action={<SimulatedBadge />}
+          >
             <div className="flex flex-col gap-3">
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={nameOf(party, "en")} data-testid="signature-name" className="max-w-[28rem]" />
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={nameOf(party, "en")}
+                data-testid="signature-name"
+                className="max-w-[28rem]"
+              />
               <SignaturePad value={signature} onChange={setSignature} />
               <div className="flex flex-wrap items-center gap-3">
-                <Button onClick={doSubmit} disabled={!canSubmit || submit.pending} data-testid="handover-submit">
+                <Button
+                  onClick={doSubmit}
+                  disabled={!canSubmit || submit.pending}
+                  data-testid="handover-submit"
+                >
                   <Truck data-icon="inline-start" />
                   {t("sd.handover.submit")}
                 </Button>
-                {!canHandover ? <span className="text-xs text-muted-foreground">{t("stl.noPermission")}</span> : null}
-                {canHandover && !canSubmit ? <span className="text-xs text-muted-foreground">{t("sd.handover.completeFirst")}</span> : null}
+                {!canHandover ? (
+                  <span className="text-xs text-muted-foreground">
+                    {t("stl.noPermission")}
+                  </span>
+                ) : null}
+                {canHandover && !canSubmit ? (
+                  <span className="text-xs text-muted-foreground">
+                    {t("sd.handover.completeFirst")}
+                  </span>
+                ) : null}
               </div>
             </div>
           </SectionCard>
@@ -215,21 +355,42 @@ export function Handover({ id }: { id: Id }) {
       {delivery ? (
         <SectionCard title={t("sd.handover.handedOver")} size="sm">
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[0.8125rem]">
-            <DocLink docType="deliveries" docId={delivery.id} docNo={delivery.deliveryNo} />
-            <span lang="en" className="font-mono">{delivery.gatePassNo}</span>
+            <DocLink
+              docType="deliveries"
+              docId={delivery.id}
+              docNo={delivery.deliveryNo}
+            />
+            <span lang="en" className="font-mono">
+              {delivery.gatePassNo}
+            </span>
             <DateText value={delivery.deliveredAt} variant="dmyTime" />
             <span>{userName(users.get(delivery.deliveredBy), locale)}</span>
             <StatusText tone="success" dot>
               {delivery.signatureName}
             </StatusText>
-            <SignatureView path={delivery.signatureSvg} className="h-12 w-32 rounded bg-white" />
+            <SignatureView
+              path={delivery.signatureSvg}
+              className="h-12 w-32 rounded bg-white"
+            />
           </div>
         </SectionCard>
       ) : null}
 
       {delivery ? (
-        <PrintDialog open={printing} onOpenChange={setPrinting} title={t("sd.handover.gatePass")} docNo={delivery.gatePassNo ?? delivery.deliveryNo} wide={false}>
-          <GatePass delivery={delivery} order={order} party={party} vehicle={vehicle} users={users} />
+        <PrintDialog
+          open={printing}
+          onOpenChange={setPrinting}
+          title={t("sd.handover.gatePass")}
+          docNo={delivery.gatePassNo ?? delivery.deliveryNo}
+          wide={false}
+        >
+          <GatePass
+            delivery={delivery}
+            order={order}
+            party={party}
+            vehicle={vehicle}
+            users={users}
+          />
         </PrintDialog>
       ) : null}
     </div>
@@ -250,15 +411,26 @@ export function GatePass({
   vehicle?: VehicleRow
   users: Map<Id, UserRow>
 }) {
-  const { t, locale } = useLocale()
+  const { t, locale, colour } = useLocale()
   return (
-    <PrintLayout size="A5" title={t("sd.handover.gatePass")} docNo={delivery.gatePassNo} location={locationById(order.locationId)?.code} meta={<DateText value={delivery.deliveredAt} variant="dmyTime" />}>
-      <div className="flex flex-col gap-3 text-[0.8125rem]" data-testid="gate-pass">
+    <PrintLayout
+      size="A5"
+      title={t("sd.handover.gatePass")}
+      docNo={delivery.gatePassNo}
+      location={locationById(order.locationId)?.code}
+      meta={<DateText value={delivery.deliveredAt} variant="dmyTime" />}
+    >
+      <div
+        className="flex flex-col gap-3 text-[0.8125rem]"
+        data-testid="gate-pass"
+      >
         {vehicle ? (
           <div className="rounded border-2 border-[#111] px-3 py-2 text-center">
-            <div lang="en" className="font-mono text-lg font-bold">{vehicle.regNo}</div>
+            <div lang="en" className="font-mono text-lg font-bold">
+              {vehicle.regNo}
+            </div>
             <div>
-              {vehicle.make} {vehicle.model} · {vehicle.colour}
+              {vehicle.make} {vehicle.model} · {colour(vehicle.colour)}
             </div>
           </div>
         ) : null}
@@ -270,30 +442,47 @@ export function GatePass({
             </tr>
             <tr>
               <td className="py-0.5 text-[#555]">{t("stl.pages.order")}</td>
-              <td lang="en" className="py-0.5 text-right font-mono">{order.orderNo}</td>
+              <td lang="en" className="py-0.5 text-right font-mono">
+                {order.orderNo}
+              </td>
             </tr>
             <tr>
-              <td className="py-0.5 text-[#555]">{t("sd.handover.deliveryNo")}</td>
-              <td lang="en" className="py-0.5 text-right font-mono">{delivery.deliveryNo}</td>
+              <td className="py-0.5 text-[#555]">
+                {t("sd.handover.deliveryNo")}
+              </td>
+              <td lang="en" className="py-0.5 text-right font-mono">
+                {delivery.deliveryNo}
+              </td>
             </tr>
             <tr>
-              <td className="py-0.5 text-[#555]">{t("sd.handover.releasedBy")}</td>
-              <td className="py-0.5 text-right">{userName(users.get(delivery.deliveredBy), locale)}</td>
+              <td className="py-0.5 text-[#555]">
+                {t("sd.handover.releasedBy")}
+              </td>
+              <td className="py-0.5 text-right">
+                {userName(users.get(delivery.deliveredBy), locale)}
+              </td>
             </tr>
           </tbody>
         </table>
         <div className="grid grid-cols-2 gap-6 pt-4 text-[0.6875rem]">
           <div>
-            <SignatureView path={delivery.signatureSvg} className="h-14 w-full" />
+            <SignatureView
+              path={delivery.signatureSvg}
+              className="h-14 w-full"
+            />
             <div className="border-t border-[#111] pt-1">
               {t("sd.handover.customerSignature")}: {delivery.signatureName}
             </div>
           </div>
           <div className="flex flex-col justify-end">
-            <div className="border-t border-[#111] pt-1">{t("sd.handover.guard")}</div>
+            <div className="border-t border-[#111] pt-1">
+              {t("sd.handover.guard")}
+            </div>
           </div>
         </div>
-        <p className={cn("text-[0.6875rem] text-[#555]")}>{t("sd.handover.gatePassNote")}</p>
+        <p className={cn("text-[0.6875rem] text-[#555]")}>
+          {t("sd.handover.gatePassNote")}
+        </p>
       </div>
     </PrintLayout>
   )

@@ -20,6 +20,7 @@ export const sharedBn: typeof sharedEn = {
       accountPlaceholder: "কোড বা নাম",
       location: "অবস্থান",
       vehiclesCount: "{count}টি গাড়ি",
+      vehiclesCount_one: "{count}টি গাড়ি",
       onHold: "আটকে আছে",
       control: "নিয়ন্ত্রণ",
       fromPrice: "{price} থেকে",
@@ -64,6 +65,7 @@ export const sharedBn: typeof sharedEn = {
     report: {
       totals: "মোট",
       rows: "{count}টি সারি",
+      rows_one: "{count}টি সারি",
       noRows: "এই প্যারামিটারে কোনো সারি নেই",
       exportCsv: "সিএসভি রপ্তানি",
       print: "প্রিন্ট",

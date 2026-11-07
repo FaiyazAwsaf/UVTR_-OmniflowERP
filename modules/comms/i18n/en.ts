@@ -6,5 +6,6 @@ export const commsEn = {
     queued: "Queued",
     delivered: "Delivered",
     parts: "{count} parts",
+    parts_one: "{count} part",
   },
 }

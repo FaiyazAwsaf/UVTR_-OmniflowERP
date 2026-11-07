@@ -19,6 +19,7 @@ import {
 } from "@dnd-kit/core"
 import { CalendarClock, ClipboardList, GripVertical } from "lucide-react"
 
+import { ScrollX } from "@/components/shared/scroll-x"
 import { UserAvatar } from "@/components/shared/avatars"
 import { PageHeader } from "@/components/shared/page-header"
 import { RegPlate } from "@/components/shared/reg-plate"
@@ -27,7 +28,16 @@ import { atDhaka, dhakaDate } from "@/core/clock/dates"
 import { now } from "@/core/clock/clock"
 import { useNow } from "@/core/clock/useNow"
 import { useDb } from "@/core/db/DbProvider"
-import type { BayRow, Id, JobTaskRow, SalesOrderLineRow, SalesOrderRow, ServiceRow, UserRow, VehicleRow } from "@/core/db/schema"
+import type {
+  BayRow,
+  Id,
+  JobTaskRow,
+  SalesOrderLineRow,
+  SalesOrderRow,
+  ServiceRow,
+  UserRow,
+  VehicleRow,
+} from "@/core/db/schema"
 import { useCan } from "@/core/security/useCan"
 import { nameOf, userName } from "@/core/security/users"
 import { useLocale } from "@/lib/i18n/provider"
@@ -76,49 +86,116 @@ export function JobBoard() {
   const canBook = useCan("stl.order.create", loc)
   const [target, setTarget] = React.useState<ScheduleTarget | null>(null)
   const [dragging, setDragging] = React.useState<Card | null>(null)
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
+  )
 
   const data = useLiveQuery(async () => {
     if (!loc) return null
     const all = await db.salesOrders.where("locationId").equals(loc).toArray()
     const orders = all.filter(
-      (o) => ACTIVE.has(o.status) || (DELIVERED.has(o.status) && !!o.deliveredAt && dhakaDate(o.deliveredAt) === today)
+      (o) =>
+        ACTIVE.has(o.status) ||
+        (DELIVERED.has(o.status) &&
+          !!o.deliveredAt &&
+          dhakaDate(o.deliveredAt) === today)
     )
     const ids = orders.map((o) => o.id)
     const dayStart = atDhaka(today, "00:00")
-    const [lines, tasksOfOrders, tasksToday, bays, vehicles, parties, services] = await Promise.all([
+    const [
+      lines,
+      tasksOfOrders,
+      tasksToday,
+      bays,
+      vehicles,
+      parties,
+      services,
+    ] = await Promise.all([
       db.salesOrderLines.where("orderId").anyOf(ids).toArray(),
       db.jobTasks.where("orderId").anyOf(ids).toArray(),
-      db.jobTasks.where("plannedStart").between(dayStart - 3 * 24 * 60 * MINUTE, dayStart + 24 * 60 * MINUTE).toArray(),
+      db.jobTasks
+        .where("plannedStart")
+        .between(dayStart - 3 * 24 * 60 * MINUTE, dayStart + 24 * 60 * MINUTE)
+        .toArray(),
       db.bays.where("locationId").equals(loc).toArray(),
-      db.vehicles.bulkGet([...new Set(orders.map((o) => o.vehicleId).filter((v): v is string => !!v))]),
+      db.vehicles.bulkGet([
+        ...new Set(
+          orders.map((o) => o.vehicleId).filter((v): v is string => !!v)
+        ),
+      ]),
       db.parties.bulkGet([...new Set(orders.map((o) => o.partyId))]),
       db.services.toArray(),
     ])
-    const laneOrders = new Map((await db.salesOrders.bulkGet([...new Set(tasksToday.map((x) => x.orderId))])).filter(Boolean).map((o) => [o!.id, o!]))
-    return { orders, lines, tasksOfOrders, tasksToday: tasksToday.filter((x) => x.locationId === loc), laneOrders, bays, vehicles, parties, services }
+    const laneOrders = new Map(
+      (
+        await db.salesOrders.bulkGet([
+          ...new Set(tasksToday.map((x) => x.orderId)),
+        ])
+      )
+        .filter(Boolean)
+        .map((o) => [o!.id, o!])
+    )
+    return {
+      orders,
+      lines,
+      tasksOfOrders,
+      tasksToday: tasksToday.filter((x) => x.locationId === loc),
+      laneOrders,
+      bays,
+      vehicles,
+      parties,
+      services,
+    }
   }, [db, loc, today])
 
   const cards = React.useMemo<Card[]>(() => {
     if (!data) return []
-    const vehicles = new Map(data.vehicles.filter(Boolean).map((v) => [v!.id, v!]))
-    const parties = new Map(data.parties.filter(Boolean).map((p) => [p!.id, p!]))
+    const vehicles = new Map(
+      data.vehicles.filter(Boolean).map((v) => [v!.id, v!])
+    )
+    const parties = new Map(
+      data.parties.filter(Boolean).map((p) => [p!.id, p!])
+    )
     return data.orders
       .map((order) => {
-        const lines = data.lines.filter((l) => l.orderId === order.id).sort((a, b) => a.lineNo - b.lineNo)
+        const lines = data.lines
+          .filter((l) => l.orderId === order.id)
+          .sort((a, b) => a.lineNo - b.lineNo)
         const tasks = data.tasksOfOrders.filter((x) => x.orderId === order.id)
-        const taskLines = lines.filter((l) => (l.kind === "service" || l.kind === "add-on") && l.status === "open")
+        const taskLines = lines.filter(
+          (l) =>
+            (l.kind === "service" || l.kind === "add-on") && l.status === "open"
+        )
         const schedulable =
           (order.status === "booked" || order.status === "in-progress") &&
-          taskLines.some((l) => !tasks.some((x) => x.orderLineId === l.id && x.status !== "queued"))
-        const column: Column = DELIVERED.has(order.status) ? "delivered" : (order.status as Column)
-        return { order, column, vehicle: order.vehicleId ? vehicles.get(order.vehicleId) : undefined, partyName: nameOf(parties.get(order.partyId), locale), lines, tasks, schedulable }
+          taskLines.some(
+            (l) =>
+              !tasks.some(
+                (x) => x.orderLineId === l.id && x.status !== "queued"
+              )
+          )
+        const column: Column = DELIVERED.has(order.status)
+          ? "delivered"
+          : (order.status as Column)
+        return {
+          order,
+          column,
+          vehicle: order.vehicleId ? vehicles.get(order.vehicleId) : undefined,
+          partyName: nameOf(parties.get(order.partyId), locale),
+          lines,
+          tasks,
+          schedulable,
+        }
       })
       .sort((a, b) => a.order.promisedAt - b.order.promisedAt)
   }, [data, locale])
-  const serviceById = React.useMemo(() => new Map((data?.services ?? []).map((s) => [s.id, s])), [data?.services])
+  const serviceById = React.useMemo(
+    () => new Map((data?.services ?? []).map((s) => [s.id, s])),
+    [data?.services]
+  )
 
-  const onDragStart = (event: DragStartEvent) => setDragging(cards.find((c) => c.order.id === event.active.id) ?? null)
+  const onDragStart = (event: DragStartEvent) =>
+    setDragging(cards.find((c) => c.order.id === event.active.id) ?? null)
   const onDragEnd = (event: DragEndEvent) => {
     setDragging(null)
     const card = cards.find((c) => c.order.id === event.active.id)
@@ -128,19 +205,34 @@ export function JobBoard() {
     setTarget({ order: card.order, bayId, start: Number(start) })
   }
 
-  const bays = (data?.bays ?? []).filter((b) => b.active).sort((a, b) => a.code.localeCompare(b.code))
-  const studioName = nameOf(studio.studios.find((s) => s.id === loc), locale)
+  const bays = (data?.bays ?? [])
+    .filter((b) => b.active)
+    .sort((a, b) => a.code.localeCompare(b.code))
+  const studioName = nameOf(
+    studio.studios.find((s) => s.id === loc),
+    locale
+  )
 
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="board">
       <PageHeader
         title={t("stl.pages.board")}
-        subtitle={t("stl.board.subtitle", { studio: studioName, count: num(cards.filter((c) => c.column !== "delivered").length) })}
+        subtitle={t("stl.board.subtitle", {
+          studio: studioName,
+          count: num(cards.filter((c) => c.column !== "delivered").length),
+        })}
         actions={
           <>
-            <StudioSelect value={loc} onChange={studio.setLocationId} studios={studio.studios} />
+            <StudioSelect
+              value={loc}
+              onChange={studio.setLocationId}
+              studios={studio.studios}
+            />
             {canBook ? (
-              <Button nativeButton={false} render={<Link href="/stl/orders/new" />}>
+              <Button
+                nativeButton={false}
+                render={<Link href="/stl/orders/new" />}
+              >
                 <ClipboardList data-icon="inline-start" />
                 {t("stl.pages.orderNew")}
               </Button>
@@ -156,14 +248,22 @@ export function JobBoard() {
         onDragEnd={onDragEnd}
         onDragCancel={() => setDragging(null)}
       >
-        <div className="-mx-1 overflow-x-auto px-1 pb-2">
+        {/* Columns past the edge fade, so the board reads as scrollable in a 960x600 window. */}
+        <ScrollX className="-mx-1 px-1 pb-2">
           <div className="grid min-w-[60rem] grid-cols-5 gap-3">
             {COLUMNS.map((col) => {
               const list = cards.filter((c) => c.column === col)
               return (
-                <section key={col} className="flex min-w-0 flex-col gap-2 rounded-lg bg-card/60 p-2.5" data-testid="board-column" data-status={col}>
+                <section
+                  key={col}
+                  className="flex min-w-0 flex-col gap-2 rounded-lg bg-card/60 p-2.5"
+                  data-testid="board-column"
+                  data-status={col}
+                >
                   <header className="flex items-center justify-between px-1.5 pt-0.5">
-                    <h2 className="text-[0.8125rem] font-semibold">{t(`stl.board.columns.${col}`)}</h2>
+                    <h2 className="text-[0.8125rem] font-semibold">
+                      {t(`stl.board.columns.${col}`)}
+                    </h2>
                     <span className="count-badge nums">{num(list.length)}</span>
                   </header>
                   <div className="flex max-h-[32rem] flex-col gap-2 overflow-y-auto">
@@ -176,22 +276,35 @@ export function JobBoard() {
                         bays={bays}
                         nowMs={nowMs}
                         draggable={canSchedule && card.schedulable}
-                        onOpen={() => router.push(`/stl/orders/${card.order.id}`)}
+                        onOpen={() =>
+                          router.push(`/stl/orders/${card.order.id}`)
+                        }
                         onSchedule={() => setTarget({ order: card.order })}
                       />
                     ))}
-                    {!list.length ? <p className="px-1.5 py-3 text-center text-xs text-muted-foreground">{t("stl.board.empty")}</p> : null}
+                    {!list.length ? (
+                      <p className="px-1.5 py-3 text-center text-xs text-muted-foreground">
+                        {t("stl.board.empty")}
+                      </p>
+                    ) : null}
                   </div>
                 </section>
               )
             })}
           </div>
-        </div>
+        </ScrollX>
 
-        <section className="surface-card flex min-w-0 flex-col gap-3 p-4" data-testid="bay-lanes">
+        <section
+          className="surface-card flex min-w-0 flex-col gap-3 p-4"
+          data-testid="bay-lanes"
+        >
           <header className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-[0.9375rem] font-semibold">{t("stl.board.lanes")}</h2>
-            <span className="text-xs text-muted-foreground">{canSchedule ? t("stl.board.dragHint") : t("stl.board.lanesHint")}</span>
+            <h2 className="text-[0.9375rem] font-semibold">
+              {t("stl.board.lanes")}
+            </h2>
+            <span className="text-xs text-muted-foreground">
+              {canSchedule ? t("stl.board.dragHint") : t("stl.board.lanesHint")}
+            </span>
           </header>
           <div className="flex min-w-0 flex-col gap-1.5">
             <HourScale />
@@ -201,7 +314,11 @@ export function JobBoard() {
                 bay={bay}
                 today={today}
                 nowMs={nowMs}
-                tasks={(data?.tasksToday ?? []).filter((x) => x.bayId === bay.id && data?.laneOrders.get(x.orderId)?.status !== "cancelled")}
+                tasks={(data?.tasksToday ?? []).filter(
+                  (x) =>
+                    x.bayId === bay.id &&
+                    data?.laneOrders.get(x.orderId)?.status !== "cancelled"
+                )}
                 orders={data?.laneOrders}
                 users={users}
                 dragging={!!dragging}
@@ -212,7 +329,13 @@ export function JobBoard() {
         <DragOverlay dropAnimation={null}>
           {dragging ? (
             <div className="w-64 rotate-1 opacity-90">
-              <JobCardBody card={dragging} users={users} services={serviceById} bays={bays} nowMs={nowMs} />
+              <JobCardBody
+                card={dragging}
+                users={users}
+                services={serviceById}
+                bays={bays}
+                nowMs={nowMs}
+              />
             </div>
           ) : null}
         </DragOverlay>
@@ -242,7 +365,10 @@ function JobCard({
   onSchedule: () => void
 }) {
   const { t } = useLocale()
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: card.order.id, disabled: !draggable })
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: card.order.id,
+    disabled: !draggable,
+  })
   const flash = useSyncFlash(`${card.order.status}:${card.order.version}`)
   return (
     <div
@@ -250,9 +376,19 @@ function JobCard({
       data-testid="job-card"
       data-order-no={card.order.orderNo}
       data-status={card.order.status}
-      className={cn("group/card relative rounded-lg", isDragging && "opacity-40", flash)}
+      className={cn(
+        "group/card relative rounded-lg",
+        isDragging && "opacity-40",
+        flash
+      )}
     >
-      <div role="button" tabIndex={0} onClick={onOpen} onKeyDown={(e) => e.key === "Enter" && onOpen()} className="cursor-pointer outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40 rounded-lg">
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={onOpen}
+        onKeyDown={(e) => e.key === "Enter" && onOpen()}
+        className="cursor-pointer rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40"
+      >
         <JobCardBody
           card={card}
           users={users}
@@ -261,7 +397,10 @@ function JobCard({
           nowMs={nowMs}
           actions={
             draggable ? (
-              <span className="flex shrink-0 items-center" onClick={(e) => e.stopPropagation()}>
+              <span
+                className="flex shrink-0 items-center"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <button
                   type="button"
                   onClick={onSchedule}
@@ -272,7 +411,12 @@ function JobCard({
                 >
                   <CalendarClock className="size-4" />
                 </button>
-                <span {...listeners} {...attributes} className="flex size-6 cursor-grab touch-none items-center justify-center rounded-md text-muted-foreground hover:bg-surface-raised" data-testid="job-drag">
+                <span
+                  {...listeners}
+                  {...attributes}
+                  className="flex size-6 cursor-grab touch-none items-center justify-center rounded-md text-muted-foreground hover:bg-surface-raised"
+                  data-testid="job-drag"
+                >
                   <GripVertical className="size-4" />
                 </span>
               </span>
@@ -301,22 +445,39 @@ function JobCardBody({
 }) {
   const { t, locale, time } = useLocale()
   const { order, vehicle } = card
-  const late = ["booked", "in-progress", "qc"].includes(order.status) && nowMs > 0 && order.promisedAt < nowMs
+  const late =
+    ["booked", "in-progress", "qc"].includes(order.status) &&
+    nowMs > 0 &&
+    order.promisedAt < nowMs
   const bay = bays.find((b) => b.id === order.bayId)
   const techIds = [...new Set(card.tasks.map((x) => x.technicianId))]
-  const chips = card.lines.filter((l) => l.kind !== "item" && l.status !== "cancelled")
+  const chips = card.lines.filter(
+    (l) => l.kind !== "item" && l.status !== "cancelled"
+  )
   return (
     <div className="flex flex-col gap-2 rounded-lg bg-card p-3 shadow-(--card-shadow)">
       <div className="flex min-w-0 items-start justify-between gap-1">
-        {vehicle ? <RegPlate regNo={vehicle.regNo} className="min-w-0" /> : <span className="truncate text-xs text-muted-foreground">{card.partyName}</span>}
+        {vehicle ? (
+          <RegPlate regNo={vehicle.regNo} className="min-w-0" />
+        ) : (
+          <span className="truncate text-xs text-muted-foreground">
+            {card.partyName}
+          </span>
+        )}
         {actions}
       </div>
       <div className="min-w-0">
         <div className="flex items-center gap-1.5 text-[0.8125rem] font-medium">
-          <span className="truncate">{vehicle ? `${vehicle.make} ${vehicle.model}` : t("stl.board.goods")}</span>
+          <span className="truncate">
+            {vehicle
+              ? `${vehicle.make} ${vehicle.model}`
+              : t("stl.board.goods")}
+          </span>
           <ClassTag cls={vehicle?.vehicleClass} />
         </div>
-        <div className="truncate text-xs text-muted-foreground">{card.partyName}</div>
+        <div className="truncate text-xs text-muted-foreground">
+          {card.partyName}
+        </div>
       </div>
       <div className="flex flex-wrap gap-1">
         {chips.slice(0, 4).map((l) => {
@@ -326,37 +487,73 @@ function JobCardBody({
               key={l.id}
               lang="en"
               title={locale === "bn" ? l.descriptionBn : l.descriptionEn}
-              className={cn("rounded-full px-2 py-0.5 font-mono text-[0.625rem]", l.status === "done" ? "bg-[color-mix(in_oklch,var(--success)_15%,transparent)] text-success" : "bg-surface-raised")}
+              className={cn(
+                "rounded-full px-2 py-0.5 font-mono text-[0.625rem]",
+                l.status === "done"
+                  ? "bg-[color-mix(in_oklch,var(--success)_15%,transparent)] text-success"
+                  : "bg-surface-raised"
+              )}
             >
               {sv?.code ?? "+"}
             </span>
           )
         })}
-        {chips.length > 4 ? <span className="text-[0.625rem] text-muted-foreground">+{chips.length - 4}</span> : null}
+        {chips.length > 4 ? (
+          <span className="text-[0.625rem] text-muted-foreground">
+            +{chips.length - 4}
+          </span>
+        ) : null}
       </div>
       <div className="flex items-center justify-between gap-2 text-xs">
-        <span className={cn("nums", late ? "font-semibold text-destructive" : "text-muted-foreground")} data-late={late || undefined}>
+        <span
+          className={cn(
+            "nums",
+            late ? "font-semibold text-destructive" : "text-muted-foreground"
+          )}
+          data-late={late || undefined}
+        >
           {t("stl.board.promised", { time: time(order.promisedAt) })}
         </span>
         <span className="flex items-center gap-1.5">
-          {bay ? <span lang="en" className="rounded bg-surface-raised px-1.5 font-mono text-[0.625rem]">{bay.code}</span> : null}
+          {bay ? (
+            <span
+              lang="en"
+              className="rounded bg-surface-raised px-1.5 font-mono text-[0.625rem]"
+            >
+              {bay.code}
+            </span>
+          ) : null}
           <span className="flex -space-x-1.5">
             {techIds.slice(0, 3).map((id) => {
               const u = users.get(id)
-              return u ? <UserAvatar key={id} user={u} role="TECHNICIAN" size={22} className="ring-2 ring-card" /> : null
+              return u ? (
+                <UserAvatar
+                  key={id}
+                  user={u}
+                  role="TECHNICIAN"
+                  size={22}
+                  className="ring-2 ring-card"
+                />
+              ) : null
             })}
           </span>
         </span>
       </div>
-      <div lang="en" className="font-mono text-[0.625rem] text-muted-foreground">
+      <div
+        lang="en"
+        className="font-mono text-[0.625rem] text-muted-foreground"
+      >
         {order.orderNo}
-        {techIds.length ? ` · ${techIds.map((id) => userName(users.get(id), locale).split(" ")[0]).join(", ")}` : ""}
+        {techIds.length
+          ? ` · ${techIds.map((id) => userName(users.get(id), locale).split(" ")[0]).join(", ")}`
+          : ""}
       </div>
     </div>
   )
 }
 
-const pct = (ms: number, dayStart: number) => ((ms - dayStart) / (LANE_HOURS * 60 * MINUTE)) * 100
+const pct = (ms: number, dayStart: number) =>
+  ((ms - dayStart) / (LANE_HOURS * 60 * MINUTE)) * 100
 
 function HourScale() {
   const { num } = useLocale()
@@ -365,7 +562,14 @@ function HourScale() {
       <span className="w-16 shrink-0" />
       <div className="relative h-4 min-w-0 flex-1">
         {Array.from({ length: LANE_HOURS + 1 }, (_, i) => (
-          <span key={i} className={cn("absolute -translate-x-1/2 text-[0.625rem] text-muted-foreground nums", i % 2 === 1 && "hidden @min-[40rem]:inline")} style={{ left: `${(i / LANE_HOURS) * 100}%` }}>
+          <span
+            key={i}
+            className={cn(
+              "nums absolute -translate-x-1/2 text-[0.625rem] text-muted-foreground",
+              i % 2 === 1 && "hidden @min-[40rem]:inline"
+            )}
+            style={{ left: `${(i / LANE_HOURS) * 100}%` }}
+          >
             {num(9 + i)}
           </span>
         ))}
@@ -394,22 +598,42 @@ function BayLane({
   const { locale, t, time } = useLocale()
   const dayStart = atDhaka(today, OPEN_DAY)
   const dayEnd = dayStart + LANE_HOURS * 60 * MINUTE
-  const visible = tasks.filter((x) => x.plannedStart < dayEnd && x.plannedStart + x.plannedMinutes * MINUTE > dayStart)
-  const nowPct = nowMs >= dayStart && nowMs <= dayEnd ? pct(nowMs, dayStart) : null
+  const visible = tasks.filter(
+    (x) =>
+      x.plannedStart < dayEnd &&
+      x.plannedStart + x.plannedMinutes * MINUTE > dayStart
+  )
+  const nowPct =
+    nowMs >= dayStart && nowMs <= dayEnd ? pct(nowMs, dayStart) : null
   return (
-    <div className="flex items-stretch gap-2" data-testid="bay-lane" data-bay={bay.code}>
+    <div
+      className="flex items-stretch gap-2"
+      data-testid="bay-lane"
+      data-bay={bay.code}
+    >
       <div className="flex w-16 shrink-0 flex-col justify-center">
-        <span lang="en" className="font-mono text-xs font-semibold">{bay.code}</span>
-        <span className="truncate text-[0.625rem] text-muted-foreground">{t(`stl.board.bayKind.${bay.kind}`)}</span>
+        <span lang="en" className="font-mono text-xs font-semibold">
+          {bay.code}
+        </span>
+        <span className="truncate text-[0.625rem] text-muted-foreground">
+          {t(`stl.board.bayKind.${bay.kind}`)}
+        </span>
       </div>
       <div className="relative h-11 min-w-0 flex-1 overflow-hidden rounded-md bg-surface-raised/50">
         {Array.from({ length: LANE_HOURS - 1 }, (_, i) => (
-          <span key={i} className="absolute inset-y-0 w-px bg-hairline" style={{ left: `${((i + 1) / LANE_HOURS) * 100}%` }} />
+          <span
+            key={i}
+            className="absolute inset-y-0 w-px bg-hairline"
+            style={{ left: `${((i + 1) / LANE_HOURS) * 100}%` }}
+          />
         ))}
         {visible.map((x) => {
           const order = orders?.get(x.orderId)
           const left = Math.max(0, pct(x.plannedStart, dayStart))
-          const right = Math.min(100, pct(x.plannedStart + x.plannedMinutes * MINUTE, dayStart))
+          const right = Math.min(
+            100,
+            pct(x.plannedStart + x.plannedMinutes * MINUTE, dayStart)
+          )
           const tech = users.get(x.technicianId)
           return (
             <Link
@@ -420,23 +644,39 @@ function BayLane({
               title={`${order?.orderNo ?? ""} · ${userName(tech, locale)} · ${time(x.plannedStart)}`}
               className={cn(
                 "absolute inset-y-1 flex min-w-0 items-center overflow-hidden rounded px-1.5 text-[0.625rem] leading-tight font-medium",
-                x.status === "done" && "bg-[color-mix(in_oklch,var(--success)_22%,transparent)] text-success",
-                x.status === "in-progress" && "bg-primary text-primary-foreground",
-                x.status === "queued" && "bg-[color-mix(in_oklch,var(--info)_22%,transparent)] text-info"
+                x.status === "done" &&
+                  "bg-[color-mix(in_oklch,var(--success)_22%,transparent)] text-success",
+                x.status === "in-progress" &&
+                  "bg-primary text-primary-foreground",
+                x.status === "queued" &&
+                  "bg-[color-mix(in_oklch,var(--info)_22%,transparent)] text-info"
               )}
-              style={{ left: `${left}%`, width: `${Math.max(1.5, right - left)}%` }}
+              style={{
+                left: `${left}%`,
+                width: `${Math.max(1.5, right - left)}%`,
+              }}
             >
               <span lang="en" className="truncate font-mono">
-                {order?.orderNo.slice(-5)} {userName(tech, locale).split(" ")[0]}
+                {order?.orderNo.slice(-5)}{" "}
+                {userName(tech, locale).split(" ")[0]}
               </span>
             </Link>
           )
         })}
-        {nowPct !== null ? <span className="pointer-events-none absolute inset-y-0 z-10 w-0.5 bg-primary" style={{ left: `${nowPct}%` }} data-testid="now-line" /> : null}
+        {nowPct !== null ? (
+          <span
+            className="pointer-events-none absolute inset-y-0 z-10 w-0.5 bg-primary"
+            style={{ left: `${nowPct}%` }}
+            data-testid="now-line"
+          />
+        ) : null}
         {dragging ? (
           <div className="absolute inset-0 z-20 flex">
             {Array.from({ length: (LANE_HOURS * 60) / SLOT_MIN }, (_, i) => (
-              <DropSlot key={i} id={`slot:${bay.id}:${dayStart + i * SLOT_MIN * MINUTE}`} />
+              <DropSlot
+                key={i}
+                id={`slot:${bay.id}:${dayStart + i * SLOT_MIN * MINUTE}`}
+              />
             ))}
           </div>
         ) : null}
@@ -447,5 +687,13 @@ function BayLane({
 
 function DropSlot({ id }: { id: string }) {
   const { setNodeRef, isOver } = useDroppable({ id })
-  return <div ref={setNodeRef} className={cn("h-full flex-1 border-r border-transparent", isOver && "bg-primary/35")} />
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "h-full flex-1 border-r border-transparent",
+        isOver && "bg-primary/35"
+      )}
+    />
+  )
 }

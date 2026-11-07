@@ -2,6 +2,7 @@
 
 import * as React from "react"
 
+import { narrationIn } from "@/core/ledger/narration"
 import { updateSession, useSession } from "@/core/session/session"
 
 import { type Locale } from "./config"
@@ -48,6 +49,12 @@ type LocaleContextValue = {
   money: (poisha: number) => string
   /** DD-MM-YYYY in Dhaka */
   dmy: (value: Date | string | number) => string
+  /** A unit of measure after a quantity: count units in the window's language, symbols (ml, kg) as they are */
+  unit: (code: string) => string
+  /** A journal narration the system wrote, in the window's language (typed text as it is) */
+  narration: (text: string) => string
+  /** A vehicle colour in the window's language when it is a known one ("Pearl white"), else as typed */
+  colour: (text: string) => string
 }
 
 const LocaleContext = React.createContext<LocaleContextValue | null>(null)
@@ -66,8 +73,15 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
 
   const value = React.useMemo<LocaleContextValue>(() => {
     const dict = dictionaries[locale]
-    const tk = (key: string, params?: TranslateParams) =>
-      interpolate(lookup(dict, key), params)
+    // "{count} bills" has a "<key>_one" variant ("{count} bill") used when the count is 1.
+    const ONE = new Set<string | number>([1, "1", "১"])
+    const tk = (key: string, params?: TranslateParams) => {
+      if (params && ONE.has(params.count)) {
+        const one = lookup(dict, `${key}_one`)
+        if (one !== `${key}_one`) return interpolate(one, params)
+      }
+      return interpolate(lookup(dict, key), params)
+    }
 
     return {
       locale,
@@ -88,6 +102,17 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
       digits: (v) => localizeDigits(v, locale),
       money: (p) => formatMoney(p, locale),
       dmy: (v) => formatDmy(v, locale),
+      unit: (code) => {
+        const key = `units.${code}`
+        const label = lookup(dict, key)
+        return label === key ? code : label
+      },
+      narration: (text) => narrationIn(text, locale),
+      colour: (text) => {
+        const key = `colours.${text.trim().toLowerCase().replace(/\s+/g, "-")}`
+        const label = lookup(dict, key)
+        return label === key ? text : label
+      },
     }
   }, [locale, setLocale])
 

@@ -96,9 +96,10 @@ export function formatDate(
   locale: Locale,
   options: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" }
 ) {
-  return new Intl.DateTimeFormat(INTL[locale], { timeZone: TIME_ZONE, ...options }).format(
-    new Date(date)
-  )
+  return new Intl.DateTimeFormat(INTL[locale], {
+    timeZone: TIME_ZONE,
+    ...options,
+  }).format(new Date(date))
 }
 
 /**
@@ -250,3 +251,11 @@ export function formatDmy(date: Date | string | number, locale: Locale) {
   return localizeDigits(`${get("day")}-${get("month")}-${get("year")}`, locale)
 }
 
+/**
+ * A date or code inside running text that must not break at its hyphens
+ * ("15-11-" / "2026"): hyphens become non-breaking (U+2011). Display only:
+ * never for values that are copied, exported or typed.
+ */
+export function noBreak(text: string): string {
+  return text.replace(/-/g, "\u2011")
+}

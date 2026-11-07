@@ -19,6 +19,7 @@ export const sharedEn = {
       accountPlaceholder: "Code or name",
       location: "Location",
       vehiclesCount: "{count} vehicles",
+      vehiclesCount_one: "{count} vehicle",
       onHold: "On hold",
       control: "Control",
       fromPrice: "from {price}",
@@ -63,6 +64,7 @@ export const sharedEn = {
     report: {
       totals: "Totals",
       rows: "{count} rows",
+      rows_one: "{count} row",
       noRows: "No rows for these parameters",
       exportCsv: "Export CSV",
       print: "Print",

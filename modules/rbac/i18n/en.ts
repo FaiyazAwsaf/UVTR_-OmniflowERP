@@ -29,19 +29,25 @@ export const rbacEn = {
       SodRuleSaved: "SoD rule {rule} saved",
     },
     rules: {
-      RBAC_OWN_ROLE: "You hold the role {role}, so you can't change it. Another administrator must.",
-      RBAC_OWN_ASSIGNMENT: "Nobody changes their own roles. Another administrator must.",
-      RBAC_OWN_LIMIT: "You hold the role {role}, so you can't change its limits. Another administrator must.",
+      RBAC_OWN_ROLE:
+        "You hold the role {role}, so you can't change it. Another administrator must.",
+      RBAC_OWN_ASSIGNMENT:
+        "Nobody changes their own roles. Another administrator must.",
+      RBAC_OWN_LIMIT:
+        "You hold the role {role}, so you can't change its limits. Another administrator must.",
       RBAC_UNKNOWN_KEY: "Unknown permission {permission}.",
-      RBAC_ROLE_INACTIVE: "The role {role} is inactive. Activate it before assigning it.",
+      RBAC_ROLE_INACTIVE:
+        "The role {role} is inactive. Activate it before assigning it.",
       RBAC_LIMIT_INVALID: "That value is not valid for the {kind} limit.",
-      RBAC_ROLE_CODE_INVALID: "The role code {code} is not valid: 2 to 24 capital letters, digits or underscores.",
+      RBAC_ROLE_CODE_INVALID:
+        "The role code {code} is not valid: 2 to 24 capital letters, digits or underscores.",
       RBAC_ROLE_CODE_TAKEN: "The role code {code} is already in use.",
       RBAC_SYSTEM_ROLE_CODE: "The code of the system role {role} can't change.",
       RBAC_SOD_CODE_INVALID: "The rule code {code} is not valid.",
       RBAC_SOD_CODE_TAKEN: "The rule code {code} is already in use.",
       RBAC_SOD_SAME_KEY: "A rule needs two different permissions.",
-      SOD_BLOCKED: "Refused by segregation of duties: {subject} would hold both {a} and {b} ({rule}, block).",
+      SOD_BLOCKED:
+        "Refused by segregation of duties: {subject} would hold both {a} and {b} ({rule}, block).",
     },
     columns: {
       view: "View",
@@ -80,7 +86,9 @@ export const rbacEn = {
       inactive: "Inactive",
       you: "You",
       users: "{count} users",
+      users_one: "{count} user",
       keys: "{count} permissions",
+      keys_one: "{count} permission",
       unlimited: "Unlimited",
       yes: "Yes",
       no: "No",
@@ -95,7 +103,8 @@ export const rbacEn = {
     },
     roles: {
       title: "Roles",
-      subtitle: "What each role may do, with its approval limits. Changes apply at once in every window.",
+      subtitle:
+        "What each role may do, with its approval limits. Changes apply at once in every window.",
       new: "New role",
       search: "Search role name or code",
       kpi: {
@@ -105,6 +114,7 @@ export const rbacEn = {
         grantsCaption: "across all roles",
         users: "Users with roles",
         usersCaption: "of {count} users",
+        usersCaption_one: "of {count} user",
         conflicts: "SoD conflicts",
         conflictsCaption: "warnings to review",
       },
@@ -123,7 +133,8 @@ export const rbacEn = {
       newTitle: "New role",
       editTitle: "Edit {name}",
       code: "Code",
-      codeHint: "Capital letters, digits and underscores. System role codes never change.",
+      codeHint:
+        "Capital letters, digits and underscores. System role codes never change.",
       nameEn: "Name (English)",
       nameBn: "Name (Bangla)",
       descriptionEn: "Description (English)",
@@ -145,7 +156,8 @@ export const rbacEn = {
       limits: "Approval limits",
       allLimits: "All limits",
       matrix: "Permission matrix",
-      matrixHint: "A cell is ticked when all its permissions are granted, dashed when only some are. Open the list to grant them one by one.",
+      matrixHint:
+        "A cell is ticked when all its permissions are granted, dashed when only some are. Open the list to grant them one by one.",
     },
     matrix: {
       app: "App",
@@ -158,17 +170,20 @@ export const rbacEn = {
       saving: "Saving",
       reason: "Reason (optional)",
       saved: "{count} changes saved. They apply at once in every window.",
+      saved_one: "{count} change saved. It applies at once in every window.",
       flagged: "SoD conflict flagged: {rules}",
       conflictsNow: "Segregation-of-duties conflicts of this role",
       conflictNew: "new with your changes",
       conflictBlock: "will be refused",
       conflictWarn: "warning",
       showKeys: "Show the permissions of this cell",
-      scopeHint: "Own location limits the permissions to the user's own studio or store.",
+      scopeHint:
+        "Own location limits the permissions to the user's own studio or store.",
     },
     assignments: {
       title: "Role assignments",
-      subtitle: "Who holds which role. Nobody changes their own roles, and segregation-of-duties rules are checked on every change.",
+      subtitle:
+        "Who holds which role. Nobody changes their own roles, and segregation-of-duties rules are checked on every change.",
       search: "Search name or username",
       columns: {
         user: "User",
@@ -183,11 +198,14 @@ export const rbacEn = {
       own: "Your own roles: another administrator must change them.",
       none: "No roles",
       conflict: "Combined roles break {rules}",
+      inRole: "In role: {rules}",
+      conflictInRole: "The role itself holds both sides of {rules}",
       empty: "No users match.",
     },
     limits: {
       title: "Approval limits",
-      subtitle: "Up to what amount each role approves, and posts its own work without approval. A user's limit is the highest across their roles.",
+      subtitle:
+        "Up to what amount each role approves, and posts its own work without approval. A user's limit is the highest across their roles.",
       role: "Role",
       edit: "Change the {kind} limit of {role}",
       amount: "Amount",
@@ -200,7 +218,8 @@ export const rbacEn = {
     },
     sod: {
       title: "Segregation of duties",
-      subtitle: "Pairs of permissions one person should not hold together. Warn rules flag a conflict; block rules refuse the change.",
+      subtitle:
+        "Pairs of permissions one person should not hold together. Warn rules flag a conflict; block rules refuse the change.",
       rules: "Rules",
       new: "New rule",
       columns: {
@@ -227,7 +246,8 @@ export const rbacEn = {
       save: "Save rule",
       saved: "Rule {code} saved.",
       conflicts: "Conflicts report",
-      conflictsHint: "Roles that break a rule on their own, and users whose combined roles break one.",
+      conflictsHint:
+        "Roles that break a rule on their own, and users whose combined roles break one.",
       kindRole: "Role",
       kindUser: "User",
       subject: "Who",
@@ -239,7 +259,8 @@ export const rbacEn = {
     },
     effective: {
       title: "Effective permissions",
-      subtitle: "Why can or can't a user do something? Pick a user and a permission.",
+      subtitle:
+        "Why can or can't a user do something? Pick a user and a permission.",
       user: "User",
       pickUser: "Choose a user",
       key: "Permission",
@@ -254,7 +275,8 @@ export const rbacEn = {
       noRolesHeld: "{name} holds no roles.",
       otherRoles: "Roles that grant it: {roles}",
       nobody: "No active role grants it.",
-      outOfScope: "Granted for own location only, and {location} is not one of {name}'s locations.",
+      outOfScope:
+        "Granted for own location only, and {location} is not one of {name}'s locations.",
       inScope: "{location} is in scope.",
       locked: "But the account is locked: unlock it in SAC first.",
       disabled: "But the account is disabled: enable it in SAC first.",
@@ -265,12 +287,14 @@ export const rbacEn = {
       all: "Every permission of {name}",
       filter: "Filter permissions",
       count: "{count} permissions",
+      count_one: "{count} permission",
       empty: "Pick a user to see their permissions.",
     },
     scenarios: {
       E13: {
         title: "Live permission revoke",
-        summary: "An administrator's change reaches the advisor's window at once (RBAC live)",
+        summary:
+          "An administrator's change reaches the advisor's window at once (RBAC live)",
         cue1: "Nayeem's window sits beside this one: his quotation editor shows + New customer.",
         cue2: "In the matrix, open the keys of PAR Create, untick par.customer.create and save: + New customer disappears in Nayeem's window at once.",
         cue3: "Open Approval limits: set the Service Advisor's discount limit to 0% and save.",

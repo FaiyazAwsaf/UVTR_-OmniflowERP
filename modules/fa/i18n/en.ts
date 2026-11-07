@@ -41,26 +41,40 @@ export const faEn = {
       JOURNAL_NOT_PENDING: "Voucher {no} is not waiting for approval.",
       NOT_PREPARER: "Only the preparer of voucher {no} can edit or submit it.",
       PARTY_UNKNOWN: "The party on a line no longer exists.",
-      COST_CENTRE_UNKNOWN: "The cost centre or location on a line no longer exists.",
+      COST_CENTRE_UNKNOWN:
+        "The cost centre or location on a line no longer exists.",
       PERIOD_ALREADY_CLOSED: "Period {period} is already closed.",
-      PERIOD_NOT_ENDED: "Period {period} ends on {date}. A month closes only after it has ended.",
+      PERIOD_NOT_ENDED:
+        "Period {period} ends on {date}. A month closes only after it has ended.",
       PERIOD_ORDER: "Close the earlier months before {period}.",
       CLOSE_BLOCKED:
         "Period {period} can't close yet: {journals} draft or pending vouchers, {approvals} pending approvals and {recurring} recurring journals not posted. Clear the blocking items first.",
       PERIOD_NOT_CLOSED: "Period {period} is not closed.",
-      YEAR_CLOSED: "Fiscal year {year} is closed. Its months can't be reopened in the demo.",
-      REOPEN_ORDER: "Reopen the later months first. Only the latest closed month of {period} or after can reopen.",
-      NOTHING_TO_POST: "Every recurring journal is already posted for {period}.",
+      YEAR_CLOSED:
+        "Fiscal year {year} is closed. Its months can't be reopened in the demo.",
+      REOPEN_ORDER:
+        "Reopen the later months first. Only the latest closed month of {period} or after can reopen.",
+      NOTHING_TO_POST:
+        "Every recurring journal is already posted for {period}.",
       ACCOUNT_CODE_TAKEN: "Account code {code} is already in use.",
-      ACCOUNT_TAG_TAKEN: "The posting tag {tag} already belongs to another account. Remap tags in settings.",
-      ACCOUNT_TAG_FIXED: "This account carries the posting tag {tag}, which stays with it. Remap the tag in settings instead.",
-      ACCOUNT_PARENT: "The parent of account {code} must be a group of the same type.",
-      ACCOUNT_HAS_POSTINGS: "Account {code} has postings, so its type stays and it stays postable.",
-      ACCOUNT_HAS_CHILDREN: "Account {code} still has active accounts under it.",
-      ACCOUNT_MAPPED: "Account {code} is the posting account for {tag}. Map the tag to another account first.",
-      ACCOUNT_HAS_BALANCE: "Account {code} still has a balance of {balanceP}. Clear it with a voucher before deactivating.",
-      MAP_TYPE_MISMATCH: "Tag {tag} can only map to an account of the same type, not {account}.",
-      MAP_CONTROL_MISMATCH: "Tag {tag} and account {account} differ on the control flag. Control tags map only to control accounts.",
+      ACCOUNT_TAG_TAKEN:
+        "The posting tag {tag} already belongs to another account. Remap tags in settings.",
+      ACCOUNT_TAG_FIXED:
+        "This account carries the posting tag {tag}, which stays with it. Remap the tag in settings instead.",
+      ACCOUNT_PARENT:
+        "The parent of account {code} must be a group of the same type.",
+      ACCOUNT_HAS_POSTINGS:
+        "Account {code} has postings, so its type stays and it stays postable.",
+      ACCOUNT_HAS_CHILDREN:
+        "Account {code} still has active accounts under it.",
+      ACCOUNT_MAPPED:
+        "Account {code} is the posting account for {tag}. Map the tag to another account first.",
+      ACCOUNT_HAS_BALANCE:
+        "Account {code} still has a balance of {balanceP}. Clear it with a voucher before deactivating.",
+      MAP_TYPE_MISMATCH:
+        "Tag {tag} can only map to an account of the same type, not {account}.",
+      MAP_CONTROL_MISMATCH:
+        "Tag {tag} and account {account} differ on the control flag. Control tags map only to control accounts.",
       COST_CENTRE_CODE_TAKEN: "Cost centre code {code} is already in use.",
     },
     voucherTypes: {
@@ -82,6 +96,7 @@ export const faEn = {
       unassigned: "No location",
       balanced: "Balanced",
       notBalanced: "Out of balance by {amount}",
+      noAmounts: "No amounts yet",
       debit: "Debit",
       credit: "Credit",
       amount: "Amount",
@@ -122,7 +137,8 @@ export const faEn = {
     },
     home: {
       title: "Accounting home",
-      subtitle: "The books today: periods, vouchers waiting, drafts and the trial balance check",
+      subtitle:
+        "The books today: periods, vouchers waiting, drafts and the trial balance check",
       kpiPosted: "Vouchers posted this month",
       kpiPostedCaption: "{count} today",
       kpiPending: "Awaiting approval",
@@ -144,12 +160,14 @@ export const faEn = {
       tbBalanced: "Balanced",
       tbOff: "Out of balance",
       tbDetail: "Debits {debit} · credits {credit} across {count} accounts",
+      tbDetail_one: "Debits {debit} · credits {credit} across {count} account",
       newVoucher: "New voucher",
       openTb: "Open the trial balance",
     },
     accounts: {
       title: "Chart of accounts",
-      subtitle: "Groups and postable accounts, system tags, control accounts and live balances",
+      subtitle:
+        "Groups and postable accounts, system tags, control accounts and live balances",
       newAccount: "New account",
       editAccount: "Edit account {code}",
       code: "Code",
@@ -174,7 +192,8 @@ export const faEn = {
       saved: "Account {code} saved",
       expandAll: "Expand all",
       collapseAll: "Collapse all",
-      readOnly: "You can view the chart. Editing it needs the accounts manager's permission.",
+      readOnly:
+        "You can view the chart. Editing it needs the accounts manager's permission.",
       types: {
         asset: "Asset",
         liability: "Liability",
@@ -189,12 +208,14 @@ export const faEn = {
       newVoucher: "New voucher",
       number: "Voucher",
       count: "{count} vouchers",
+      count_one: "{count} voucher",
       empty: "No vouchers match.",
     },
     editor: {
       titleNew: "New journal voucher",
       titleEdit: "Edit draft {no}",
-      subtitle: "Lines post only to postable, non-control accounts. Documents post to control accounts themselves.",
+      subtitle:
+        "Lines post only to postable, non-control accounts. Documents post to control accounts themselves.",
       voucherType: "Voucher type",
       date: "Date",
       narration: "Narration",
@@ -210,15 +231,18 @@ export const faEn = {
       submitPost: "Post",
       discard: "Discard",
       back: "Back to vouchers",
-      limitHint: "Your journal limit is {limit}. Above it the voucher waits for an approver.",
-      noLimit: "You have no journal limit, so every voucher waits for an approver.",
+      limitHint:
+        "Your journal limit is {limit}. Above it the voucher waits for an approver.",
+      noLimit:
+        "You have no journal limit, so every voucher waits for an approver.",
       unlimited: "Your journal limit is unlimited.",
       saved: "Draft {no} saved",
       posted: "Voucher {no} posted",
       submitted: "Voucher {no} is waiting for approval",
       discarded: "Voucher {no} discarded",
       discardTitle: "Discard voucher {no}?",
-      discardBody: "Nothing posts. The voucher keeps its number and shows as discarded.",
+      discardBody:
+        "Nothing posts. The voucher keeps its number and shows as discarded.",
       needLines: "Add at least two lines with an account and an amount.",
       noPermission: "Preparing vouchers needs the journal create permission.",
     },
@@ -230,16 +254,19 @@ export const faEn = {
       reject: "Reject",
       approveTitle: "Approve voucher {no}?",
       rejectTitle: "Reject voucher {no}?",
-      approveBody: "It posts at once, dated {date}, with {name} kept as the preparer.",
+      approveBody:
+        "It posts at once, dated {date}, with {name} kept as the preparer.",
       rejectBody: "It returns to its preparer as a draft. Nothing posts.",
       approved: "Voucher {no} approved and posted",
       rejected: "Voucher {no} returned to its preparer",
       reverse: "Reverse",
       reverseTitle: "Reverse voucher {no}?",
-      reverseBody: "A new voucher of the same type swaps every debit and credit. The original stays and shows as reversed.",
+      reverseBody:
+        "A new voucher of the same type swaps every debit and credit. The original stays and shows as reversed.",
       reverseDate: "Reversal date",
       reversed: "Reversal {no} posted",
-      cantReverseSource: "Vouchers from documents are corrected by their document (credit note, debit note or adjustment).",
+      cantReverseSource:
+        "Vouchers from documents are corrected by their document (credit note, debit note or adjustment).",
       draftLines: "Draft lines (not posted)",
       header: {
         total: "Total",
@@ -274,11 +301,13 @@ export const faEn = {
       linked: "Linked documents",
       source: "Source document",
       approval: "Approval",
-      closedBanner: "Period {period} is closed. This voucher can no longer change.",
+      closedBanner:
+        "Period {period} is closed. This voucher can no longer change.",
     },
     ledger: {
       title: "Ledger",
-      subtitle: "Account ledger with opening and running balance; every line opens its voucher and source",
+      subtitle:
+        "Account ledger with opening and running balance; every line opens its voucher and source",
       chooseAccount: "Choose an account to see its ledger",
       opening: "Opening balance",
       closing: "Closing balance",
@@ -287,6 +316,7 @@ export const faEn = {
       general: "General ledger",
       generalHint: "Every account in the range; open one for its lines",
       lines: "{count} lines",
+      lines_one: "{count} line",
       noLines: "No postings in this range.",
       thisMonth: "This month",
       lastMonth: "Last month",
@@ -294,7 +324,8 @@ export const faEn = {
     },
     periods: {
       title: "Periods",
-      subtitle: "Fiscal years and months; closing locks a month against any posting",
+      subtitle:
+        "Fiscal years and months; closing locks a month against any posting",
       fiscalYear: "Fiscal year {code}",
       yearOpen: "Open",
       yearClosed: "Closed",
@@ -308,10 +339,12 @@ export const faEn = {
       checklistHint: "Blocking items must be clear before the month can close.",
       showChecklist: "Checklist",
       closeTitle: "Close {month}?",
-      closeBody: "Nothing can be posted dated in {month} after this. Reopening needs the owner or the accounts manager and a reason.",
+      closeBody:
+        "Nothing can be posted dated in {month} after this. Reopening needs the owner or the accounts manager and a reason.",
       closed: "Period {period} closed",
       reopenTitle: "Reopen {month}?",
-      reopenBody: "Postings dated in {month} will be accepted again. Give a reason; it is kept in the audit trail.",
+      reopenBody:
+        "Postings dated in {month} will be accepted again. Give a reason; it is kept in the audit trail.",
       reopened: "Period {period} reopened",
       reopenReason: "Reopened: {reason}",
       notEnded: "Ends {date}",
@@ -340,7 +373,8 @@ export const faEn = {
     },
     recurring: {
       title: "Recurring journals",
-      subtitle: "Monthly templates: depreciation, salary accrual and prepaid amortisation. Each posts once per month, without a further approval.",
+      subtitle:
+        "Monthly templates: depreciation, salary accrual and prepaid amortisation. Each posts once per month, without a further approval.",
       template: "Template",
       kind: "Kind",
       monthly: "Monthly",
@@ -360,6 +394,7 @@ export const faEn = {
       postedStatus: "Posted",
       notDue: "Nothing left to amortise",
       postAction: "Post {count} vouchers",
+      postAction_one: "Post {count} voucher",
       posted: "{count} recurring vouchers posted for {period}",
       history: "Posted recurring vouchers",
       lines: "Template lines",
@@ -373,7 +408,8 @@ export const faEn = {
         costCentres: "Cost centres",
         tax: "Tax rates",
       },
-      postingHint: "Each system tag names the account its posting rules use. A tag maps only to an active account of the same type and control flag.",
+      postingHint:
+        "Each system tag names the account its posting rules use. A tag maps only to an active account of the same type and control flag.",
       tag: "Tag",
       mappedTo: "Account",
       saveMap: "Save map",
@@ -385,7 +421,8 @@ export const faEn = {
       newCostCentre: "New cost centre",
       costCentreSaved: "Cost centre {code} saved",
       demoValues: "Demo values",
-      demoNote: "Rates are demo values for the demonstration (CONFIRM: TAX ADVISOR). They are configurable and every posting uses them.",
+      demoNote:
+        "Rates are demo values for the demonstration (CONFIRM: TAX ADVISOR). They are configurable and every posting uses them.",
       vatRates: "VAT rates by category",
       vatCategories: {
         standard: "Standard",
@@ -420,24 +457,36 @@ export const faEn = {
     scenarios: {
       E10: {
         title: "Maker-checker journal",
-        summary: "A voucher above its preparer's limit waits for another approver; nobody approves their own.",
+        summary:
+          "A voucher above its preparer's limit waits for another approver; nobody approves their own.",
         cue: {
-          submit: "Mahbub's draft {accrualNo} accrues {accrualP} for electricity and water. Click Submit: it is above his {limitP} journal limit.",
-          pending: "The voucher is now pending and says \"You prepared this\": Mahbub has no approve button.",
-          farzanaApproves: "In Farzana's window, open Approvals (the bell) and approve {accrualNo}. It posts at once, live in Mahbub's window.",
-          ownVoucher: "Still as Farzana, open her own {bigNo} under Requested by me ({bigP}, above her {bigLimitP} limit): \"You prepared this\", no approve button.",
-          rashedApproves: "In Rashed's window, approve {bigNo} from Approvals: only the owner can. It posts (R24) with Farzana kept as its preparer.",
+          submit:
+            "Mahbub's draft {accrualNo} accrues {accrualP} for electricity and water. Click Submit: it is above his {limitP} journal limit.",
+          pending:
+            'The voucher is now pending and says "You prepared this": Mahbub has no approve button.',
+          farzanaApproves:
+            "In Farzana's window, open Approvals (the bell) and approve {accrualNo}. It posts at once, live in Mahbub's window.",
+          ownVoucher:
+            'Still as Farzana, open her own {bigNo} under Requested by me ({bigP}, above her {bigLimitP} limit): "You prepared this", no approve button.',
+          rashedApproves:
+            "In Rashed's window, approve {bigNo} from Approvals: only the owner can. It posts (R24) with Farzana kept as its preparer.",
         },
       },
       E11: {
         title: "Month-end close",
-        summary: "Drafts and pending approvals block the close; a closed month refuses every posting.",
+        summary:
+          "Drafts and pending approvals block the close; a closed month refuses every posting.",
         cue: {
-          closeBlocked: "Click Close period for {month} and confirm: refused. The checklist names Mahbub's draft {draftNo} and Sabbir's petty cash {pettyNo}.",
-          discardDraft: "Open {draftNo} ({draftP}) from the checklist, click Discard and confirm. Back in Periods its line has cleared.",
-          approvePetty: "Open Approvals (the bell) and approve {pettyNo}: {pettyP} at Uttara, above Sabbir's {pettyLimitP} limit. It posts into {month}.",
-          close: "Back in Periods the checklist is clear: click Close period and confirm. {month} shows Closed.",
-          refused: "Try a posting into it: Vouchers, New voucher dated {lastDay}, two lines, Save draft. Refused: the period is closed (PERIOD_CLOSED).",
+          closeBlocked:
+            "Click Close period for {month} and confirm: refused. The checklist names Mahbub's draft {draftNo} and Sabbir's petty cash {pettyNo}.",
+          discardDraft:
+            "Open {draftNo} ({draftP}) from the checklist, click Discard and confirm. Back in Periods its line has cleared.",
+          approvePetty:
+            "Open Approvals (the bell) and approve {pettyNo}: {pettyP} at Uttara, above Sabbir's {pettyLimitP} limit. It posts into {month}.",
+          close:
+            "Back in Periods the checklist is clear: click Close period and confirm. {month} shows Closed.",
+          refused:
+            "Try a posting into it: Vouchers, New voucher dated {lastDay}, two lines, Save draft. Refused: the period is closed (PERIOD_CLOSED).",
         },
       },
     },

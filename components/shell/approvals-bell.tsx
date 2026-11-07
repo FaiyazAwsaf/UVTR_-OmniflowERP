@@ -7,7 +7,11 @@ import { Bell, BellRing, CheckCheck, ChevronRight, Inbox } from "lucide-react"
 
 import { AppChip } from "@/components/shared/app-frame"
 import { EmptyState } from "@/components/shared/empty-state"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import { useApprovalInbox } from "@/core/approvals/useInbox"
 import { markNotificationsRead } from "@/core/comms/notifications"
 import { DAY } from "@/core/clock/dates"
@@ -20,8 +24,14 @@ import { useUserMap } from "@/core/security/users"
 import { useSyncFlash } from "@/components/shell/use-sync-flash"
 import { cn } from "@/lib/utils"
 import { useLocale } from "@/lib/i18n/provider"
+import { localizeParams } from "@/modules/demo/components/labels"
 
-import { approvalFigure, approvalLink, kindLabel, personName } from "./approvals/format"
+import {
+  approvalFigure,
+  approvalLink,
+  kindLabel,
+  personName,
+} from "./approvals/format"
 
 const SHOWN = 5
 
@@ -33,9 +43,17 @@ function useRecentDecisions(): ApprovalRow[] {
   return (
     useLiveQuery(async () => {
       if (!user) return []
-      const mine = await db.approvals.where("requestedBy").equals(user.id).toArray()
+      const mine = await db.approvals
+        .where("requestedBy")
+        .equals(user.id)
+        .toArray()
       return mine
-        .filter((a) => !a.inline && a.status !== "pending" && (a.decidedAt ?? 0) >= nowMs - 7 * DAY)
+        .filter(
+          (a) =>
+            !a.inline &&
+            a.status !== "pending" &&
+            (a.decidedAt ?? 0) >= nowMs - 7 * DAY
+        )
         .sort((a, b) => (b.decidedAt ?? 0) - (a.decidedAt ?? 0))
         .slice(0, 3)
     }, [db, user, nowMs]) ?? []
@@ -53,8 +71,13 @@ function useNotices(): NotificationRow[] {
   return (
     useLiveQuery(async () => {
       if (!user) return []
-      const mine = await db.notifications.where("userId").equals(user.id).toArray()
-      return mine.filter((n) => !n.read && n.kind !== "approval-requested").sort((a, b) => b.at - a.at)
+      const mine = await db.notifications
+        .where("userId")
+        .equals(user.id)
+        .toArray()
+      return mine
+        .filter((n) => !n.read && n.kind !== "approval-requested")
+        .sort((a, b) => b.at - a.at)
     }, [db, user]) ?? []
   )
 }
@@ -66,7 +89,7 @@ function useNotices(): NotificationRow[] {
  * and the decisions on the user's own requests.
  */
 export function ApprovalsBell({ className }: { className?: string }) {
-  const { t, tk, num, money, pct, relative, locale } = useLocale()
+  const { t, tk, num, money, pct, relative, locale, dmy } = useLocale()
   const inbox = useApprovalInbox()
   const decisions = useRecentDecisions()
   const notices = useNotices()
@@ -102,7 +125,10 @@ export function ApprovalsBell({ className }: { className?: string }) {
       >
         <Bell className="size-[1.125rem]" />
         {notices.length > 0 && count === 0 ? (
-          <span data-testid="notices-dot" className="absolute top-1.5 right-1.5 size-2 rounded-full bg-info ring-2 ring-card" />
+          <span
+            data-testid="notices-dot"
+            className="absolute top-1.5 right-1.5 size-2 rounded-full bg-info ring-2 ring-card"
+          />
         ) : null}
         {count > 0 ? (
           <span
@@ -114,9 +140,15 @@ export function ApprovalsBell({ className }: { className?: string }) {
           </span>
         ) : null}
       </PopoverTrigger>
-      <PopoverContent align="end" sideOffset={8} className="w-[min(24rem,calc(100vw-1.5rem))] gap-0 p-0">
+      <PopoverContent
+        align="end"
+        sideOffset={8}
+        className="w-[min(24rem,calc(100vw-1.5rem))] gap-0 p-0"
+      >
         <div className="flex items-center gap-2 border-b border-hairline px-4 py-3">
-          <span className="flex-1 text-[0.9375rem] font-semibold">{t("shell.bell.title")}</span>
+          <span className="flex-1 text-[0.9375rem] font-semibold">
+            {t("shell.bell.title")}
+          </span>
           {count ? (
             <span className="count-badge nums px-2 py-0.5 text-xs font-semibold">
               {t("shell.bell.waiting", { count: num(count) })}
@@ -124,7 +156,11 @@ export function ApprovalsBell({ className }: { className?: string }) {
           ) : null}
         </div>
         {count === 0 ? (
-          <EmptyState icon={CheckCheck} title={t("shell.bell.empty")} size="sm" />
+          <EmptyState
+            icon={CheckCheck}
+            title={t("shell.bell.empty")}
+            size="sm"
+          />
         ) : (
           <ul className="flex max-h-[min(22rem,55svh)] flex-col overflow-y-auto p-1.5">
             {waiting.slice(0, SHOWN).map((approval) => {
@@ -143,7 +179,10 @@ export function ApprovalsBell({ className }: { className?: string }) {
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center gap-2">
-                        <span lang="en" className="truncate font-mono text-[0.8125rem] font-semibold">
+                        <span
+                          lang="en"
+                          className="truncate font-mono text-[0.8125rem] font-semibold"
+                        >
                           {approval.docNo}
                         </span>
                         {app ? <AppChip app={app} /> : null}
@@ -152,7 +191,13 @@ export function ApprovalsBell({ className }: { className?: string }) {
                         {[
                           kindLabel(approval.kind, tk),
                           figure,
-                          t("shell.bell.from", { name: personName(users, approval.requestedBy, locale) }),
+                          t("shell.bell.from", {
+                            name: personName(
+                              users,
+                              approval.requestedBy,
+                              locale
+                            ),
+                          }),
                           relative(approval.requestedAt),
                         ]
                           .filter(Boolean)
@@ -172,12 +217,19 @@ export function ApprovalsBell({ className }: { className?: string }) {
           </ul>
         )}
         {notices.length ? (
-          <div className="border-t border-hairline px-1.5 py-2" data-testid="bell-notices">
+          <div
+            className="border-t border-hairline px-1.5 py-2"
+            data-testid="bell-notices"
+          >
             <div className="flex items-center gap-2 px-2.5 pb-1">
-              <p className="flex-1 text-xs font-medium text-muted-foreground">{t("shell.bell.notices")}</p>
+              <p className="flex-1 text-xs font-medium text-muted-foreground">
+                {t("shell.bell.notices")}
+              </p>
               <button
                 type="button"
-                onClick={() => void markRead.run({ ids: notices.map((n) => n.id) })}
+                onClick={() =>
+                  void markRead.run({ ids: notices.map((n) => n.id) })
+                }
                 className="rounded-sm text-xs font-medium text-link outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/40"
                 data-testid="notices-read"
               >
@@ -201,8 +253,15 @@ export function ApprovalsBell({ className }: { className?: string }) {
                       <BellRing className="size-4" />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="line-clamp-2 text-[0.8125rem]">{tk(n.titleKey, n.params)}</span>
-                      <span className="block text-xs text-muted-foreground">{relative(n.at)}</span>
+                      <span className="line-clamp-2 text-[0.8125rem]">
+                        {tk(
+                          n.titleKey,
+                          localizeParams(n.params, num, locale, dmy)
+                        )}
+                      </span>
+                      <span className="block text-xs text-muted-foreground">
+                        {relative(n.at)}
+                      </span>
                     </span>
                     <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
                   </Link>
@@ -213,7 +272,9 @@ export function ApprovalsBell({ className }: { className?: string }) {
         ) : null}
         {decisions.length ? (
           <div className="border-t border-hairline px-4 py-3">
-            <p className="mb-1.5 text-xs font-medium text-muted-foreground">{t("shell.bell.yourRequests")}</p>
+            <p className="mb-1.5 text-xs font-medium text-muted-foreground">
+              {t("shell.bell.yourRequests")}
+            </p>
             <ul className="flex flex-col gap-1">
               {decisions.map((a) => (
                 <li key={a.id} className="flex items-center gap-2 text-xs">
@@ -227,9 +288,14 @@ export function ApprovalsBell({ className }: { className?: string }) {
                     {a.docNo}
                   </span>
                   <span className="min-w-0 flex-1 truncate text-muted-foreground">
-                    {t(a.status === "approved" ? "shell.bell.approvedBy" : "shell.bell.rejectedBy", {
-                      name: personName(users, a.decidedBy, locale),
-                    })}
+                    {t(
+                      a.status === "approved"
+                        ? "shell.bell.approvedBy"
+                        : "shell.bell.rejectedBy",
+                      {
+                        name: personName(users, a.decidedBy, locale),
+                      }
+                    )}
                     {a.decidedAt ? ` · ${relative(a.decidedAt)}` : ""}
                   </span>
                 </li>

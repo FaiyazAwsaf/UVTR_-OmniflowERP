@@ -127,7 +127,8 @@ export const coreEn = {
     open: "Open",
     simulated: "Simulated",
     demoValues: "Demo values",
-    demoValuesHint: "Rates and limits here are demo values, to be confirmed by the client's advisor.",
+    demoValuesHint:
+      "Rates and limits here are demo values, to be confirmed by the client's advisor.",
     years: "{count} y",
     months: "{count} mo",
     sexShort: { M: "M", F: "F" },
@@ -196,6 +197,31 @@ export const coreEn = {
       },
     },
   },
+  /** Count units after a quantity ("20 kit"); volume and mass keep their symbols (ml, l, g, kg). */
+  /** Vehicle colours the seed uses; a colour someone typed shows as typed. */
+  colours: {
+    white: "White",
+    "pearl-white": "Pearl white",
+    black: "Black",
+    silver: "Silver",
+    grey: "Grey",
+    "wine-red": "Wine red",
+    blue: "Blue",
+    red: "Red",
+  },
+  units: {
+    pc: "pc",
+    roll: "roll",
+    pair: "pair",
+    set: "set",
+    can: "can",
+    bottle: "bottle",
+    tin: "tin",
+    kit: "kit",
+    pack: "pack",
+    box: "box",
+    carton: "carton",
+  },
   suites: {
     fms: { code: "FMS", name: "Financial Management System" },
     sdm: { code: "SDM", name: "Sales & Distribution Management" },
@@ -248,7 +274,8 @@ export const coreEn = {
     keyboardShortcuts: "Keyboard shortcuts",
     demoMode: "Demo data",
     uiScale: "Display size",
-    uiScaleHint: "Scales text, spacing and controls across the whole interface.",
+    uiScaleHint:
+      "Scales text, spacing and controls across the whole interface.",
     scaleCompact: "Compact",
     scaleDefault: "Default",
     scaleLarge: "Large",
@@ -353,11 +380,13 @@ export const coreEn = {
       changed: "Password changed",
       failed: "The password could not be changed.",
       requiredTitle: "Choose a new password",
-      requiredHint: "Your password was reset by an administrator. Choose a new one to continue; the current password is the temporary one you were given.",
+      requiredHint:
+        "Your password was reset by an administrator. Choose a new one to continue; the current password is the temporary one you were given.",
     },
     toasts: {
       open: "Open",
-      accessChanged: "An administrator changed your access. Your apps are up to date.",
+      accessChanged:
+        "An administrator changed your access. Your apps are up to date.",
     },
     userMenu: {
       signedInAs: "Signed in as",
@@ -365,11 +394,14 @@ export const coreEn = {
     },
     guard: {
       signInTitle: "Sign in to open this screen",
-      signInBody: "Each window works as one signed-in user, with its own language.",
+      signInBody:
+        "Each window works as one signed-in user, with its own language.",
       signIn: "Sign in",
       deniedTitle: "No access",
-      deniedBody: "You don't have access to {app}. An administrator can grant it in RBAC.",
-      deniedScreen: "You don't have access to this screen. An administrator can grant it in RBAC.",
+      deniedBody:
+        "You don't have access to {app}. An administrator can grant it in RBAC.",
+      deniedScreen:
+        "You don't have access to this screen. An administrator can grant it in RBAC.",
       goHome: "Go to my home screen",
     },
     signedOut: {
@@ -389,7 +421,8 @@ export const coreEn = {
       body: "This screen is being built and arrives in Phase 2.",
     },
     palette: {
-      placeholder: "Type a screen, a name, a registration or a document number…",
+      placeholder:
+        "Type a screen, a name, a registration or a document number…",
       goTo: "Go to",
       preferences: "Preferences",
       language: "Switch language to {language}",
@@ -413,7 +446,8 @@ export const coreEn = {
       audited: "This attempt was recorded in the audit trail.",
       unknownRule: "This action was blocked by rule {code}.",
       deniedTitle: "Not allowed",
-      deniedBody: "You need the permission \"{permission}\". An administrator can grant it in RBAC.",
+      deniedBody:
+        'You need the permission "{permission}". An administrator can grant it in RBAC.',
       deniedUnknown: "Your roles don't allow this.",
       signedInAs: "You are signed in as {user}.",
       noUserTitle: "Sign in first",
@@ -442,7 +476,8 @@ export const coreEn = {
     },
     inbox: {
       title: "Approvals",
-      subtitle: "Approve or reject what waits for you. Nobody approves their own work.",
+      subtitle:
+        "Approve or reject what waits for you. Nobody approves their own work.",
       groups: {
         forMe: "Pending for me",
         requested: "Requested by me",
@@ -485,10 +520,14 @@ export const coreEn = {
     verify: "Verify",
     badCredentials: "Wrong username or password.",
     attemptsLeft: "{count} attempts left before the account locks.",
-    locked: "This account is locked after too many failed attempts. An administrator can unlock it in SAC.",
-    disabled: "This account is disabled. An administrator can enable it in SAC.",
+    attemptsLeft_one: "{count} attempt left before the account locks.",
+    locked:
+      "This account is locked after too many failed attempts. An administrator can unlock it in SAC.",
+    disabled:
+      "This account is disabled. An administrator can enable it in SAC.",
     mfaFailed: "Wrong verification code.",
-    simulatedNote: "Simulated sign-in for the demo. Every password is demo1234.",
+    simulatedNote:
+      "Simulated sign-in for the demo. Every password is demo1234.",
     toLauncher: "Pick a demo user instead",
     alreadySignedIn: "This window is signed in as {name}.",
     continue: "Continue",
@@ -504,17 +543,22 @@ export const coreEn = {
     PERMISSION_DENIED: "You don't have the permission for this.",
     OUT_OF_SCOPE: "You can only do this at your own location.",
     USER_DISABLED: "User {user} is disabled.",
-    USER_LOCKED: "User {user} is locked. An administrator can unlock them in SAC.",
+    USER_LOCKED:
+      "User {user} is locked. An administrator can unlock them in SAC.",
     USER_UNKNOWN: "Unknown user {user}.",
     SESSION_ENDED: "This window's session has ended. Sign in again.",
     SESSION_ALREADY_ENDED: "That session has already ended.",
-    CANNOT_END_OWN_SESSION: "You can't force your own session to end. Sign out instead.",
+    CANNOT_END_OWN_SESSION:
+      "You can't force your own session to end. Sign out instead.",
     IMMUTABLE_DOCUMENT:
       "This document is posted, so it can't be changed. Corrections are new documents (reversal, credit note or debit note).",
-    JOURNAL_UNBALANCED: "The voucher does not balance: debits {debit}, credits {credit}.",
+    JOURNAL_UNBALANCED:
+      "The voucher does not balance: debits {debit}, credits {credit}.",
     JOURNAL_LINE_BOTH: "A voucher line can't carry both a debit and a credit.",
-    JOURNAL_EMPTY: "A voucher needs at least one debit and one credit above zero.",
-    PERIOD_CLOSED: "The period {period} is closed. Nothing can be posted on {date}.",
+    JOURNAL_EMPTY:
+      "A voucher needs at least one debit and one credit above zero.",
+    PERIOD_CLOSED:
+      "The period {period} is closed. Nothing can be posted on {date}.",
     NO_PERIOD: "There is no accounting period for {date}.",
     ACCOUNT_INACTIVE: "Account {account} is inactive.",
     ACCOUNT_GROUP: "Account {account} is a group. Post to one of its accounts.",
@@ -522,33 +566,45 @@ export const coreEn = {
       "Account {account} is a control account. Only documents (invoices, bills, receipts, payments) post to it.",
     PARTY_REQUIRED: "A line on {account} needs a party.",
     ITEM_REQUIRED: "A line on {account} needs an item and a location.",
-    UNKNOWN_TAG: "No account is mapped to the posting tag {tag}. Map it in FA settings.",
-    STOCK_NEGATIVE: "Not enough stock of {item} at {location}. Available {available}, needed {needed}.",
+    UNKNOWN_TAG:
+      "No account is mapped to the posting tag {tag}. Map it in FA settings.",
+    STOCK_NEGATIVE:
+      "Not enough stock of {item} at {location}. Available {available}, needed {needed}.",
     QUARANTINE_ISSUE: "Quarantined stock can't be issued.",
-    SELF_APPROVAL: "Nobody approves their own work. Another approver must decide.",
-    NOT_APPROVER: "You can't decide this approval: it needs {permission} with a limit covering {amount}.",
+    SELF_APPROVAL:
+      "Nobody approves their own work. Another approver must decide.",
+    NOT_APPROVER:
+      "You can't decide this approval: it needs {permission} with a limit covering {amount}.",
     APPROVAL_DECIDED: "This approval has already been decided.",
     NO_APPROVAL_HANDLER: "No module handles approvals of {docType} yet.",
     PASSWORD_WRONG: "The current password is wrong.",
-    PASSWORD_POLICY: "The new password needs at least {min} characters, including a digit.",
-    STOCK_VALUE_NEGATIVE: "The stock value of {item} at {location} would go below zero.",
-    STOCK_VALUE_RESIDUE: "The stock of {item} at {location} is empty but still carries a value.",
+    PASSWORD_POLICY:
+      "The new password needs at least {min} characters, including a digit.",
+    STOCK_VALUE_NEGATIVE:
+      "The stock value of {item} at {location} would go below zero.",
+    STOCK_VALUE_RESIDUE:
+      "The stock of {item} at {location} is empty but still carries a value.",
     JOURNAL_NOT_POSTED: "Voucher {no} is not posted, so it can't be reversed.",
-    REVERSE_SOURCE_DOCUMENT: "Voucher {no} belongs to {doc}. Correct the document (credit note, debit note or adjustment) instead.",
+    REVERSE_SOURCE_DOCUMENT:
+      "Voucher {no} belongs to {doc}. Correct the document (credit note, debit note or adjustment) instead.",
     RECEIPT_NOT_PENDING: "Receipt {no} is not pending.",
     CHEQUE_DETAILS_REQUIRED: "Enter the cheque number, bank and date.",
     APPROVAL_LIMIT: "This is above your limit. It needs approval.",
     BAD_PIN: "Wrong PIN for the approver.",
     DOC_TOTALS: "The document's totals don't match its lines.",
-    OVER_ALLOCATION: "The allocation is more than what is outstanding on {doc}.",
+    OVER_ALLOCATION:
+      "The allocation is more than what is outstanding on {doc}.",
     CREDIT_OVERRIDE_REQUIRED:
       "{party} is on hold or over its credit limit. An approver with credit override must approve it.",
     DUPLICATE_NUMBER: "Document number {no} is already in use.",
     DUPLICATE_VENDOR_REF: "This vendor's bill {ref} is already recorded.",
     DUPLICATE_CHEQUE: "Cheque {no} is already recorded on this account.",
-    PERIOD_HAS_PENDING: "The period still has draft or pending items. Clear them before closing.",
+    PERIOD_HAS_PENDING:
+      "The period still has draft or pending items. Clear them before closing.",
     DUPLICATE_ID: "A record with this ID already exists, so nothing was saved.",
-    UNIQUE_CONSTRAINT: "This value is already in use and must be unique. Nothing was saved.",
-    NOT_DELETABLE: "Records like this can't be deleted. Change their status instead.",
+    UNIQUE_CONSTRAINT:
+      "This value is already in use and must be unique. Nothing was saved.",
+    NOT_DELETABLE:
+      "Records like this can't be deleted. Change their status instead.",
   },
 }

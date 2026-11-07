@@ -155,10 +155,20 @@ function EventStreamPanel() {
 
   const events = useLiveQuery(() => {
     if (filter === "location" && locationId) {
-      return db.events.where("locationId").equals(locationId).reverse().limit(LIMIT).toArray()
+      return db.events
+        .where("locationId")
+        .equals(locationId)
+        .reverse()
+        .limit(LIMIT)
+        .toArray()
     }
     if (filter === "mine" && userId) {
-      return db.events.where("actor.userId").equals(userId).reverse().limit(LIMIT).toArray()
+      return db.events
+        .where("actor.userId")
+        .equals(userId)
+        .reverse()
+        .limit(LIMIT)
+        .toArray()
     }
     return db.events.orderBy("seq").reverse().limit(LIMIT).toArray()
   }, [db, filter, locationId, userId])
@@ -256,13 +266,17 @@ function EventListItem({
   fresh: boolean
   onSelect: () => void
 }) {
-  const { tk, num, locale, relative, dateTime } = useLocale()
+  const { tk, num, locale, relative, dateTime, dmy } = useLocale()
   const def = eventDef(event.type)
-  const label = eventLabel(event, tk, num)
+  const label = eventLabel(event, tk, num, locale, dmy)
   const consumers = (event.consumers ?? def?.consumers ?? []).map((key) =>
     consumerLabel(key, tk)
   )
-  const who = [actorName(event.actor, locale, tk), locationCode(event.locationId), event.app?.toUpperCase()]
+  const who = [
+    actorName(event.actor, locale, tk),
+    locationCode(event.locationId),
+    event.app?.toUpperCase(),
+  ]
     .filter(Boolean)
     .join(" · ")
 

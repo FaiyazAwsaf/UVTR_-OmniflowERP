@@ -36,11 +36,14 @@ export const siEn = {
       SI_MIXED_LOCATIONS: "One invoice covers orders of one studio only.",
       SI_MIXED_PARTIES: "One invoice covers orders of one customer only.",
       SI_NOTHING_TO_INVOICE: "There is nothing to invoice.",
-      SI_NOT_CREDIT_PARTY: "{party} is not a fleet, dealer or corporate account.",
+      SI_NOT_CREDIT_PARTY:
+        "{party} is not a fleet, dealer or corporate account.",
       SI_NOT_RETAIL_ITEM: "{item} is not a retail product on sale.",
       SI_NO_TENDER: "Add a tender to collect the balance.",
-      SI_ORDER_NOT_DELIVERED: "Order {no} is not delivered and waiting for an invoice.",
-      SI_TENDER_MISMATCH: "The tenders ({payingP}) must equal the amount due ({dueP}).",
+      SI_ORDER_NOT_DELIVERED:
+        "Order {no} is not delivered and waiting for an invoice.",
+      SI_TENDER_MISMATCH:
+        "The tenders ({payingP}) must equal the amount due ({dueP}).",
     },
     tender: {
       card: "Card",
@@ -53,7 +56,8 @@ export const siEn = {
       approveCard: "Approve on terminal",
       declined: "Declined by the card issuer. Try another card or tender.",
       pushTitle: "{brand} payment request",
-      pushBody: "A payment request was pushed to {brand} wallet {phone}. It times out after {minutes} demo minutes.",
+      pushBody:
+        "A payment request was pushed to {brand} wallet {phone}. It times out after {minutes} demo minutes.",
       waiting: "Waiting for the customer to approve on the phone",
       customerApproved: "Customer approved",
     },
@@ -63,6 +67,7 @@ export const siEn = {
       kind: "Kind",
       kpiInvoices: "Invoiced today",
       kpiCount: "{count} invoices",
+      kpiCount_one: "{count} invoice",
       kpiCollected: "Collected today",
       kpiPending: "Wallet payments pending",
       kpiCredits: "Credit notes this month",
@@ -72,7 +77,8 @@ export const siEn = {
     counter: {
       subtitle: "Delivered jobs and retail goods, paid in one step",
       readyToPay: "Ready to pay",
-      readyHint: "Delivered jobs at this studio; pick one or more of the same customer",
+      readyHint:
+        "Delivered jobs at this studio; pick one or more of the same customer",
       noneReady: "No delivered job is waiting for payment",
       deposit: "deposit {amount}",
       retail: "Retail goods",
@@ -90,7 +96,8 @@ export const siEn = {
       tenders: "Tenders",
       received: "Received",
       change: "Change",
-      mfsHint: "The push goes out on checkout; the invoice stays unpaid until the customer approves (times out after {minutes} demo minutes).",
+      mfsHint:
+        "The push goes out on checkout; the invoice stays unpaid until the customer approves (times out after {minutes} demo minutes).",
       remaining: "Left to tender",
       checkout: "Check out {amount}",
       issueOnly: "Issue invoice",
@@ -103,12 +110,14 @@ export const siEn = {
       thanks: "Thank you. Drive safe.",
     },
     new: {
-      subtitle: "From delivered orders, or one consolidated invoice for a fleet or dealer",
+      subtitle:
+        "From delivered orders, or one consolidated invoice for a fleet or dealer",
       fromOrders: "From delivered orders",
       consolidated: "Consolidated monthly",
       deliveredOrders: "Delivered orders",
       ordersInPeriod: "Delivered, unbilled orders in the period ({count})",
-      noOrders: "No delivered, unbilled orders for this customer at this studio.",
+      noOrders:
+        "No delivered, unbilled orders for this customer at this studio.",
       pickCustomer: "Choose a customer.",
       summary: "Summary",
       creditCheck: "Credit check",
@@ -123,6 +132,7 @@ export const siEn = {
       overrideBy: "Override approved by {name}",
       issue: "Issue invoice",
       issueConsolidated: "Issue consolidated invoice ({count} orders)",
+      issueConsolidated_one: "Issue consolidated invoice ({count} order)",
     },
     invoice: {
       title: "Tax invoice",
@@ -143,7 +153,8 @@ export const siEn = {
     scenarios: {
       e2: {
         title: "Fleet over credit limit",
-        summary: "A consolidated fleet invoice over the credit limit needs an accounts manager's override",
+        summary:
+          "A consolidated fleet invoice over the credit limit needs an accounts manager's override",
         cue1: "Swift Ride Rentals owes {outstandingP} against a {limitP} credit limit. Its {count} delivered, unbilled orders at Gulshan come to {invoiceP}.",
         cue2: "The credit check shows {afterP} after this invoice, {overP} over the limit. Click Credit override.",
         cue3: "Choose Farzana Haque (accounts manager), give a reason and the PIN 1234: the override shows as approved.",
@@ -152,7 +163,8 @@ export const siEn = {
       },
       e12: {
         title: "Credit note",
-        summary: "A partial Mushak 6.7 credit note above the cashier's limit, approved on the spot and kept as advance",
+        summary:
+          "A partial Mushak 6.7 credit note above the cashier's limit, approved on the spot and kept as advance",
         cue1: "{invoiceNo}: {nameEn} paid {totalP} for a premium wash and interior deep cleaning on {regNo}. The complaint on {orderNo} shows above the lines.",
         cue2: "Click Credit note, tick only Interior deep cleaning and type the reason: the note is {creditP} with {vatP} VAT reversed, all kept as advance.",
         cue3: "Tania's credit note limit is ৳0: click Approve on the spot, choose Shahriar Kabir, give a reason and the PIN 1234.",
@@ -169,7 +181,8 @@ export const siEn = {
       toInvoice: "Against the invoice",
       toAdvance: "Kept as advance",
       vatReversed: "VAT reversed",
-      overLimit: "Above your credit note limit ({limit}): an approver confirms with a PIN, or send it for approval.",
+      overLimit:
+        "Above your credit note limit ({limit}): an approver confirms with a PIN, or send it for approval.",
       ask: "Credit note of {amount} against {no}",
       approveNow: "Approve on the spot",
       sendForApproval: "Send for approval",

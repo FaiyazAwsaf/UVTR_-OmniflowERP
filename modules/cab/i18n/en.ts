@@ -46,12 +46,14 @@ export const cabEn = {
       "card-clearing": "Card clearing",
     },
     home: {
-      subtitle: "Every till, petty cash box, bank, wallet and card clearing, straight from the ledger",
+      subtitle:
+        "Every till, petty cash box, bank, wallet and card clearing, straight from the ledger",
       tills: "Cash in tills",
       banks: "In the bank",
       wallets: "Wallets and cards",
       petty: "Petty cash",
       accounts: "{count} accounts",
+      accounts_one: "{count} account",
       position: "Daily cash position",
       colAccount: "Account",
       colLocation: "Location",
@@ -82,9 +84,11 @@ export const cabEn = {
       colVoucher: "Voucher",
       notFound: "Account not found",
       count: "{count} entries",
+      count_one: "{count} entry",
     },
     transfers: {
-      subtitle: "Contra entries between tills, banks, wallets and petty cash (R17)",
+      subtitle:
+        "Contra entries between tills, banks, wallets and petty cash (R17)",
       new: "New transfer",
       topUp: "Top up petty cash",
       colDate: "Date",
@@ -95,7 +99,13 @@ export const cabEn = {
       colAmount: "Amount",
       colFees: "Fees",
       count: "{count} transfers",
-      kinds: { deposit: "Till deposit", withdrawal: "Withdrawal", transfer: "Transfer", "top-up": "Petty cash top-up" },
+      count_one: "{count} transfer",
+      kinds: {
+        deposit: "Till deposit",
+        withdrawal: "Withdrawal",
+        transfer: "Transfer",
+        "top-up": "Petty cash top-up",
+      },
       formTitle: "Transfer funds",
       topUpTitle: "Top up petty cash",
       from: "From account",
@@ -111,7 +121,8 @@ export const cabEn = {
       topUpHint: "Leave the amount empty to bring it back to its imprest.",
     },
     cheques: {
-      subtitle: "Received and issued cheques, post-dated cheques and their clearing",
+      subtitle:
+        "Received and issued cheques, post-dated cheques and their clearing",
       received: "Received",
       issued: "Issued",
       statusAll: "All statuses",
@@ -133,16 +144,19 @@ export const cabEn = {
       calendarHint: "Cheques in hand by cheque date, next 14 days",
       noneDue: "Nothing due",
       bounceTitle: "Bounce cheque {no}",
-      bounceBody: "Nothing posts. The invoices it was reserving are outstanding again and the customer gets an SMS notice.",
+      bounceBody:
+        "Nothing posts. The invoices it was reserving are outstanding again and the customer gets an SMS notice.",
       cleared: "Cheque {no} cleared",
       deposited: "Cheque {no} deposited",
       bounced: "Cheque {no} bounced; the customer is notified",
       return: "Return",
       returnTitle: "Return cheque {no} to the customer",
-      returnBody: "The cheque goes back to the customer before it is deposited. Nothing posts; the invoices it was reserving are open again.",
+      returnBody:
+        "The cheque goes back to the customer before it is deposited. Nothing posts; the invoices it was reserving are open again.",
       returned: "Cheque {no} returned to the customer",
       presented: "Cheque {no} presented",
       count: "{count} cheques",
+      count_one: "{count} cheque",
       detailTitle: "Cheque {no}",
       receivedOn: "Received on",
       colInvoice: "Invoice",
@@ -154,11 +168,13 @@ export const cabEn = {
       noticeNone: "No customer notice was sent",
     },
     recon: {
-      subtitle: "Import the bank's statement, match it to the books, post the bank's charges, complete",
+      subtitle:
+        "Import the bank's statement, match it to the books, post the bank's charges, complete",
       account: "Bank account",
       month: "Statement month",
       import: "Import statement",
       imported: "{count} lines imported",
+      imported_one: "{count} line imported",
       statements: "Statements",
       noStatement: "No statement imported for this account and month yet.",
       colFile: "File",
@@ -196,8 +212,10 @@ export const cabEn = {
       matchSave: "Match",
       noCandidates: "No unreconciled book entries near this date.",
       explainTitle: "Explain line {ref}",
-      explainBody: "A line with no book entry (for example a timing difference). The note goes to the audit trail.",
-      superseded: "Superseded statements stay for the record; their matches were cleared.",
+      explainBody:
+        "A line with no book entry (for example a timing difference). The note goes to the audit trail.",
+      superseded:
+        "Superseded statements stay for the record; their matches were cleared.",
       readOnly: "This statement is {status}.",
       opening: "Opening",
       closing: "Closing",
@@ -206,7 +224,8 @@ export const cabEn = {
       noOpen: "Every line is matched or explained.",
     },
     petty: {
-      subtitle: "Petty cash boxes on the imprest system, and their vouchers (R19)",
+      subtitle:
+        "Petty cash boxes on the imprest system, and their vouchers (R19)",
       new: "New voucher",
       topUp: "Top up",
       imprest: "Imprest",
@@ -221,6 +240,7 @@ export const cabEn = {
       colAmount: "Amount",
       colStatus: "Status",
       count: "{count} vouchers",
+      count_one: "{count} voucher",
       formTitle: "Petty cash voucher",
       box: "Petty cash box",
       expense: "Expense",
@@ -235,7 +255,8 @@ export const cabEn = {
       limitOver: "Above your petty cash limit ({limit}): an approver decides.",
     },
     settle: {
-      subtitle: "Card and MFS clearing settled to the bank, with merchant fees (R18)",
+      subtitle:
+        "Card and MFS clearing settled to the bank, with merchant fees (R18)",
       new: "New settlement",
       colDate: "Date",
       colNo: "Settlement",
@@ -246,6 +267,7 @@ export const cabEn = {
       colNet: "Net",
       colRef: "Reference",
       count: "{count} settlements",
+      count_one: "{count} settlement",
       formTitle: "Record a settlement",
       kind: "Clearing",
       kinds: { card: "Card", bkash: "bKash", nagad: "Nagad" },
@@ -262,7 +284,8 @@ export const cabEn = {
     scenarios: {
       E7: {
         title: "Bank reconciliation",
-        summary: "Last month's BRAC Bank statement: auto-match, post the bank charge, match a deposit by hand",
+        summary:
+          "Last month's BRAC Bank statement: auto-match, post the bank charge, match a deposit by hand",
         cue1: "BRAC Bank's statement {file} is imported with {lines} lines. Click Auto-match.",
         cue2: "{autoLines} lines match the books; 2 stay open (show Open lines).",
         cue3: "On the {chargeP} account maintenance charge, click Post charge: it posts to bank charges (R23).",
@@ -271,7 +294,8 @@ export const cabEn = {
       },
       E8: {
         title: "Post-dated cheque bounce",
-        summary: "A customer's post-dated cheque is deposited and bounces; the invoice is outstanding again",
+        summary:
+          "A customer's post-dated cheque is deposited and bounces; the invoice is outstanding again",
         cue1: "Metro Corporate Fleet's post-dated cheque {chequeNo} for {amountP}, dated today, reserves {reservedP} on invoice {invoiceNo}.",
         cue2: "Click Deposit: the cheque goes to the bank.",
         cue3: "The bank returns it unpaid: click Bounce and confirm.",
@@ -285,7 +309,8 @@ export const cabEn = {
       PETTY_AT_IMPREST: "{account} is already at its imprest.",
       FEES_TOO_HIGH: "The fees are more than the amount.",
       CHEQUE_STATUS: "Cheque {no} is {status}; that step does not apply.",
-      PDC_NOT_DUE: "Cheque {no} is dated {date}; it can't be deposited before then.",
+      PDC_NOT_DUE:
+        "Cheque {no} is dated {date}; it can't be deposited before then.",
       CHEQUE_RETURN_REASON: "Say why cheque {no} goes back to the customer.",
       NOT_A_BANK: "{account} is not a bank account.",
       BAD_PERIOD: "The statement period is not valid.",
@@ -297,7 +322,8 @@ export const cabEn = {
       MATCH_AMOUNT: "The book entries add up to {bookP}, not {lineP}.",
       CHARGE_POSTED: "A posted charge can't be unmatched.",
       NOT_A_CHARGE: "Only money out can be posted as a bank charge.",
-      RECON_OPEN_LINES: "{count} lines are still open: match or explain them first.",
+      RECON_OPEN_LINES:
+        "{count} lines are still open: match or explain them first.",
       VOUCHER_NOT_PENDING: "Voucher {no} is not waiting for approval.",
     },
   },

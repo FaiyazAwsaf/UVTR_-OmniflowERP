@@ -3,6 +3,7 @@
 import * as React from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 
+import { keepShort, ScrollX } from "@/components/shared/scroll-x"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -13,7 +14,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import { useLocale } from "@/lib/i18n/provider"
@@ -80,9 +87,12 @@ export function ListTable<T>({
   const height = dense ? "h-9" : "h-11"
 
   return (
-    <div className={cn("@container/list flex min-w-0 flex-col", className)} data-testid={testId}>
-      <div className="min-w-0 overflow-x-auto">
-        <table className="w-full border-separate border-spacing-0 text-[0.8125rem]">
+    <div
+      className={cn("@container/list flex min-w-0 flex-col", className)}
+      data-testid={testId}
+    >
+      <ScrollX>
+        <table className="w-full border-separate border-spacing-0 text-[0.8125rem] [&_td_.nums]:whitespace-nowrap">
           <thead>
             <tr>
               {columns.map((col) => (
@@ -125,25 +135,32 @@ export function ListTable<T>({
                       col.className
                     )}
                   >
-                    {col.cell(row)}
+                    {keepShort(col.cell(row))}
                   </td>
                 ))}
               </tr>
             ))}
           </tbody>
         </table>
-      </div>
+      </ScrollX>
       {rows === undefined ? (
-        <p className="py-8 text-center text-sm text-muted-foreground">{t("common.loading")}</p>
+        <p className="py-8 text-center text-sm text-muted-foreground">
+          {t("common.loading")}
+        </p>
       ) : list.length === 0 ? (
-        (empty ?? <p className="py-8 text-center text-sm text-muted-foreground">{t("common.noResults")}</p>)
+        (empty ?? (
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            {t("common.noResults")}
+          </p>
+        ))
       ) : null}
       {pages > 1 ? (
         <div className="flex h-11 items-center gap-2 pt-3">
           <span className="nums text-xs text-muted-foreground">
             {num(current * pageSize + 1)}
             {" - "}
-            {num(Math.min((current + 1) * pageSize, list.length))} {t("common.of")} {num(list.length)}
+            {num(Math.min((current + 1) * pageSize, list.length))}{" "}
+            {t("common.of")} {num(list.length)}
           </span>
           <div className="ml-auto flex items-center gap-1">
             <Button
@@ -198,8 +215,17 @@ export function OptionSelect({
 }) {
   const current = options.find((o) => o.value === value)
   return (
-    <Select value={value} onValueChange={(next) => next !== null && onChange(String(next))} disabled={disabled}>
-      <SelectTrigger className={cn("min-w-32", className)} aria-label={label} data-testid={testId} size={size}>
+    <Select
+      value={value}
+      onValueChange={(next) => next !== null && onChange(String(next))}
+      disabled={disabled}
+    >
+      <SelectTrigger
+        className={cn("min-w-32", className)}
+        aria-label={label}
+        data-testid={testId}
+        size={size}
+      >
         <SelectValue>{() => current?.label ?? label}</SelectValue>
       </SelectTrigger>
       <SelectContent>
@@ -231,7 +257,10 @@ export function Field({
 }) {
   return (
     <div className={cn("flex min-w-0 flex-col gap-1.5", className)}>
-      <Label htmlFor={htmlFor} className="text-xs font-medium text-muted-foreground">
+      <Label
+        htmlFor={htmlFor}
+        className="text-xs font-medium text-muted-foreground"
+      >
         {label}
       </Label>
       {children}
@@ -287,8 +316,12 @@ export function ConfirmDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent data-testid={testId}>
         <DialogHeader>
-          <DialogTitle className="text-[1.0625rem] font-semibold">{title}</DialogTitle>
-          {description ? <DialogDescription>{description}</DialogDescription> : null}
+          <DialogTitle className="text-[1.0625rem] font-semibold">
+            {title}
+          </DialogTitle>
+          {description ? (
+            <DialogDescription>{description}</DialogDescription>
+          ) : null}
         </DialogHeader>
         {children}
         {withReason ? (
@@ -320,9 +353,19 @@ export function ConfirmDialog({
 }
 
 /** An identifier in mono, always Latin (usernames, keys, codes). */
-export function Mono({ children, className }: { children: React.ReactNode; className?: string }) {
+export function Mono({
+  children,
+  className,
+}: {
+  children: React.ReactNode
+  className?: string
+}) {
   return (
-    <span lang="en" translate="no" className={cn("font-mono text-[0.75rem] tracking-tight", className)}>
+    <span
+      lang="en"
+      translate="no"
+      className={cn("font-mono text-[0.75rem] tracking-tight", className)}
+    >
       {children}
     </span>
   )

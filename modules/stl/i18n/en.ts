@@ -42,10 +42,13 @@ export const stlEn = {
       DiscountApproved: "Discount of {pct}% approved on {no}",
     },
     rules: {
-      BAY_BUSY: "Bay {bay} is already booked at {time}. Pick another bay or time.",
-      TECHNICIAN_BUSY: "{name} is already on a job at {time}. Pick another technician or time.",
+      BAY_BUSY:
+        "Bay {bay} is already booked at {time}. Pick another bay or time.",
+      TECHNICIAN_BUSY:
+        "{name} is already on a job at {time}. Pick another technician or time.",
       STL_BAY_LOCATION: "Bay {bay} belongs to another studio.",
-      STL_DEPOSIT_NOT_CONFIRMED: "The customer has not approved the mobile payment yet.",
+      STL_DEPOSIT_NOT_CONFIRMED:
+        "The customer has not approved the mobile payment yet.",
       STL_DEPOSIT_TOO_LARGE: "The deposit is more than the order total.",
       STL_NOTHING_TO_SCHEDULE: "Order {no} has nothing left to schedule.",
       STL_NOT_CUSTOMER: "{party} is not a customer.",
@@ -61,11 +64,14 @@ export const stlEn = {
       STL_PHONE_TAKEN: "This phone number belongs to {name} ({code}).",
       STL_PRICING: "A line could not be priced ({problem}).",
       STL_QUOTE_CLOSED: "Quotation {no} is already closed.",
-      STL_QUOTE_EXPIRED: "Quotation {no} expired on {date}. Revise it to renew its validity.",
-      STL_RETURN_EXCEEDS: "More than was issued to this job ({issued} of {item}).",
+      STL_QUOTE_EXPIRED:
+        "Quotation {no} expired on {date}. Revise it to renew its validity.",
+      STL_RETURN_EXCEEDS:
+        "More than was issued to this job ({issued} of {item}).",
       STL_TASK_STATUS: "This task is not at a step where this can be done.",
       STL_VEHICLE_PARTY: "Vehicle {regNo} belongs to another customer.",
-      STL_VEHICLE_REQUIRED: "Choose the vehicle: services are priced by its class.",
+      STL_VEHICLE_REQUIRED:
+        "Choose the vehicle: services are priced by its class.",
     },
     email: {
       quotation: "Quotation {no}",
@@ -78,6 +84,7 @@ export const stlEn = {
     },
     board: {
       subtitle: "{studio} · {count} jobs on the board",
+      subtitle_one: "{studio} · {count} job on the board",
       columns: {
         booked: "Booked",
         "in-progress": "In progress",
@@ -111,7 +118,8 @@ export const stlEn = {
       done: "{no} scheduled in bay {bay}",
     },
     quote: {
-      subtitle: "Priced by vehicle class on the customer's price list, valid {days} days",
+      subtitle:
+        "Priced by vehicle class on the customer's price list, valid {days} days",
       revise: "Revise {no}",
       reviseShort: "Revise",
       customer: "Customer and vehicle",
@@ -128,7 +136,8 @@ export const stlEn = {
       needVehicle: "Choose the vehicle to price its services.",
       minutes: "{min} min",
       inspection: "Inspection notes",
-      notesPlaceholder: "What you saw on the vehicle (stays internal, never in SMS)",
+      notesPlaceholder:
+        "What you saw on the vehicle (stays internal, never in SMS)",
       summary: "Summary",
       discountPct: "Discount %",
       yourLimit: "Your limit {limit}%",
@@ -146,19 +155,22 @@ export const stlEn = {
       sentEmail: "Quotation {no} emailed",
       accept: "Accept and book",
       acceptTitle: "Book {no}",
-      acceptBody: "The order is booked from this quotation. Take a deposit if the customer pays now.",
+      acceptBody:
+        "The order is booked from this quotation. Take a deposit if the customer pays now.",
       bookOrder: "Book order",
       accepted: "Order {no} booked",
       printTitle: "Quotation",
       discountTitle: "Discount on {no}",
-      discountBody: "The lines are priced again with the new percent. Above your limit an approver confirms with a PIN.",
+      discountBody:
+        "The lines are priced again with the new percent. Above your limit an approver confirms with a PIN.",
       discountApply: "Apply discount",
       discountApplied: "{pct}% discount applied to {no}",
     },
     deposit: {
       take: "Take a deposit",
       amount: "Deposit amount",
-      simHint: "The terminal or wallet push opens next; the booking saves once it is approved.",
+      simHint:
+        "The terminal or wallet push opens next; the booking saves once it is approved.",
     },
     quick: {
       button: "New customer",
@@ -189,6 +201,7 @@ export const stlEn = {
       newSubtitle: "Book a job directly, with an optional deposit",
       condition: "Vehicle condition",
       odometer: "Odometer",
+      odometerKm: "{km} km",
       book: "Book order",
       notFound: "Order not found",
       promised: "Promised",
@@ -201,11 +214,13 @@ export const stlEn = {
       jobCard: "Job card",
       cancel: "Cancel order",
       cancelTitle: "Cancel {no}",
-      cancelBody: "Consumables already used stay consumed. Any deposit stays with the customer as an advance (refund it in AR).",
+      cancelBody:
+        "Consumables already used stay consumed. Any deposit stays with the customer as an advance (refund it in AR).",
       cancelled: "{no} cancelled",
       tasks: "Tasks by technician",
       noTasks: "Not scheduled yet. Schedule it on the job board.",
-      noTasksGoods: "A goods order has no tasks; it is delivered with a challan.",
+      noTasksGoods:
+        "A goods order has no tasks; it is delivered with a challan.",
       lines: "Lines",
       timeline: "Lifecycle",
       details: "Details",
@@ -246,12 +261,14 @@ export const stlEn = {
       requestTransfer: "Request transfer",
       requestHint: "{qty} from Central Store",
       show: "Show the {count} items",
+      show_one: "Show the {count} item",
       hide: "Hide the items",
     },
     scenarios: {
       e1: {
         title: "Discount override",
-        summary: "A 12% discount above the advisor's 5% needs the studio manager's PIN",
+        summary:
+          "A 12% discount above the advisor's 5% needs the studio manager's PIN",
         cue1: "{quoteNo} for {nameEn}'s Toyota Allion ({regNo}): paint correction and sealant, {subtotalP} before discount.",
         cue2: "The customer asks for {pct}% off: click Discount, type {pct} (the new total shows {totalP}) and click Apply discount.",
         cue3: "Shuvo's limit is 5%, so the approval dialog opens: choose Arif Mahmud (limit 15%), give a reason and the PIN 1234.",
@@ -272,7 +289,8 @@ export const stlEn = {
       none: "Nothing issued yet. Finishing a task issues its recipe.",
       record: "Extra or return",
       recordTitle: "Record consumables",
-      recordBody: "Extra stock issued to {no}, or unused stock back to the shelf.",
+      recordBody:
+        "Extra stock issued to {no}, or unused stock back to the shelf.",
       qty: "Quantity",
       onHand: "{qty} {unit} of {item} on hand",
       issued: "Extra consumables issued",
@@ -302,7 +320,8 @@ export const stlEn = {
       subtitle: "Tasks for {name} today",
       managerSubtitle: "Every task at the studio today",
       none: "No tasks today",
-      noneHint: "Scheduled tasks appear here as soon as the advisor assigns them.",
+      noneHint:
+        "Scheduled tasks appear here as soon as the advisor assigns them.",
       groups: {
         inProgress: "In progress",
         upNext: "Up next",

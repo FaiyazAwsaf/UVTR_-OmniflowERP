@@ -31,21 +31,30 @@ export function DocLink({
   const allowed = !app || can(`${app}.app.view`)
   const content = (
     <>
-      {showApp && app ? <AppChip app={app} className="text-[0.625rem]" /> : null}
-      <span lang="en" className="font-mono">
+      {showApp && app ? (
+        <AppChip app={app} className="text-[0.625rem]" />
+      ) : null}
+      <span lang="en" className="font-mono whitespace-nowrap">
         {docNo}
       </span>
     </>
   )
   if (!href || !allowed) {
-    return <span className={cn("inline-flex items-center gap-1.5", className)}>{content}</span>
+    return (
+      <span className={cn("inline-flex items-center gap-1.5", className)}>
+        {content}
+      </span>
+    )
   }
   return (
     <Link
       href={href}
       data-testid="doc-link"
       data-doc-type={docType}
-      className={cn("inline-flex items-center gap-1.5 text-link hover:underline", className)}
+      className={cn(
+        "inline-flex items-center gap-1.5 text-link hover:underline",
+        className
+      )}
     >
       {content}
     </Link>

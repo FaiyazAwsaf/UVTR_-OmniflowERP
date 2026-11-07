@@ -3,7 +3,16 @@
 import * as React from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { ArrowLeft, Eye, EyeOff, Info, KeyRound, Lock, LogIn, ShieldAlert } from "lucide-react"
+import {
+  ArrowLeft,
+  Eye,
+  EyeOff,
+  Info,
+  KeyRound,
+  Lock,
+  LogIn,
+  ShieldAlert,
+} from "lucide-react"
 
 import { SimulatedBadge } from "@/components/shared/simulated-badge"
 import { TenantMark } from "@/components/shared/tenant-mark"
@@ -29,7 +38,13 @@ type Failure = Extract<SignInResult, { status: "failed" }>
 
 /** Where a user lands after signing in: `?next=` when safe, else their role's landing route (plan §8). */
 function landingFor(username: string, next: string | null): string {
-  if (next && next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/login")) return next
+  if (
+    next &&
+    next.startsWith("/") &&
+    !next.startsWith("//") &&
+    !next.startsWith("/login")
+  )
+    return next
   const seed = findSeedUser(username.trim().toLowerCase())
   return seed ? ROLE_LANDING[seed.role] : "/home"
 }
@@ -80,8 +95,16 @@ function LoginForm() {
     try {
       const ctx = { db: getCentralDb(), actor: SYSTEM_ACTOR }
       const result = mfaUserId
-        ? await commit(verifyMfa, { userId: mfaUserId, code, windowId: windowKey() }, ctx)
-        : await commit(signIn, { username, password, windowId: windowKey(), method: "password" }, ctx)
+        ? await commit(
+            verifyMfa,
+            { userId: mfaUserId, code, windowId: windowKey() },
+            ctx
+          )
+        : await commit(
+            signIn,
+            { username, password, windowId: windowKey(), method: "password" },
+            ctx
+          )
       finish(result.result)
     } finally {
       setBusy(false)
@@ -114,8 +137,12 @@ function LoginForm() {
       <div className="flex flex-col items-center gap-3 text-center">
         <TenantMark size={56} />
         <div className="min-w-0">
-          <p className="text-[1.0625rem] font-semibold">{tenant.shortName[locale]}</p>
-          <p className="text-xs text-muted-foreground">{t("login.subtitle", { tenant: tenant.shortName[locale] })}</p>
+          <p className="text-[1.0625rem] font-semibold">
+            {tenant.shortName[locale]}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {t("login.subtitle", { tenant: tenant.shortName[locale] })}
+          </p>
         </div>
         <h1 className="sr-only">{t("login.title")}</h1>
       </div>
@@ -132,9 +159,17 @@ function LoginForm() {
       ) : null}
 
       {userId && current && !mfaUserId ? (
-        <p className="rounded-md bg-surface-raised px-3 py-2 text-xs text-muted-foreground" data-testid="login-current">
-          {t("login.alreadySignedIn", { name: locale === "bn" ? current.nameBn : current.nameEn })}{" "}
-          <Link href={landingFor(current.username, null)} className="font-medium text-link hover:underline">
+        <p
+          className="rounded-md bg-surface-raised px-3 py-2 text-xs text-muted-foreground"
+          data-testid="login-current"
+        >
+          {t("login.alreadySignedIn", {
+            name: locale === "bn" ? current.nameBn : current.nameEn,
+          })}{" "}
+          <Link
+            href={landingFor(current.username, null)}
+            className="font-medium text-link hover:underline"
+          >
             {t("login.continue")}
           </Link>
         </p>
@@ -203,11 +238,23 @@ function LoginForm() {
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                aria-label={showPassword ? t("login.hidePassword") : t("login.showPassword")}
-                title={showPassword ? t("login.hidePassword") : t("login.showPassword")}
+                aria-label={
+                  showPassword
+                    ? t("login.hidePassword")
+                    : t("login.showPassword")
+                }
+                title={
+                  showPassword
+                    ? t("login.hidePassword")
+                    : t("login.showPassword")
+                }
                 className="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-md text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/40"
               >
-                {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                {showPassword ? (
+                  <EyeOff className="size-4" />
+                ) : (
+                  <Eye className="size-4" />
+                )}
               </button>
             </div>
           </div>
@@ -226,7 +273,11 @@ function LoginForm() {
               : "text-destructive"
           )}
         >
-          {locked ? <Lock className="mt-0.5 size-4 shrink-0" /> : <ShieldAlert className="mt-0.5 size-4 shrink-0" />}
+          {locked ? (
+            <Lock className="mt-0.5 size-4 shrink-0" />
+          ) : (
+            <ShieldAlert className="mt-0.5 size-4 shrink-0" />
+          )}
           <span>
             {message}
             {failure?.attemptsLeft !== undefined
@@ -240,14 +291,25 @@ function LoginForm() {
         <Button
           type="submit"
           size="lg"
-          disabled={busy || (mfaUserId ? code.length < 1 : !username || !password)}
+          disabled={
+            busy || (mfaUserId ? code.length < 1 : !username || !password)
+          }
           data-testid="login-submit"
         >
           <LogIn />
-          {busy ? t("login.signingIn") : mfaUserId ? t("login.verify") : t("login.submit")}
+          {busy
+            ? t("login.signingIn")
+            : mfaUserId
+              ? t("login.verify")
+              : t("login.submit")}
         </Button>
         {mfaUserId ? (
-          <Button type="button" variant="ghost" onClick={backToPassword} data-testid="login-back">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={backToPassword}
+            data-testid="login-back"
+          >
             <ArrowLeft />
             {t("login.back")}
           </Button>
@@ -259,7 +321,11 @@ function LoginForm() {
           <SimulatedBadge />
           <span>{t("login.simulatedNote")}</span>
         </p>
-        <Link href="/" className="text-sm font-medium text-link hover:underline" data-testid="login-launcher">
+        <Link
+          href="/"
+          className="text-sm font-medium text-link hover:underline"
+          data-testid="login-launcher"
+        >
           {t("login.toLauncher")}
         </Link>
       </div>
@@ -269,7 +335,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="relative flex min-h-svh flex-col items-center justify-center gap-6 bg-background px-4 py-10">
+    <div className="relative flex min-h-svh flex-col items-center justify-center gap-6 bg-background px-4 py-10 [@media(max-height:720px)]:gap-3 [@media(max-height:720px)]:py-4">
       <div className="absolute top-4 right-4 flex items-center gap-1.5">
         <LanguageToggle />
         <ThemeToggle />

@@ -17,7 +17,14 @@ import { nameOf } from "@/core/security/users"
 import { useLocale } from "@/lib/i18n/provider"
 import { cn } from "@/lib/utils"
 
-import { CsvButton, Field, ListTable, Stat, useToday, type Column } from "@/modules/par/components/kit"
+import {
+  CsvButton,
+  Field,
+  ListTable,
+  Stat,
+  useToday,
+  type Column,
+} from "@/modules/par/components/kit"
 
 import { canSeeAccount } from "../lib"
 import { accountBook, type BookRow } from "../queries"
@@ -26,7 +33,7 @@ import { accountBook, type BookRow } from "../queries"
 export function AccountBookView({ accountId }: { accountId: Id }) {
   const db = useDb()
   const today = useToday()
-  const { t, tk, locale, dmy, num } = useLocale()
+  const { t, tk, locale, dmy, num, narration } = useLocale()
   const [from, setFrom] = React.useState("")
   const [to, setTo] = React.useState("")
   const start = from || (today ? addDaysISO(today, -30) : "")
@@ -42,29 +49,93 @@ export function AccountBookView({ accountId }: { accountId: Id }) {
   }, [db, accountId, start, end, can, loading])
 
   if (data === undefined || loading) return null
-  if (data === null) return <EmptyState icon={Landmark} title={t("cab.book.notFound")} action={{ label: t("cab.pages.home"), href: "/cab" }} />
+  if (data === null)
+    return (
+      <EmptyState
+        icon={Landmark}
+        title={t("cab.book.notFound")}
+        action={{ label: t("cab.pages.home"), href: "/cab" }}
+      />
+    )
   const { account, book } = data
   const rows = [...book.rows].reverse()
 
   const columns: Column<BookRow>[] = [
-    { key: "date", header: t("cab.book.colDate"), cell: (r) => <span className="nums">{dmy(r.line.date)}</span> },
+    {
+      key: "date",
+      header: t("cab.book.colDate"),
+      cell: (r) => <span className="nums">{dmy(r.line.date)}</span>,
+    },
     {
       key: "ref",
       header: t("cab.book.colRef"),
       cell: (r) =>
         r.journal?.source && r.journal.source.docType !== "journals" ? (
-          <DocLink docType={r.journal.source.docType} docId={r.journal.source.docId} docNo={r.journal.source.docNo} />
+          <DocLink
+            docType={r.journal.source.docType}
+            docId={r.journal.source.docId}
+            docNo={r.journal.source.docNo}
+          />
         ) : (
           <span lang="en" className="font-mono">
             {r.ref}
           </span>
         ),
     },
-    { key: "narration", header: t("cab.book.colNarration"), hide: "lg", cell: (r) => <span className="line-clamp-1 text-muted-foreground">{r.journal?.narration}</span> },
-    { key: "voucher", header: t("cab.book.colVoucher"), hide: "md", cell: (r) => (r.journal ? <DocLink docType="journals" docId={r.journal.id} docNo={r.journal.journalNo} showApp={false} /> : null) },
-    { key: "in", header: t("cab.book.colReceived"), align: "right", cell: (r) => (r.receivedP ? <MoneyText poisha={r.receivedP} className="font-mono text-success" /> : "") },
-    { key: "out", header: t("cab.book.colPaid"), align: "right", cell: (r) => (r.paidP ? <MoneyText poisha={r.paidP} className="font-mono" /> : "") },
-    { key: "bal", header: t("cab.book.colBalance"), align: "right", hide: "sm", cell: (r) => <MoneyText poisha={r.runningP} className={cn("font-mono", r.runningP < 0 && "text-destructive")} /> },
+    {
+      key: "narration",
+      header: t("cab.book.colNarration"),
+      hide: "lg",
+      cell: (r) => (
+        <span className="line-clamp-1 text-muted-foreground">
+          {narration(r.journal?.narration ?? "")}
+        </span>
+      ),
+    },
+    {
+      key: "voucher",
+      header: t("cab.book.colVoucher"),
+      hide: "md",
+      cell: (r) =>
+        r.journal ? (
+          <DocLink
+            docType="journals"
+            docId={r.journal.id}
+            docNo={r.journal.journalNo}
+            showApp={false}
+          />
+        ) : null,
+    },
+    {
+      key: "in",
+      header: t("cab.book.colReceived"),
+      align: "right",
+      cell: (r) =>
+        r.receivedP ? (
+          <MoneyText poisha={r.receivedP} className="font-mono text-success" />
+        ) : (
+          ""
+        ),
+    },
+    {
+      key: "out",
+      header: t("cab.book.colPaid"),
+      align: "right",
+      cell: (r) =>
+        r.paidP ? <MoneyText poisha={r.paidP} className="font-mono" /> : "",
+    },
+    {
+      key: "bal",
+      header: t("cab.book.colBalance"),
+      align: "right",
+      hide: "sm",
+      cell: (r) => (
+        <MoneyText
+          poisha={r.runningP}
+          className={cn("font-mono", r.runningP < 0 && "text-destructive")}
+        />
+      ),
+    },
   ]
 
   return (
@@ -76,7 +147,14 @@ export function AccountBookView({ accountId }: { accountId: Id }) {
           <CsvButton
             exportKey="cab.export"
             fileName={`book-${account.code}`}
-            rows={book.rows.map((r) => ({ date: r.line.date, reference: r.ref, voucher: r.journal?.journalNo ?? "", receivedP: r.receivedP, paidP: r.paidP, runningP: r.runningP }))}
+            rows={book.rows.map((r) => ({
+              date: r.line.date,
+              reference: r.ref,
+              voucher: r.journal?.journalNo ?? "",
+              receivedP: r.receivedP,
+              paidP: r.paidP,
+              runningP: r.runningP,
+            }))}
             columns={[
               { key: "date", label: t("cab.book.colDate") },
               { key: "reference", label: t("cab.book.colRef") },
@@ -95,12 +173,29 @@ export function AccountBookView({ accountId }: { accountId: Id }) {
         <Field label={t("cab.book.to")} className="w-40">
           <DateField value={end} onChange={setTo} max={today || undefined} />
         </Field>
-        <Stat label={t("cab.book.opening")} value={<MoneyText poisha={book.openingP} />} />
-        <Stat label={t("cab.book.closing")} value={<MoneyText poisha={book.closingP} />} tone="info" testId="book-closing" />
-        <span className="ml-auto text-xs text-muted-foreground">{t("cab.book.count", { count: num(book.rows.length) })}</span>
+        <Stat
+          label={t("cab.book.opening")}
+          value={<MoneyText poisha={book.openingP} />}
+        />
+        <Stat
+          label={t("cab.book.closing")}
+          value={<MoneyText poisha={book.closingP} />}
+          tone="info"
+          testId="book-closing"
+        />
+        <span className="ml-auto text-xs text-muted-foreground">
+          {t("cab.book.count", { count: num(book.rows.length) })}
+        </span>
       </section>
       <section className="surface-card p-4 md:p-5">
-        <ListTable rows={rows} columns={columns} rowKey={(r) => r.line.id} rowTestId="book-row" dense pageSize={40} />
+        <ListTable
+          rows={rows}
+          columns={columns}
+          rowKey={(r) => r.line.id}
+          rowTestId="book-row"
+          dense
+          pageSize={40}
+        />
       </section>
     </div>
   )

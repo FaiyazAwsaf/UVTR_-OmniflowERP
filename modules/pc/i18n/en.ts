@@ -25,9 +25,11 @@ export const pcEn = {
       PC_CODE_TAKEN: "Code {code} is already in use.",
       PC_DATES: "The end date is before the start date.",
       PC_LIST_EMPTY: "Price list {code} has no prices yet.",
-      PC_LIST_NOT_DRAFT: "Price list {code} is published. Revise it as a new draft instead.",
+      PC_LIST_NOT_DRAFT:
+        "Price list {code} is published. Revise it as a new draft instead.",
       PC_PROMO_PCT: "A promotion can take at most 50% off.",
-      PC_PUBLISH_PAST: "A price list can't be published from a past date ({date}).",
+      PC_PUBLISH_PAST:
+        "A price list can't be published from a past date ({date}).",
       PC_RECIPE_DUPLICATE: "An item appears twice in the recipe.",
       PC_RECIPE_RETAIL: "{item} is a retail product, not a consumable.",
     },
@@ -42,27 +44,33 @@ export const pcEn = {
       duration: "Duration (sedan)",
       warranty: "Warranty",
       months: "{count} months",
-      vatNote: "Prices exclude VAT; invoices add VAT per line. Prices are demo values.",
+      months_one: "{count} month",
+      vatNote:
+        "Prices exclude VAT; invoices add VAT per line. Prices are demo values.",
       addOns: "Add-ons",
     },
     service: {
       notFound: "Service not found",
       edit: "Edit service",
       editTitle: "Edit {code}",
-      editBody: "Names, description, warranty and the duration for each class. Selling prices change through price lists.",
+      editBody:
+        "Names, description, warranty and the duration for each class. Selling prices change through price lists.",
       variants: "Variants by class",
       class: "Class",
       about: "Details",
       noWarranty: "No warranty",
       revenue: "Revenue account",
+      duration: "Duration",
       addOns: "Add-ons that apply",
       recipe: "Consumables recipe",
       editBase: "Edit sedan recipe",
       editClass: "Own recipe for {cls}",
-      baseBody: "The sedan quantities; other classes scale them (hatchback 0.85, SUV 1.25, large SUV and MPV 1.5).",
+      baseBody:
+        "The sedan quantities; other classes scale them (hatchback 0.85, SUV 1.25, large SUV and MPV 1.5).",
       classBody: "Rows for this class replace the scaled sedan recipe for it.",
       classOwn: "This class has its own recipe.",
-      classScaled: "The sedan recipe scaled by {factor}, rounded to whole ml or g and 0.05 pc.",
+      classScaled:
+        "The sedan recipe scaled by {factor}, rounded to whole ml or g and 0.05 pc.",
       sedanQty: "Sedan",
       classQty: "{cls}",
       stdCost: "Standard cost",
@@ -78,17 +86,20 @@ export const pcEn = {
       recipeSaved: "Recipe of {code} saved",
     },
     packages: {
-      subtitle: "Bundles of services; on a quote they explode into one line per service",
+      subtitle:
+        "Bundles of services; on a quote they explode into one line per service",
       bundle: "{pct}% off the services",
       fixed: "Fixed price per class",
       list: "List",
       editTitle: "Edit {code}",
-      editBody: "Components and pricing. A bundle takes a percent off; a fixed package has a price per class.",
+      editBody:
+        "Components and pricing. A bundle takes a percent off; a fixed package has a price per class.",
       pct: "Percent off",
       saved: "Package {code} saved",
     },
     lists: {
-      subtitle: "Retail, fleet and dealer prices with effective dates (demo values)",
+      subtitle:
+        "Retail, fleet and dealer prices with effective dates (demo values)",
       all: "Price lists",
       code: "Code",
       basis: "Basis",
@@ -102,13 +113,15 @@ export const pcEn = {
       publishedBy: "Published by {name}",
       draftHint: "Draft: not in force until published",
       adjust: "Adjust by category",
-      adjustBody: "Raise or lower every class price of one category by a percent (rounded to the poisha).",
+      adjustBody:
+        "Raise or lower every class price of one category by a percent (rounded to the poisha).",
       category: "Category",
       pct: "Percent (+ or -)",
       adjusted: "Draft prices adjusted",
       matrixHint: "Yellow: above the retail list price; blue: below it.",
       publishTitle: "Publish {code}",
-      publishBody: "From this date the list is in force; the current list with the same code stays until the day before, then archives.",
+      publishBody:
+        "From this date the list is in force; the current list with the same code stays until the day before, then archives.",
       validFrom: "Valid from",
       nextMonth: "1st of next month",
       published: "Price list {code} published",

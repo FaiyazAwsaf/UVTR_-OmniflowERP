@@ -10,12 +10,31 @@ import { DocStatus } from "@/components/shared/doc-status"
 import { EmptyState } from "@/components/shared/empty-state"
 import { SimulatedBadge } from "@/components/shared/simulated-badge"
 import { Button, buttonVariants } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { sendToPrinter } from "@/core/connectors/printer"
 import { useDb } from "@/core/db/DbProvider"
 import { newId } from "@/core/db/ids"
-import type { Id, ItemCategoryRow, ItemRow, LocationRow, PartyRow, UserRow } from "@/core/db/schema"
+import type {
+  Id,
+  ItemCategoryRow,
+  ItemRow,
+  LocationRow,
+  PartyRow,
+  UserRow,
+} from "@/core/db/schema"
 import { toCsv, downloadCsv } from "@/core/reports/csv"
 import type { DatasetRow } from "@/core/reports/types"
 import { usePermissions } from "@/core/security/useCan"
@@ -59,9 +78,19 @@ export function useScmLookups(): ScmLookups | undefined {
       itemList,
       categories: new Map(categories.map((c) => [c.id, c])),
       locations: new Map(locations.map((l) => [l.id, l])),
-      stockLocations: locations.filter((l) => l.isStockLocation && l.active).sort((a, b) => (a.kind === "store" ? -1 : b.kind === "store" ? 1 : a.code.localeCompare(b.code))),
+      stockLocations: locations
+        .filter((l) => l.isStockLocation && l.active)
+        .sort((a, b) =>
+          a.kind === "store"
+            ? -1
+            : b.kind === "store"
+              ? 1
+              : a.code.localeCompare(b.code)
+        ),
       vendors: new Map(vendors.map((v) => [v.id, v])),
-      vendorList: vendors.filter((v) => v.segment === "supplier").sort((a, b) => a.nameEn.localeCompare(b.nameEn)),
+      vendorList: vendors
+        .filter((v) => v.segment === "supplier")
+        .sort((a, b) => a.nameEn.localeCompare(b.nameEn)),
       users: new Map(users.map((u) => [u.id, u])),
     }
   }, [db])
@@ -73,16 +102,31 @@ export function freshKey(): string {
 }
 
 /** Quantity with its unit: "1,250 ml", "0.5 pc" (Bangla digits in Bangla). */
-export function QtyText({ value, uom, className, signed = false }: { value: number; uom?: string; className?: string; signed?: boolean }) {
-  const { num } = useLocale()
+export function QtyText({
+  value,
+  uom,
+  className,
+  signed = false,
+}: {
+  value: number
+  uom?: string
+  className?: string
+  signed?: boolean
+}) {
+  const { num, unit } = useLocale()
   const v = roundQty(value)
+  // Count units read in the window's language (২০ কিট); symbols stay Latin (ml, kg).
+  const label = uom ? unit(uom) : ""
   return (
     <span className={cn("nums whitespace-nowrap tabular-nums", className)}>
       {signed && v > 0 ? "+" : ""}
       {num(v, { maximumFractionDigits: 3 })}
       {uom ? (
-        <span lang="en" className="ml-1 text-xs text-muted-foreground">
-          {uom}
+        <span
+          lang={label === uom ? "en" : undefined}
+          className="ml-1 text-xs text-muted-foreground"
+        >
+          {label}
         </span>
       ) : null}
     </span>
@@ -90,20 +134,34 @@ export function QtyText({ value, uom, className, signed = false }: { value: numb
 }
 
 /** Item name in the window's language with its SKU below (mono, Latin). */
-export function ItemCell({ item, href, className }: { item: ItemRow | undefined; href?: string; className?: string }) {
+export function ItemCell({
+  item,
+  href,
+  className,
+}: {
+  item: ItemRow | undefined
+  href?: string
+  className?: string
+}) {
   const { locale } = useLocale()
   if (!item) return <span className="text-muted-foreground">-</span>
   const name = nameOf(item, locale)
   return (
     <span className={cn("flex min-w-0 flex-col", className)}>
       {href ? (
-        <Link href={href} className="truncate font-medium text-link hover:underline">
+        <Link
+          href={href}
+          className="truncate font-medium text-link hover:underline"
+        >
           {name}
         </Link>
       ) : (
         <span className="truncate font-medium">{name}</span>
       )}
-      <span lang="en" className="truncate font-mono text-[0.6875rem] text-muted-foreground">
+      <span
+        lang="en"
+        className="truncate font-mono text-[0.6875rem] text-muted-foreground"
+      >
         {item.sku}
       </span>
     </span>
@@ -113,7 +171,8 @@ export function ItemCell({ item, href, className }: { item: ItemRow | undefined;
 /** A user's name by id, in the window's language. */
 export function useUserLabel() {
   const { locale } = useLocale()
-  return (users: Map<Id, UserRow> | undefined, id: Id | undefined) => (id ? userName(users?.get(id), locale) || id : "")
+  return (users: Map<Id, UserRow> | undefined, id: Id | undefined) =>
+    id ? userName(users?.get(id), locale) || id : ""
 }
 
 /** Location filter: "All locations" plus the stock locations (or the given ones). */
@@ -136,15 +195,26 @@ export function LocationSelect({
   const current = locations.find((l) => l.id === value)
   return (
     <Select value={value} onValueChange={(v) => v && onChange(v as Id | "all")}>
-      <SelectTrigger className={cn("min-w-44", className)} data-testid={testId} aria-label={t("ic.ui.location")}>
-        <SelectValue>{() => (current ? nameOf(current, locale) : t("ic.ui.allLocations"))}</SelectValue>
+      <SelectTrigger
+        className={cn("min-w-44", className)}
+        data-testid={testId}
+        aria-label={t("ic.ui.location")}
+      >
+        <SelectValue>
+          {() => (current ? nameOf(current, locale) : t("ic.ui.allLocations"))}
+        </SelectValue>
       </SelectTrigger>
       <SelectContent>
-        {includeAll ? <SelectItem value="all">{t("ic.ui.allLocations")}</SelectItem> : null}
+        {includeAll ? (
+          <SelectItem value="all">{t("ic.ui.allLocations")}</SelectItem>
+        ) : null}
         {locations.map((l) => (
           <SelectItem key={l.id} value={l.id}>
             {nameOf(l, locale)}
-            <span lang="en" className="ml-auto pl-3 font-mono text-xs text-muted-foreground">
+            <span
+              lang="en"
+              className="ml-auto pl-3 font-mono text-xs text-muted-foreground"
+            >
               {l.code}
             </span>
           </SelectItem>
@@ -173,7 +243,11 @@ export function OptionSelect<T extends string>({
   const current = options.find((o) => o.value === value)
   return (
     <Select value={value} onValueChange={(v) => v && onChange(v as T)}>
-      <SelectTrigger className={cn("min-w-36", className)} data-testid={testId} aria-label={label}>
+      <SelectTrigger
+        className={cn("min-w-36", className)}
+        data-testid={testId}
+        aria-label={label}
+      >
         <SelectValue>{() => current?.label ?? label}</SelectValue>
       </SelectTrigger>
       <SelectContent>
@@ -216,17 +290,35 @@ export function ExportCsvButton({
 }
 
 /** Toolbar row above a list: search and filters left, actions right; wraps at 960px. */
-export function ListToolbar({ children, actions }: { children?: React.ReactNode; actions?: React.ReactNode }) {
+export function ListToolbar({
+  children,
+  actions,
+}: {
+  children?: React.ReactNode
+  actions?: React.ReactNode
+}) {
   return (
     <div className="flex w-full flex-wrap items-center gap-2">
       {children}
-      {actions ? <div className="ml-auto flex flex-wrap items-center gap-2">{actions}</div> : null}
+      {actions ? (
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          {actions}
+        </div>
+      ) : null}
     </div>
   )
 }
 
 /** "Not found" inside the shell for an unknown document id. */
-export function NotFound({ title, backHref, backLabel }: { title: string; backHref: string; backLabel: string }) {
+export function NotFound({
+  title,
+  backHref,
+  backLabel,
+}: {
+  title: string
+  backHref: string
+  backLabel: string
+}) {
   return (
     <EmptyState
       icon={FileQuestion}
@@ -262,12 +354,19 @@ export function DocHeader({
   testId?: string
 }) {
   return (
-    <section data-testid={testId} className="surface-card flex flex-col gap-4 p-5 @container/doc">
+    <section
+      data-testid={testId}
+      className="surface-card @container/doc flex flex-col gap-4 p-5"
+    >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex min-w-0 flex-col gap-1">
           <span className="text-xs text-muted-foreground">{kind}</span>
           <div className="flex flex-wrap items-center gap-3">
-            <h1 lang="en" className="font-mono text-xl font-semibold tracking-tight" data-testid="doc-no">
+            <h1
+              lang="en"
+              className="font-mono text-xl font-semibold tracking-tight"
+              data-testid="doc-no"
+            >
               {docNo}
             </h1>
             {status ? <DocStatus status={status} /> : null}
@@ -289,8 +388,16 @@ export function DocHeader({
           </dl>
         ) : null}
       </div>
-      {actions ? <div className="flex flex-wrap items-center gap-2 border-t border-hairline pt-4">{actions}</div> : null}
-      {links ? <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[0.8125rem]">{links}</div> : null}
+      {actions ? (
+        <div className="flex flex-wrap items-center gap-2 border-t border-hairline pt-4">
+          {actions}
+        </div>
+      ) : null}
+      {links ? (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[0.8125rem]">
+          {links}
+        </div>
+      ) : null}
     </section>
   )
 }
@@ -312,11 +419,16 @@ export function PrintPreview({
   const { t } = useLocale()
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[min(62rem,calc(100%-2rem))]" data-testid="print-preview">
+      <DialogContent
+        className="sm:max-w-[min(62rem,calc(100%-2rem))]"
+        data-testid="print-preview"
+      >
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        <div className="-mx-2 max-h-[calc(100svh-11rem)] overflow-auto rounded-md bg-[#d9d9d9] p-3">{children}</div>
+        <div className="-mx-2 max-h-[calc(100svh-11rem)] overflow-auto rounded-md bg-[#d9d9d9] p-3">
+          {children}
+        </div>
         <DialogFooter className="items-center">
           <SimulatedBadge className="mr-auto" />
           <Button
@@ -339,20 +451,49 @@ export function PrintPreview({
 }
 
 /** A labelled form field. */
-export function Field({ label, children, className, hint }: { label: React.ReactNode; children: React.ReactNode; className?: string; hint?: React.ReactNode }) {
+export function Field({
+  label,
+  children,
+  className,
+  hint,
+}: {
+  label: React.ReactNode
+  children: React.ReactNode
+  className?: string
+  hint?: React.ReactNode
+}) {
   return (
-    <label className={cn("flex min-w-0 flex-col gap-1.5 text-[0.8125rem]", className)}>
+    <label
+      className={cn(
+        "flex min-w-0 flex-col gap-1.5 text-[0.8125rem]",
+        className
+      )}
+    >
       <span className="text-xs font-medium text-muted-foreground">{label}</span>
       {children}
-      {hint ? <span className="text-xs text-muted-foreground">{hint}</span> : null}
+      {hint ? (
+        <span className="text-xs text-muted-foreground">{hint}</span>
+      ) : null}
     </label>
   )
 }
 
 /** A turquoise text link used as a row action. */
-export function RowLink({ href, children, testId }: { href: string; children: React.ReactNode; testId?: string }) {
+export function RowLink({
+  href,
+  children,
+  testId,
+}: {
+  href: string
+  children: React.ReactNode
+  testId?: string
+}) {
   return (
-    <Link href={href} data-testid={testId} className={cn(buttonVariants({ variant: "link" }), "text-[0.8125rem]")}>
+    <Link
+      href={href}
+      data-testid={testId}
+      className={cn(buttonVariants({ variant: "link" }), "text-[0.8125rem]")}
+    >
       {children}
     </Link>
   )
@@ -365,7 +506,12 @@ export function LinesTable({
   foot,
   testId,
 }: {
-  head: { label: React.ReactNode; align?: "right"; hide?: "sm" | "md" | "lg"; className?: string }[]
+  head: {
+    label: React.ReactNode
+    align?: "right"
+    hide?: "sm" | "md" | "lg"
+    className?: string
+  }[]
   children: React.ReactNode
   foot?: React.ReactNode
   testId?: string
@@ -390,8 +536,14 @@ export function LinesTable({
             ))}
           </tr>
         </thead>
-        <tbody className="[&_td]:h-11 [&_td]:border-b [&_td]:border-hairline [&_td]:px-3">{children}</tbody>
-        {foot ? <tfoot className="[&_td]:h-10 [&_td]:bg-surface-raised [&_td]:px-3 [&_td]:font-semibold">{foot}</tfoot> : null}
+        <tbody className="[&_td]:h-11 [&_td]:border-b [&_td]:border-hairline [&_td]:px-3">
+          {children}
+        </tbody>
+        {foot ? (
+          <tfoot className="[&_td]:h-10 [&_td]:bg-surface-raised [&_td]:px-3 [&_td]:font-semibold">
+            {foot}
+          </tfoot>
+        ) : null}
       </table>
     </div>
   )
@@ -405,12 +557,25 @@ export const HIDE = {
 } as const
 
 /** Two-column (or one on narrow screens) page body with an optional right rail. */
-export function PageGrid({ main, rail }: { main: React.ReactNode; rail?: React.ReactNode }) {
+export function PageGrid({
+  main,
+  rail,
+}: {
+  main: React.ReactNode
+  rail?: React.ReactNode
+}) {
   return (
     <div className="@container/page">
-      <div className={cn("grid gap-5", rail && "@min-[70rem]/page:grid-cols-[minmax(0,1fr)_20rem]")}>
+      <div
+        className={cn(
+          "grid gap-5",
+          rail && "@min-[70rem]/page:grid-cols-[minmax(0,1fr)_20rem]"
+        )}
+      >
         <div className="flex min-w-0 flex-col gap-5">{main}</div>
-        {rail ? <aside className="flex min-w-0 flex-col gap-5">{rail}</aside> : null}
+        {rail ? (
+          <aside className="flex min-w-0 flex-col gap-5">{rail}</aside>
+        ) : null}
       </div>
     </div>
   )

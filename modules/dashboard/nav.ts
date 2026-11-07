@@ -1,4 +1,4 @@
-import { LayoutDashboard } from "lucide-react"
+import { Gauge } from "lucide-react"
 
 import type { NavItem } from "@/core/security/types"
 
@@ -7,7 +7,7 @@ export const dashboardNav: NavItem[] = [
   {
     href: "/dashboard",
     labelKey: "dashboard.name",
-    icon: LayoutDashboard,
+    icon: Gauge,
     group: "workspace",
     permission: "dashboard.app.view",
     order: 30,

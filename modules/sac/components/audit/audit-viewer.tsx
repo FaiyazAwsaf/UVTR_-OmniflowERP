@@ -4,7 +4,15 @@ import * as React from "react"
 import type { Collection } from "dexie"
 import { useLiveQuery } from "dexie-react-hooks"
 import { useSearchParams } from "next/navigation"
-import { ChevronLeft, ChevronRight, LoaderCircle, Search, ShieldCheck, ShieldX, X } from "lucide-react"
+import {
+  ChevronLeft,
+  ChevronRight,
+  LoaderCircle,
+  Search,
+  ShieldCheck,
+  ShieldX,
+  X,
+} from "lucide-react"
 
 import { AppChip } from "@/components/shared/app-frame"
 import { DateField } from "@/components/shared/date-field"
@@ -20,13 +28,23 @@ import type { AuditAction, AuditRow, UserRow } from "@/core/db/schema"
 import { useLocale } from "@/lib/i18n/provider"
 import { cn } from "@/lib/utils"
 import { actorName, userNameById } from "@/modules/demo/components/labels"
-import { DiffList, MONO_DATA, diffLines } from "@/modules/demo/components/audit/diff"
+import {
+  DiffList,
+  MONO_DATA,
+  diffLines,
+} from "@/modules/demo/components/audit/diff"
 
 import { locationName, personName, useUserDirectory } from "../../queries"
 import { Field, Mono, OptionSelect } from "../kit"
 
 const PAGE_SIZE = 50
-const ACTIONS: AuditAction[] = ["insert", "update", "delete", "blocked", "system"]
+const ACTIONS: AuditAction[] = [
+  "insert",
+  "update",
+  "delete",
+  "blocked",
+  "system",
+]
 const ACTION_TEXT: Record<AuditAction, string> = {
   insert: "text-success",
   update: "text-info",
@@ -47,14 +65,25 @@ type Filters = {
   from: string
   to: string
 }
-const NO_FILTERS: Filters = { user: "all", app: "all", action: "all", entity: "all", doc: "", from: "", to: "" }
+const NO_FILTERS: Filters = {
+  user: "all",
+  app: "all",
+  action: "all",
+  entity: "all",
+  doc: "",
+  from: "",
+  to: "",
+}
 
 /**
  * Newest-first rows for the filters. The most selective indexed filter picks
  * the index; the rest are applied while iterating, and offsets keep a page
  * cheap even with thousands of rows.
  */
-function auditCollection(db: OmniflowDb, f: Filters): Collection<AuditRow, number> {
+function auditCollection(
+  db: OmniflowDb,
+  f: Filters
+): Collection<AuditRow, number> {
   const lo = f.from ? startOfDhakaDay(f.from) : null
   const hi = f.to ? startOfDhakaDay(f.to) + DAY - 1 : null
   let collection: Collection<AuditRow, number>
@@ -66,7 +95,10 @@ function auditCollection(db: OmniflowDb, f: Filters): Collection<AuditRow, numbe
     collection = db.audit.where("actor.userId").equals(f.user).reverse()
     used.add("user")
   } else if (lo !== null || hi !== null) {
-    collection = db.audit.where("at").between(lo ?? 0, hi ?? Number.MAX_SAFE_INTEGER, true, true).reverse()
+    collection = db.audit
+      .where("at")
+      .between(lo ?? 0, hi ?? Number.MAX_SAFE_INTEGER, true, true)
+      .reverse()
     used.add("date")
   } else if (f.app !== "all") {
     collection = db.audit.where("app").equals(f.app).reverse()
@@ -78,20 +110,28 @@ function auditCollection(db: OmniflowDb, f: Filters): Collection<AuditRow, numbe
     collection = db.audit.orderBy("seq").reverse()
   }
   const checks: ((row: AuditRow) => boolean)[] = []
-  if (f.user !== "all" && !used.has("user")) checks.push((row) => (row.actor?.userId ?? "system") === f.user)
-  if (f.app !== "all" && !used.has("app")) checks.push((row) => row.app === f.app)
-  if (f.action !== "all" && !used.has("action")) checks.push((row) => row.action === f.action)
+  if (f.user !== "all" && !used.has("user"))
+    checks.push((row) => (row.actor?.userId ?? "system") === f.user)
+  if (f.app !== "all" && !used.has("app"))
+    checks.push((row) => row.app === f.app)
+  if (f.action !== "all" && !used.has("action"))
+    checks.push((row) => row.action === f.action)
   if ((lo !== null || hi !== null) && !used.has("date")) {
-    checks.push((row) => row.at >= (lo ?? 0) && row.at <= (hi ?? Number.MAX_SAFE_INTEGER))
+    checks.push(
+      (row) => row.at >= (lo ?? 0) && row.at <= (hi ?? Number.MAX_SAFE_INTEGER)
+    )
   }
   const doc = f.doc.trim().toLowerCase()
   if (doc) {
     checks.push(
       (row) =>
-        (!!row.docNo && row.docNo.toLowerCase().includes(doc)) || row.entityId.toLowerCase().includes(doc)
+        (!!row.docNo && row.docNo.toLowerCase().includes(doc)) ||
+        row.entityId.toLowerCase().includes(doc)
     )
   }
-  return checks.length ? collection.filter((row) => checks.every((check) => check(row))) : collection
+  return checks.length
+    ? collection.filter((row) => checks.every((check) => check(row)))
+    : collection
 }
 
 /**
@@ -156,7 +196,10 @@ export function AuditViewer() {
     ])
     return { entities: entities.map(String), apps: apps.map(String) }
   }, [db])
-  const maxSeq = useLiveQuery(async () => (await db.audit.orderBy("seq").last())?.seq ?? 0, [db])
+  const maxSeq = useLiveQuery(
+    async () => (await db.audit.orderBy("seq").last())?.seq ?? 0,
+    [db]
+  )
 
   const update = (patch: Partial<Filters>) => {
     setFilters((current) => ({ ...current, ...patch }))
@@ -175,10 +218,23 @@ export function AuditViewer() {
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE))
   const from = total ? page * PAGE_SIZE + 1 : 0
   const to = Math.min(total, (page + 1) * PAGE_SIZE)
-  const chainState = verifying ? "verifying" : chain ? (chain.ok ? "intact" : "broken") : "unknown"
+  const chainState = verifying
+    ? "verifying"
+    : chain
+      ? chain.ok
+        ? "intact"
+        : "broken"
+      : "unknown"
 
-  const users: (UserRow | { id: "system"; nameEn: string; nameBn: string; username: string })[] = [
-    { id: "system", nameEn: t("sac.audit.system"), nameBn: t("sac.audit.system"), username: "system" },
+  const users: (
+    UserRow | { id: "system"; nameEn: string; nameBn: string; username: string }
+  )[] = [
+    {
+      id: "system",
+      nameEn: t("sac.audit.system"),
+      nameBn: t("sac.audit.system"),
+      username: "system",
+    },
     ...(directory?.users ?? []),
   ]
 
@@ -222,7 +278,11 @@ export function AuditViewer() {
                 {t("sac.audit.jump", { seq: num(broken) })}
               </Button>
             ) : null}
-            <Button onClick={verify} disabled={verifying} data-testid="audit-verify">
+            <Button
+              onClick={verify}
+              disabled={verifying}
+              data-testid="audit-verify"
+            >
               <ShieldCheck />
               {t("sac.audit.verify")}
             </Button>
@@ -231,8 +291,11 @@ export function AuditViewer() {
       />
 
       <div className="surface-card @container flex min-w-0 flex-col gap-3 p-3 md:p-4">
-        <div className="grid grid-cols-1 gap-2 @min-[34rem]:grid-cols-2 @min-[56rem]:grid-cols-4 @min-[84rem]:grid-cols-8">
-          <Field label={t("sac.audit.filters.user")} className="@min-[84rem]:col-span-2">
+        <div className="grid grid-cols-1 gap-2 @min-[34rem]:grid-cols-2 @min-[44rem]:grid-cols-4 @min-[84rem]:grid-cols-8">
+          <Field
+            label={t("sac.audit.filters.user")}
+            className="@min-[84rem]:col-span-2"
+          >
             <SearchPicker
               items={users}
               value={filters.user === "all" ? null : filters.user}
@@ -242,7 +305,8 @@ export function AuditViewer() {
               renderValue={(u) => personName(u, locale)}
               renderItem={(u) => (
                 <span className="flex items-center justify-between gap-2">
-                  {personName(u, locale)} <Mono className="text-muted-foreground">{u.username}</Mono>
+                  {personName(u, locale)}{" "}
+                  <Mono className="text-muted-foreground">{u.username}</Mono>
                 </span>
               )}
               placeholder={t("sac.audit.filters.allUsers")}
@@ -258,20 +322,28 @@ export function AuditViewer() {
               className="w-full"
               options={[
                 { value: "all", label: t("sac.audit.filters.allApps") },
-                ...(facets?.apps ?? []).map((app) => ({ value: app, label: <AppChip app={app} /> })),
+                ...(facets?.apps ?? []).map((app) => ({
+                  value: app,
+                  label: <AppChip app={app} />,
+                })),
               ]}
             />
           </Field>
           <Field label={t("sac.audit.filters.action")}>
             <OptionSelect
               value={filters.action}
-              onChange={(action) => update({ action: action as Filters["action"] })}
+              onChange={(action) =>
+                update({ action: action as Filters["action"] })
+              }
               label={t("sac.audit.filters.action")}
               testId="audit-action"
               className="w-full"
               options={[
                 { value: "all", label: t("sac.audit.filters.allActions") },
-                ...ACTIONS.map((a) => ({ value: a, label: tk(`sac.audit.actions.${a}`) })),
+                ...ACTIONS.map((a) => ({
+                  value: a,
+                  label: tk(`sac.audit.actions.${a}`),
+                })),
               ]}
             />
           </Field>
@@ -284,11 +356,17 @@ export function AuditViewer() {
               className="w-full"
               options={[
                 { value: "all", label: t("sac.audit.filters.allEntities") },
-                ...(facets?.entities ?? []).map((e) => ({ value: e, label: <Mono>{e}</Mono> })),
+                ...(facets?.entities ?? []).map((e) => ({
+                  value: e,
+                  label: <Mono>{e}</Mono>,
+                })),
               ]}
             />
           </Field>
-          <Field label={t("sac.audit.filters.doc")} className="@min-[84rem]:col-span-1">
+          <Field
+            label={t("sac.audit.filters.doc")}
+            className="@min-[84rem]:col-span-1"
+          >
             <div className="relative">
               <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -302,15 +380,28 @@ export function AuditViewer() {
             </div>
           </Field>
           <Field label={t("sac.audit.filters.from")}>
-            <DateField value={filters.from} onChange={(from) => update({ from })} data-testid="audit-from" />
+            <DateField
+              value={filters.from}
+              onChange={(from) => update({ from })}
+              data-testid="audit-from"
+            />
           </Field>
           <Field label={t("sac.audit.filters.to")}>
-            <DateField value={filters.to} onChange={(to) => update({ to })} data-testid="audit-to" />
+            <DateField
+              value={filters.to}
+              onChange={(to) => update({ to })}
+              data-testid="audit-to"
+            />
           </Field>
         </div>
         {filtered ? (
           <div>
-            <Button variant="ghost" size="sm" onClick={() => update(NO_FILTERS)} data-testid="audit-clear">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => update(NO_FILTERS)}
+              data-testid="audit-clear"
+            >
               <X />
               {t("sac.audit.filters.clear")}
             </Button>
@@ -321,28 +412,44 @@ export function AuditViewer() {
           <table className="w-full border-separate border-spacing-0 text-xs">
             <thead>
               <tr>
-                <Th className="w-12 rounded-l-md">{t("sac.audit.columns.seq")}</Th>
+                <Th className="w-12 rounded-l-md">
+                  {t("sac.audit.columns.seq")}
+                </Th>
                 <Th>{t("sac.audit.columns.at")}</Th>
                 <Th>{t("sac.audit.columns.user")}</Th>
                 <Th>{t("sac.audit.columns.action")}</Th>
                 <Th>{t("sac.audit.columns.record")}</Th>
-                <Th className="hidden @[64rem]:table-cell">{t("sac.audit.columns.doc")}</Th>
+                <Th className="hidden @[64rem]:table-cell">
+                  {t("sac.audit.columns.doc")}
+                </Th>
                 <Th>{t("sac.audit.columns.changes")}</Th>
-                <Th className="hidden @[72rem]:table-cell">{t("sac.audit.columns.reason")}</Th>
-                <Th className="hidden @[56rem]:table-cell">{t("sac.audit.columns.app")}</Th>
-                <Th className="hidden rounded-r-md @[60rem]:table-cell">{t("sac.audit.columns.hash")}</Th>
+                <Th className="hidden @[72rem]:table-cell">
+                  {t("sac.audit.columns.reason")}
+                </Th>
+                <Th className="hidden @[56rem]:table-cell">
+                  {t("sac.audit.columns.app")}
+                </Th>
+                <Th className="hidden rounded-r-md @[60rem]:table-cell">
+                  {t("sac.audit.columns.hash")}
+                </Th>
               </tr>
             </thead>
             <tbody>
               {data === undefined ? (
                 <tr>
-                  <td colSpan={10} className="py-8 text-center text-muted-foreground">
+                  <td
+                    colSpan={10}
+                    className="py-8 text-center text-muted-foreground"
+                  >
                     {t("common.loading")}
                   </td>
                 </tr>
               ) : data.rows.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="py-8 text-center text-muted-foreground">
+                  <td
+                    colSpan={10}
+                    className="py-8 text-center text-muted-foreground"
+                  >
                     {t("sac.audit.empty")}
                   </td>
                 </tr>
@@ -353,7 +460,11 @@ export function AuditViewer() {
                     row={row}
                     broken={row.seq === broken}
                     expanded={expanded === row.seq}
-                    onToggle={() => setExpanded((current) => (current === row.seq ? null : row.seq))}
+                    onToggle={() =>
+                      setExpanded((current) =>
+                        current === row.seq ? null : row.seq
+                      )
+                    }
                   />
                 ))
               )}
@@ -363,7 +474,11 @@ export function AuditViewer() {
 
         <footer className="flex items-center justify-end gap-2 text-xs text-muted-foreground">
           <span data-testid="audit-range">
-            {t("sac.audit.range", { from: num(from), to: num(to), total: num(total) })}
+            {t("sac.audit.range", {
+              from: num(from),
+              to: num(to),
+              total: num(total),
+            })}
           </span>
           <Button
             variant="outline"
@@ -397,9 +512,20 @@ export function AuditViewer() {
   )
 }
 
-function Th({ className, children }: { className?: string; children: React.ReactNode }) {
+function Th({
+  className,
+  children,
+}: {
+  className?: string
+  children: React.ReactNode
+}) {
   return (
-    <th className={cn("h-9 bg-surface-raised px-2 text-left font-medium whitespace-nowrap text-muted-foreground", className)}>
+    <th
+      className={cn(
+        "h-9 bg-surface-raised px-2 text-left font-medium whitespace-nowrap text-muted-foreground",
+        className
+      )}
+    >
       {children}
     </th>
   )
@@ -423,7 +549,9 @@ function AuditTableRow({
 }) {
   const { t, tk, num, locale, dmy, time } = useLocale()
   const lines = visibleDiff(row)
-  const approver = row.approvedBy ? userNameById(row.approvedBy, locale, tk) : null
+  const approver = row.approvedBy
+    ? userNameById(row.approvedBy, locale, tk)
+    : null
   const cell = "border-b border-hairline px-2 py-2 align-top"
   return (
     <>
@@ -448,7 +576,12 @@ function AuditTableRow({
             }}
             className="inline-flex items-center gap-0.5 outline-none focus-visible:text-foreground"
           >
-            <ChevronRight className={cn("size-3 transition-transform", expanded && "rotate-90")} />
+            <ChevronRight
+              className={cn(
+                "size-3 transition-transform",
+                expanded && "rotate-90"
+              )}
+            />
             <span lang="en">{row.seq}</span>
           </button>
         </td>
@@ -457,20 +590,31 @@ function AuditTableRow({
           <span className="block text-muted-foreground">{time(row.at)}</span>
         </td>
         <td className={cn(cell, "max-w-44")}>
-          <span className="block truncate font-medium">{actorName(row.actor, locale, tk)}</span>
+          <span className="block truncate font-medium">
+            {actorName(row.actor, locale, tk)}
+          </span>
           {row.actor && row.actor.userId !== "system" ? (
-            <span lang="en" className="block truncate font-mono text-[0.6875rem] text-muted-foreground">
+            <span
+              lang="en"
+              className="block truncate font-mono text-[0.6875rem] text-muted-foreground"
+            >
               {row.actor.username}
             </span>
           ) : null}
         </td>
         <td className={cn(cell, "font-medium", ACTION_TEXT[row.action])}>
           {tk(`sac.audit.actions.${row.action}`)}
-          {row.code ? <span className="block font-mono text-[0.625rem]">{row.code}</span> : null}
+          {row.code ? (
+            <span className="block font-mono text-[0.625rem]">{row.code}</span>
+          ) : null}
         </td>
         <td className={cn(cell, "max-w-40")}>
-          <span className="block truncate font-mono">{row.entity}</span>
-          <span className="block truncate font-mono text-[0.625rem] text-muted-foreground">{row.entityId}</span>
+          <span lang="en" className="block truncate font-mono">
+            {row.entity}
+          </span>
+          <span className="block truncate font-mono text-[0.625rem] text-muted-foreground">
+            {row.entityId}
+          </span>
         </td>
         <td className={cn(cell, "hidden max-w-40 @[64rem]:table-cell")}>
           {row.docNo ? (
@@ -480,24 +624,46 @@ function AuditTableRow({
           ) : null}
         </td>
         <td className={cn(cell, "max-w-[22rem] min-w-40 whitespace-normal")}>
-          <DiffList lines={lines} limit={3} max={28} moreLabel={(count) => t("sac.audit.moreFields", { count: num(count) })} />
+          <DiffList
+            lines={lines}
+            limit={3}
+            max={28}
+            moreLabel={(count) =>
+              t("sac.audit.moreFields", { count: num(count) })
+            }
+          />
         </td>
-        <td className={cn(cell, "hidden max-w-44 whitespace-normal @[72rem]:table-cell")}>
+        <td
+          className={cn(
+            cell,
+            "hidden max-w-44 whitespace-normal @[72rem]:table-cell"
+          )}
+        >
           {row.reason ? <span className="block">{row.reason}</span> : null}
           {approver ? (
-            <span className="block text-[0.6875rem] text-muted-foreground">{t("sac.audit.approvedBy", { name: approver })}</span>
+            <span className="block text-[0.6875rem] text-muted-foreground">
+              {t("sac.audit.approvedBy", { name: approver })}
+            </span>
           ) : null}
         </td>
         <td className={cn(cell, "hidden @[56rem]:table-cell")}>
           <AppChip app={row.app} />
         </td>
-        <td className={cn(cell, "hidden font-mono text-[0.6875rem] text-muted-foreground @[60rem]:table-cell")}>
+        <td
+          className={cn(
+            cell,
+            "hidden font-mono text-[0.6875rem] text-muted-foreground @[60rem]:table-cell"
+          )}
+        >
           {row.hash.slice(0, 8)}
         </td>
       </tr>
       {expanded ? (
         <tr className="bg-card">
-          <td colSpan={10} className="border-b border-hairline px-2 py-2 whitespace-normal">
+          <td
+            colSpan={10}
+            className="border-b border-hairline px-2 py-2 whitespace-normal"
+          >
             <AuditDetails row={row} />
           </td>
         </tr>
@@ -506,7 +672,15 @@ function AuditTableRow({
   )
 }
 
-function Detail({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
+function Detail({
+  label,
+  children,
+  className,
+}: {
+  label: string
+  children: React.ReactNode
+  className?: string
+}) {
   return (
     <>
       <dt className="text-muted-foreground">{label}</dt>
@@ -521,45 +695,72 @@ function AuditDetails({ row }: { row: AuditRow }) {
   const strip = (value: Record<string, unknown> | undefined) => {
     if (!value) return {}
     const out: Record<string, unknown> = {}
-    for (const [key, v] of Object.entries(value)) out[key] = SECRET_FIELDS.has(key) ? "••••••" : v
+    for (const [key, v] of Object.entries(value))
+      out[key] = SECRET_FIELDS.has(key) ? "••••••" : v
     return out
   }
   const pretty = (value: unknown) => JSON.stringify(value ?? {}, null, 2)
   return (
-    <div className="grid gap-3 py-1 @[48rem]:grid-cols-2" data-testid="audit-details">
+    <div
+      className="grid gap-3 py-1 @[48rem]:grid-cols-2"
+      data-testid="audit-details"
+    >
       <div className="min-w-0">
         <p className="micro mb-1">{t("sac.audit.details.before")}</p>
-        <pre className={cn("max-h-56 overflow-auto rounded-md bg-surface-raised p-2 text-[0.6875rem] leading-relaxed", MONO_DATA)}>
+        <pre
+          className={cn(
+            "max-h-56 overflow-auto rounded-md bg-surface-raised p-2 text-[0.6875rem] leading-relaxed",
+            MONO_DATA
+          )}
+        >
           {pretty(strip(row.before))}
         </pre>
       </div>
       <div className="min-w-0">
         <p className="micro mb-1">{t("sac.audit.details.after")}</p>
-        <pre className={cn("max-h-56 overflow-auto rounded-md bg-surface-raised p-2 text-[0.6875rem] leading-relaxed", MONO_DATA)}>
+        <pre
+          className={cn(
+            "max-h-56 overflow-auto rounded-md bg-surface-raised p-2 text-[0.6875rem] leading-relaxed",
+            MONO_DATA
+          )}
+        >
           {pretty(strip(row.after))}
         </pre>
       </div>
       <dl className="grid min-w-0 grid-cols-[7rem_1fr] gap-x-2 gap-y-1 text-[0.6875rem] @[48rem]:col-span-2">
-        <Detail label={t("sac.audit.columns.at")}>{`${dmy(row.at)}, ${time(row.at)}`}</Detail>
-        <Detail label={t("sac.audit.columns.user")}>{actorName(row.actor, locale, tk)}</Detail>
+        <Detail
+          label={t("sac.audit.columns.at")}
+        >{`${dmy(row.at)}, ${time(row.at)}`}</Detail>
+        <Detail label={t("sac.audit.columns.user")}>
+          {actorName(row.actor, locale, tk)}
+        </Detail>
         {row.actor?.sessionId ? (
           <Detail label={t("sac.audit.details.session")} className="font-mono">
             {row.actor.sessionId}
           </Detail>
         ) : null}
         {row.actor?.locationId ? (
-          <Detail label={t("sac.audit.details.location")}>{locationName(row.actor.locationId, locale)}</Detail>
+          <Detail label={t("sac.audit.details.location")}>
+            {locationName(row.actor.locationId, locale)}
+          </Detail>
         ) : null}
         {row.docNo ? (
           <Detail label={t("sac.audit.columns.doc")} className="font-mono">
             {row.docNo}
           </Detail>
         ) : null}
-        {row.reason ? <Detail label={t("sac.audit.columns.reason")}>{row.reason}</Detail> : null}
-        {row.approvedBy ? (
-          <Detail label={t("sac.audit.details.approver")}>{userNameById(row.approvedBy, locale, tk)}</Detail>
+        {row.reason ? (
+          <Detail label={t("sac.audit.columns.reason")}>{row.reason}</Detail>
         ) : null}
-        <Detail label={t("sac.audit.columns.app")} className="font-mono uppercase">
+        {row.approvedBy ? (
+          <Detail label={t("sac.audit.details.approver")}>
+            {userNameById(row.approvedBy, locale, tk)}
+          </Detail>
+        ) : null}
+        <Detail
+          label={t("sac.audit.columns.app")}
+          className="font-mono uppercase"
+        >
           {row.app}
         </Detail>
         <Detail label={t("sac.audit.details.command")} className="font-mono">
@@ -573,7 +774,10 @@ function AuditDetails({ row }: { row: AuditRow }) {
             {row.code}
           </Detail>
         ) : null}
-        <Detail label={t("sac.audit.details.prevHash")} className="font-mono text-muted-foreground">
+        <Detail
+          label={t("sac.audit.details.prevHash")}
+          className="font-mono text-muted-foreground"
+        >
           {row.prevHash}
         </Detail>
         <Detail label={t("sac.audit.details.hash")} className="font-mono">

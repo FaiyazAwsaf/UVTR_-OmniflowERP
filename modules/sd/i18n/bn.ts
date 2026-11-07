@@ -20,9 +20,11 @@ export const sdBn: typeof sdEn = {
       GoodsDelivered: "পণ্য ডেলিভারি: {order}-এর জন্য {no}",
     },
     rules: {
-      SD_NOT_READY: "অর্ডার {no} এখনও মান যাচাই উত্তীর্ণ হয়নি, তাই হস্তান্তর করা যাবে না।",
+      SD_NOT_READY:
+        "অর্ডার {no} এখনও মান যাচাই উত্তীর্ণ হয়নি, তাই হস্তান্তর করা যাবে না।",
       SD_CHECKLIST: "আগে হস্তান্তর তালিকার প্রতিটি বিষয়ে টিক দিন।",
-      SD_NOT_GOODS_ORDER: "অর্ডার {no} ডেলিভারির অপেক্ষায় থাকা পণ্যের অর্ডার নয়।",
+      SD_NOT_GOODS_ORDER:
+        "অর্ডার {no} ডেলিভারির অপেক্ষায় থাকা পণ্যের অর্ডার নয়।",
       SD_OVER_DELIVERY: "{item}-এর মাত্র {open}টি ডেলিভারি বাকি।",
     },
     checklist: {
@@ -61,6 +63,7 @@ export const sdBn: typeof sdEn = {
       qcSummary: "মান যাচাইয়ের সারাংশ",
       passedBy: "উত্তীর্ণ করেছেন {name}",
       attempts: "{count} বার যাচাই",
+      attempts_one: "{count} বার যাচাই",
       photos: "ছবি",
       angles: {
         front: "সামনে",
@@ -99,7 +102,8 @@ export const sdBn: typeof sdEn = {
       none: "এখনও কোনো ডেলিভারি নেই",
       return: "ক্রেডিট নোট",
       noReturns: "কোনো ফেরত নেই",
-      returnsHint: "যে ক্রেডিট নোট ফেরত পণ্য তাকে ফিরিয়ে দেয় তা এখানে দেখা যায়।",
+      returnsHint:
+        "যে ক্রেডিট নোট ফেরত পণ্য তাকে ফিরিয়ে দেয় তা এখানে দেখা যায়।",
       challan: "ডেলিভারি চালান",
       receivedBy: "গ্রহণ করেছেন",
     },

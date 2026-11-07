@@ -20,7 +20,8 @@ export const pmBn: typeof pmEn = {
     events: {
       ItemCreated: "পণ্য {sku} তৈরি হয়েছে",
       ItemUpdated: "পণ্য {sku} হালনাগাদ হয়েছে",
-      ReorderRuleChanged: "{sku}-এর পুনঃক্রয় নিয়ম বদলেছে (সর্বনিম্ন {min}, সর্বোচ্চ {max})",
+      ReorderRuleChanged:
+        "{sku}-এর পুনঃক্রয় নিয়ম বদলেছে (সর্বনিম্ন {min}, সর্বোচ্চ {max})",
     },
     kind: {
       chemical: "রাসায়নিক",
@@ -48,7 +49,8 @@ export const pmBn: typeof pmEn = {
     },
     list: {
       title: "পণ্য তালিকা",
-      subtitle: "রাসায়নিক, ভোগ্যপণ্য ও খুচরা পণ্য, তাদের একক, ব্যাচ ও পুনঃক্রয় নিয়মসহ",
+      subtitle:
+        "রাসায়নিক, ভোগ্যপণ্য ও খুচরা পণ্য, তাদের একক, ব্যাচ ও পুনঃক্রয় নিয়মসহ",
       search: "SKU, নাম বা বারকোড খুঁজুন",
       allCategories: "সব শ্রেণি",
       allKinds: "সব ধরন",
@@ -64,6 +66,7 @@ export const pmBn: typeof pmEn = {
       perUnit: "প্রতি {unit}",
       empty: "কোনো পণ্য মেলেনি",
       count: "{count}টি পণ্য",
+      count_one: "{count}টি পণ্য",
     },
     item: {
       kindLabel: "পণ্য",
@@ -84,6 +87,7 @@ export const pmBn: typeof pmEn = {
       notTracked: "অনুসরণ করা হয় না",
       shelfLife: "সংরক্ষণকাল",
       days: "{count} দিন",
+      days_one: "{count} দিন",
       costs: "খরচ ও মূল্য",
       standardCost: "আদর্শ খরচ (প্রতি {unit})",
       movingAverage: "{location}-এ গড় (প্রতি {unit})",
@@ -171,6 +175,7 @@ export const pmBn: typeof pmEn = {
       dimension: "মাত্রা",
       usedBy: "ব্যবহার",
       itemsCount: "{count}টি পণ্য",
+      itemsCount_one: "{count}টি পণ্য",
       new: "নতুন একক",
       edit: "সম্পাদনা",
       newTitle: "নতুন পরিমাপের একক",
@@ -185,12 +190,16 @@ export const pmBn: typeof pmEn = {
       SKU_FORMAT: "SKU-তে শুধু বড় হাতের অক্ষর, অঙ্ক ও হাইফেন থাকে ({sku})।",
       UOM_UNKNOWN: "অজানা একক {uom}। আগে পরিমাপের এককে যোগ করুন।",
       UOM_FORMAT: "এককের কোডে ছোট হাতের অক্ষর ও অঙ্ক থাকে ({uom})।",
-      RETAIL_PRICE_REQUIRED: "খুচরা পণ্যের বিক্রয় একক ও খুচরা মূল্য লাগবে ({sku})।",
+      RETAIL_PRICE_REQUIRED:
+        "খুচরা পণ্যের বিক্রয় একক ও খুচরা মূল্য লাগবে ({sku})।",
       BASE_UOM_LOCKED: "{sku}-এর মজুদ আছে, তাই মূল একক বদলানো যাবে না।",
-      ITEM_TAG_LOCKED: "{sku}-এর মজুদ আছে, তাই অন্য মজুদ হিসাবের শ্রেণিতে নেওয়া যাবে না।",
+      ITEM_TAG_LOCKED:
+        "{sku}-এর মজুদ আছে, তাই অন্য মজুদ হিসাবের শ্রেণিতে নেওয়া যাবে না।",
       CATEGORY_CODE_TAKEN: "শ্রেণি কোড {code} ইতিমধ্যে ব্যবহৃত।",
-      CATEGORY_TAG_LOCKED: "{code}-এর পণ্যের মজুদ আছে, তাই এর মজুদ হিসাব বদলানো যাবে না।",
-      REORDER_MAX_BELOW_MIN: "সর্বোচ্চ পরিমাণ সর্বনিম্নের চেয়ে কম হতে পারে না।",
+      CATEGORY_TAG_LOCKED:
+        "{code}-এর পণ্যের মজুদ আছে, তাই এর মজুদ হিসাব বদলানো যাবে না।",
+      REORDER_MAX_BELOW_MIN:
+        "সর্বোচ্চ পরিমাণ সর্বনিম্নের চেয়ে কম হতে পারে না।",
     },
   },
 }

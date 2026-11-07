@@ -29,7 +29,8 @@ export const grnEn = {
     progress: "{accepted} accepted · {pending} pending",
     home: {
       title: "Goods awaiting receipt",
-      subtitle: "Issued and partly received purchase orders; receive with lots, QC and quarantine",
+      subtitle:
+        "Issued and partly received purchase orders; receive with lots, QC and quarantine",
       po: "PO",
       vendor: "Vendor",
       location: "Deliver to",
@@ -46,6 +47,7 @@ export const grnEn = {
       rejected: "Rejected",
       value: "Value",
       quarantineHeld: "{count} lots in quarantine",
+      quarantineHeld_one: "{count} lot in quarantine",
     },
     receive: {
       title: "Receive goods",
@@ -99,7 +101,8 @@ export const grnEn = {
     },
     quarantine: {
       title: "Quarantine",
-      subtitle: "Lots held at receipt: accept them into stock at the PO cost (R12) or return them to the vendor",
+      subtitle:
+        "Lots held at receipt: accept them into stock at the PO cost (R12) or return them to the vendor",
       held: "Held",
       decided: "Decided",
       grn: "GRN",
@@ -115,15 +118,18 @@ export const grnEn = {
       return: "Return to vendor",
       accepted: "Lot accepted into stock",
       returned: "Lot returned to the vendor",
-      confirmAccept: "Accept {qty} of {sku} into stock at the PO cost? This posts the inventory and GRNI entry.",
-      confirmReturn: "Return {qty} of {sku} to the vendor? Nothing posts; the held quantity clears.",
+      confirmAccept:
+        "Accept {qty} of {sku} into stock at the PO cost? This posts the inventory and GRNI entry.",
+      confirmReturn:
+        "Return {qty} of {sku} to the vendor? Nothing posts; the held quantity clears.",
       note: "Note (optional)",
       empty: "Nothing is held in quarantine",
     },
     rules: {
       GRN_EMPTY: "Enter an accepted or rejected quantity on at least one line.",
       GRN_WRONG_LINE: "That line is not on this purchase order.",
-      OVER_RECEIPT: "Only {open} of {item} is still open on the PO; {received} entered.",
+      OVER_RECEIPT:
+        "Only {open} of {item} is still open on the PO; {received} entered.",
       REJECT_REASON_REQUIRED: "Choose a QC reason for the rejected {item}.",
       BATCH_REQUIRED: "{item} is batch tracked: enter its batch number.",
       EXPIRY_REQUIRED: "{item} needs an expiry date.",
@@ -133,7 +139,8 @@ export const grnEn = {
     scenarios: {
       e4: {
         title: "Partial GRN with QC reject",
-        summary: "Part of a Gloss & Guard order arrives: 2 kits rejected for short expiry into quarantine, 18 accepted, 6 pending",
+        summary:
+          "Part of a Gloss & Guard order arrives: 2 kits rejected for short expiry into quarantine, 18 accepted, 6 pending",
         cue1: "PO {poNo} to Gloss & Guard ({poTotalP}, approved by Farzana): 24 ceramic coating 2-year kits and 12 finishing polish. 20 kits and the 12 polish arrived.",
         cue2: "Kits ({kitSku}): Accepted 18, Rejected 2, QC reason Short expiry, Hold in quarantine ticked; batch {kitBatch}, expiry {kitExpiry}. The line reads 18 accepted · 6 pending.",
         cue3: "Polish ({polishSku}): keep Accepted 12; batch {polishBatch}, expiry {polishExpiry}.",

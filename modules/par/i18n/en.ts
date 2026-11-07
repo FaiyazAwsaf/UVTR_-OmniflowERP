@@ -46,8 +46,10 @@ export const parEn = {
       vendors: "Vendors",
       onHold: "On hold",
       count: "{count} parties",
+      count_one: "{count} party",
       both: "Customer and vendor",
       days: "{count} days",
+      days_one: "{count} day",
       cash: "Cash",
     },
     type: { individual: "Individual", company: "Company" },
@@ -94,7 +96,8 @@ export const parEn = {
       priceListDefault: "By segment",
       deductsVds: "Deducts VDS at source",
       deductsAit: "Deducts AIT at source",
-      creditLocked: "Credit limit, terms, price list and tax flags need the credit permission (accounts manager).",
+      creditLocked:
+        "Credit limit, terms, price list and tax flags need the credit permission (accounts manager).",
       vendorTax: "Vendor tax category",
       vendorTaxHint: "Sets the AIT and VDS withheld on payments (demo values)",
       vendorTerms: "Vendor terms (days)",
@@ -107,8 +110,14 @@ export const parEn = {
       created: "Party {code} created",
       saved: "Party saved",
       duplicateTitle: "Possible duplicate",
-      duplicateBody: "These parties look the same. Open one instead, or create anyway if this is a different party.",
-      reason: { name: "similar name", phone: "same phone", bin: "same BIN", nid: "same NID" },
+      duplicateBody:
+        "These parties look the same. Open one instead, or create anyway if this is a different party.",
+      reason: {
+        name: "similar name",
+        phone: "same phone",
+        bin: "same BIN",
+        nid: "same NID",
+      },
       sameBinError: "Another party already has this BIN: {party}",
       sameNidError: "Another party already has this NID: {party}",
       kindRequired: "Choose customer, vendor or both",
@@ -140,12 +149,14 @@ export const parEn = {
       holdTitle: "Put {party} on hold",
       blockTitle: "Block {party}",
       releaseTitle: "Release {party}",
-      holdBody: "Credit invoices for this party will need an approved credit override.",
+      holdBody:
+        "Credit invoices for this party will need an approved credit override.",
       releaseBody: "The party can be invoiced on credit again.",
       reason: "Reason",
       holdBanner: "On hold: {reason}",
       blockedBanner: "Blocked: {reason}",
-      autoHold: "Put on hold automatically {date} (invoice more than {days} days past due). A receipt that brings it within terms releases it.",
+      autoHold:
+        "Put on hold automatically {date} (invoice more than {days} days past due). A receipt that brings it within terms releases it.",
       newReceipt: "New receipt",
       statement: "Statement",
       newPayment: "Pay vendor",
@@ -193,7 +204,8 @@ export const parEn = {
       saved: "Vehicle saved",
     },
     registry: {
-      subtitle: "Every customer vehicle; search a registration in Latin or Bangla digits",
+      subtitle:
+        "Every customer vehicle; search a registration in Latin or Bangla digits",
       searchPlaceholder: "Registration, make, model or owner",
       colReg: "Registration",
       colVehicle: "Vehicle",
@@ -203,6 +215,7 @@ export const parEn = {
       colOwner: "Owner",
       colLastService: "Last service",
       count: "{count} vehicles",
+      count_one: "{count} vehicle",
       retired: "Retired",
     },
     print: {
@@ -213,7 +226,8 @@ export const parEn = {
       DUPLICATE_BIN: "Another party ({party}) already has BIN {bin}.",
       DUPLICATE_NID: "Another party ({party}) already has NID {nid}.",
       DUPLICATE_REGISTRATION: "Registration {regNo} is already on file.",
-      CREDIT_EDIT_DENIED: "Credit limit, terms, price list and tax flags need the credit permission.",
+      CREDIT_EDIT_DENIED:
+        "Credit limit, terms, price list and tax flags need the credit permission.",
       NOT_A_CUSTOMER: "{party} is not a customer.",
       PARTY_STATUS_SAME: "The party already has that status.",
       REASON_REQUIRED: "A reason is required.",
@@ -221,7 +235,8 @@ export const parEn = {
     scenarios: {
       E15: {
         title: "Concurrent edit",
-        summary: "Two windows edit the same party; the second save gets the conflict dialog",
+        summary:
+          "Two windows edit the same party; the second save gets the conflict dialog",
         cue1: "Mahbub's pane shows {party} too: click Edit in both panes.",
         cue2: "Here, as Farzana, set the contact phone to {first} and save.",
         cue3: "In Mahbub's pane set it to {second} and save.",

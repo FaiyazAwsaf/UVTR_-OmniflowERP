@@ -26,7 +26,13 @@ import { fiscalYearBounds } from "@/config/brand.config"
 import { addDaysISO } from "@/core/clock/dates"
 import { useDb } from "@/core/db/DbProvider"
 import type { AccountTag } from "@/core/db/schema"
-import { balanceSheet, cashFlow, profitAndLoss, trialBalance } from "@/core/ledger/statements"
+import {
+  balanceSheet,
+  cashFlow,
+  profitAndLoss,
+  trialBalance,
+} from "@/core/ledger/statements"
+import { noBreak } from "@/lib/i18n/format"
 import { useLocale } from "@/lib/i18n/provider"
 import { cn } from "@/lib/utils"
 import { BalanceCheck } from "@/modules/fa/components/common"
@@ -67,16 +73,29 @@ export function FrsHome() {
     if (!ready) return null
     const books = await loadBooks(db, today)
     const fy = fiscalYearBounds(today).startsOn
-    const pl = profitAndLoss(books.accounts, books.lines, { from: `${month}-01`, to: today })
-    const tb = trialBalance(books.accounts, books.lines, { from: `${month}-01`, to: today })
-    const bs = balanceSheet(books.accounts, books.lines, { asOf: today, fiscalYearStart: fy })
-    const cf = cashFlow(books.accounts, books.lines, { from: `${month}-01`, to: today })
+    const pl = profitAndLoss(books.accounts, books.lines, {
+      from: `${month}-01`,
+      to: today,
+    })
+    const tb = trialBalance(books.accounts, books.lines, {
+      from: `${month}-01`,
+      to: today,
+    })
+    const bs = balanceSheet(books.accounts, books.lines, {
+      asOf: today,
+      fiscalYearStart: fy,
+    })
+    const cf = cashFlow(books.accounts, books.lines, {
+      from: `${month}-01`,
+      to: today,
+    })
     const cashIds = new Set(CASH_TAGS.map((tag) => books.map[tag]))
     let cash = 0
     let vatPayable = 0
     for (const l of books.lines) {
       if (cashIds.has(l.accountId)) cash += l.debitP - l.creditP
-      if (l.accountId === books.map.VAT_OUTPUT) vatPayable += l.creditP - l.debitP
+      if (l.accountId === books.map.VAT_OUTPUT)
+        vatPayable += l.creditP - l.debitP
     }
     const [figures, vatReturn, deposits] = await Promise.all([
       loadVatMonth(db, lastMonth),
@@ -87,27 +106,59 @@ export function FrsHome() {
   }, [db, today, month, lastMonth, ready])
 
   const flash = useLiveFlash(data?.tb.totalDebitP)
-  const margin = data && data.pl.netRevenueP ? (data.pl.profitBeforeTaxP / data.pl.netRevenueP) * 100 : 0
+  const margin =
+    data && data.pl.netRevenueP
+      ? (data.pl.profitBeforeTaxP / data.pl.netRevenueP) * 100
+      : 0
   const due = lastMonth ? dueDateOf(lastMonth) : ""
   const overdue = !!due && today > due
 
-  const tiles: { href: string; icon: LucideIcon; title: string; body: string; check?: React.ReactNode; testId: string }[] = [
+  const tiles: {
+    href: string
+    icon: LucideIcon
+    title: string
+    body: string
+    check?: React.ReactNode
+    testId: string
+  }[] = [
     {
       href: "/frs/trial-balance",
       icon: Scale,
       title: t("frs.home.tbTile"),
-      body: t("frs.home.tbTileBody", { amount: money(data?.tb.totalDebitP ?? 0) }),
-      check: data ? <BalanceCheck debitP={data.tb.totalDebitP} creditP={data.tb.totalCreditP} balanced={data.tb.balanced} testId="tb-balanced" /> : null,
+      body: t("frs.home.tbTileBody", {
+        amount: money(data?.tb.totalDebitP ?? 0),
+      }),
+      check: data ? (
+        <BalanceCheck
+          debitP={data.tb.totalDebitP}
+          creditP={data.tb.totalCreditP}
+          balanced={data.tb.balanced}
+          testId="tb-balanced"
+        />
+      ) : null,
       testId: "frs-tile-tb",
     },
-    { href: "/frs/profit-loss", icon: TrendingUp, title: t("frs.home.plTile"), body: t("frs.home.plTileBody"), testId: "frs-tile-pl" },
+    {
+      href: "/frs/profit-loss",
+      icon: TrendingUp,
+      title: t("frs.home.plTile"),
+      body: t("frs.home.plTileBody"),
+      testId: "frs-tile-pl",
+    },
     {
       href: "/frs/balance-sheet",
       icon: FileSpreadsheet,
       title: t("frs.home.bsTile"),
-      body: t("frs.home.bsTileBody", { amount: money(data?.bs.totalAssetsP ?? 0) }),
+      body: t("frs.home.bsTileBody", {
+        amount: money(data?.bs.totalAssetsP ?? 0),
+      }),
       check: data ? (
-        <BalanceCheck debitP={data.bs.totalAssetsP} creditP={data.bs.totalLiabilitiesP + data.bs.totalEquityP} balanced={data.bs.balanced} testId="bs-balanced" />
+        <BalanceCheck
+          debitP={data.bs.totalAssetsP}
+          creditP={data.bs.totalLiabilitiesP + data.bs.totalEquityP}
+          balanced={data.bs.balanced}
+          testId="bs-balanced"
+        />
       ) : null,
       testId: "frs-tile-bs",
     },
@@ -116,23 +167,47 @@ export function FrsHome() {
       icon: Waves,
       title: t("frs.home.cfTile"),
       body: t("frs.home.cfTileBody"),
-      check: data ? <BalanceCheck debitP={data.cf.netChangeP} creditP={data.cf.cashChangeP} balanced={data.cf.balanced} testId="cf-balanced" /> : null,
+      check: data ? (
+        <BalanceCheck
+          debitP={data.cf.netChangeP}
+          creditP={data.cf.cashChangeP}
+          balanced={data.cf.balanced}
+          testId="cf-balanced"
+        />
+      ) : null,
       testId: "frs-tile-cf",
     },
-    { href: "/frs/vat", icon: Receipt, title: t("frs.home.vatTile"), body: t("frs.home.vatTileBody"), testId: "frs-tile-vat" },
-    { href: "/frs/withholding", icon: Landmark, title: t("frs.home.whtTile"), body: t("frs.home.whtTileBody"), testId: "frs-tile-wht" },
+    {
+      href: "/frs/vat",
+      icon: Receipt,
+      title: t("frs.home.vatTile"),
+      body: t("frs.home.vatTileBody"),
+      testId: "frs-tile-vat",
+    },
+    {
+      href: "/frs/withholding",
+      icon: Landmark,
+      title: t("frs.home.whtTile"),
+      body: t("frs.home.whtTileBody"),
+      testId: "frs-tile-wht",
+    },
   ]
 
   return (
     <div className="flex flex-col gap-5" data-testid="frs-home">
-      <PageHeader title={t("frs.home.title")} subtitle={t("frs.home.subtitle")} />
+      <PageHeader
+        title={t("frs.home.title")}
+        subtitle={t("frs.home.subtitle")}
+      />
       <KpiGrid>
         <KpiCard
           variant="cyan"
           icon={ChartColumn}
           title={t("frs.home.kpiRevenue")}
           value={money(data?.pl.netRevenueP ?? 0)}
-          caption={t("frs.home.kpiRevenueCaption", { month: ready ? monthLabel(month) : "" })}
+          caption={t("frs.home.kpiRevenueCaption", {
+            month: ready ? monthLabel(month) : "",
+          })}
           href="/frs/profit-loss"
           className={flash}
         />
@@ -164,7 +239,7 @@ export function FrsHome() {
 
       <div className="grid grid-cols-1 gap-5 min-[1200px]:grid-cols-[minmax(0,1fr)_24rem]">
         <SectionCard title={t("frs.home.statements")}>
-          <div className="grid grid-cols-1 gap-3 @container sm:grid-cols-2">
+          <div className="@container grid grid-cols-1 gap-3 sm:grid-cols-2">
             {tiles.map((tile) => (
               <Link
                 key={tile.href}
@@ -176,11 +251,17 @@ export function FrsHome() {
                   <span className="icon-well flex size-9 items-center justify-center text-link">
                     <tile.icon className="size-4" />
                   </span>
-                  <span className="min-w-0 flex-1 font-semibold">{tile.title}</span>
+                  <span className="min-w-0 flex-1 font-semibold">
+                    {tile.title}
+                  </span>
                   <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
                 </span>
-                <span className="text-xs text-muted-foreground">{tile.body}</span>
-                {tile.check ? <span className="text-sm">{tile.check}</span> : null}
+                <span className="text-xs text-muted-foreground">
+                  {tile.body}
+                </span>
+                {tile.check ? (
+                  <span className="text-sm">{tile.check}</span>
+                ) : null}
               </Link>
             ))}
           </div>
@@ -192,18 +273,39 @@ export function FrsHome() {
           size="sm"
         >
           {lastMonth ? (
-            <p className="text-xs text-muted-foreground">{t("frs.home.taxCalendarHint", { month: monthLabel(lastMonth), date: dmy(due) })}</p>
+            <p className="text-xs text-muted-foreground">
+              {t("frs.home.taxCalendarHint", {
+                month: monthLabel(lastMonth),
+                date: noBreak(dmy(due)),
+              })}
+            </p>
           ) : null}
           <ul className="flex flex-col" data-testid="tax-calendar">
-            <li className="flex items-start justify-between gap-3 border-b border-hairline py-2.5" data-testid="tax-calendar-vat">
+            <li
+              className="flex items-start justify-between gap-3 border-b border-hairline py-2.5"
+              data-testid="tax-calendar-vat"
+            >
               <span className="flex min-w-0 flex-col">
-                <span className="font-medium">{t("frs.home.vatReturn", { month: lastMonth ? monthLabel(lastMonth) : "" })}</span>
-                <span className={cn("text-xs", !data?.vatReturn && overdue ? "text-destructive" : "text-muted-foreground")}>
+                <span className="font-medium">
+                  {t("frs.home.vatReturn", {
+                    month: lastMonth ? monthLabel(lastMonth) : "",
+                  })}
+                </span>
+                <span
+                  className={cn(
+                    "text-xs",
+                    !data?.vatReturn && overdue
+                      ? "text-destructive"
+                      : "text-muted-foreground"
+                  )}
+                >
                   {data?.vatReturn
-                    ? t("frs.common.submittedOn", { date: dmy(data.vatReturn.submittedAt) })
+                    ? t("frs.common.submittedOn", {
+                        date: noBreak(dmy(data.vatReturn.submittedAt)),
+                      })
                     : overdue
-                      ? t("frs.common.overdue", { date: dmy(due) })
-                      : t("frs.common.dueOn", { date: dmy(due) })}
+                      ? t("frs.common.overdue", { date: noBreak(dmy(due)) })
+                      : t("frs.common.dueOn", { date: noBreak(dmy(due)) })}
                 </span>
               </span>
               <span className="flex flex-col items-end gap-1">
@@ -212,21 +314,54 @@ export function FrsHome() {
                     {t("frs.home.submitted")}
                   </StatusText>
                 ) : (
-                  <Link href={`/frs/vat?month=${lastMonth}`} className="text-xs font-medium text-link hover:underline">
+                  <Link
+                    href={`/frs/vat?month=${lastMonth}`}
+                    className="text-xs font-medium text-link hover:underline"
+                  >
                     {t("frs.home.open")}
                   </Link>
                 )}
-                <MoneyText poisha={data?.vatReturn?.netPayableP ?? data?.figures.netPayableP ?? 0} className="font-mono text-xs" />
+                <MoneyText
+                  poisha={
+                    data?.vatReturn?.netPayableP ??
+                    data?.figures.netPayableP ??
+                    0
+                  }
+                  className="font-mono text-xs"
+                />
               </span>
             </li>
             {(["vat", "vds", "ait"] as TaxKind[]).map((kind) => {
-              const d = data ? depositDue(kind, lastMonth, data.figures, data.vatReturn, data.deposits) : { dueP: 0, paidP: 0, leftP: 0 }
-              const amount = kind === "vat" && !data?.vatReturn ? (data?.figures.netPayableP ?? 0) : d.dueP
+              const d = data
+                ? depositDue(
+                    kind,
+                    lastMonth,
+                    data.figures,
+                    data.vatReturn,
+                    data.deposits
+                  )
+                : { dueP: 0, paidP: 0, leftP: 0 }
+              const amount =
+                kind === "vat" && !data?.vatReturn
+                  ? (data?.figures.netPayableP ?? 0)
+                  : d.dueP
               return (
-                <li key={kind} className="flex items-start justify-between gap-3 border-b border-hairline py-2.5 last:border-b-0" data-testid="tax-calendar-deposit" data-kind={kind}>
+                <li
+                  key={kind}
+                  className="flex items-start justify-between gap-3 border-b border-hairline py-2.5 last:border-b-0"
+                  data-testid="tax-calendar-deposit"
+                  data-kind={kind}
+                >
                   <span className="flex min-w-0 flex-col">
-                    <span className="font-medium">{t("frs.home.deposit", { kind: tk(`frs.deposits.kinds.${kind}`), month: lastMonth ? monthLabel(lastMonth) : "" })}</span>
-                    <span className="text-xs text-muted-foreground">{t("frs.common.dueOn", { date: dmy(due) })}</span>
+                    <span className="font-medium">
+                      {t("frs.home.deposit", {
+                        kind: tk(`frs.deposits.kinds.${kind}`),
+                        month: lastMonth ? monthLabel(lastMonth) : "",
+                      })}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {t("frs.common.dueOn", { date: noBreak(dmy(due)) })}
+                    </span>
                   </span>
                   <span className="flex flex-col items-end gap-1">
                     {amount <= 0 ? (
@@ -238,7 +373,10 @@ export function FrsHome() {
                         {t("frs.home.paid")}
                       </StatusText>
                     ) : (
-                      <StatusText tone={overdue ? "destructive" : "warning"} dot>
+                      <StatusText
+                        tone={overdue ? "destructive" : "warning"}
+                        dot
+                      >
                         {t("frs.home.due")}
                       </StatusText>
                     )}
@@ -248,7 +386,10 @@ export function FrsHome() {
               )
             })}
           </ul>
-          <Link href={`/frs/vat?month=${lastMonth}`} className="mt-3 inline-block text-[0.8125rem] font-medium text-link hover:underline">
+          <Link
+            href={`/frs/vat?month=${lastMonth}`}
+            className="mt-3 inline-block text-[0.8125rem] font-medium text-link hover:underline"
+          >
             {t("frs.home.open")}
           </Link>
         </SectionCard>

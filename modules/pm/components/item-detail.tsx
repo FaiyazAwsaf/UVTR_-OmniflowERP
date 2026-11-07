@@ -3,7 +3,15 @@
 import * as React from "react"
 import Link from "next/link"
 import { useLiveQuery } from "dexie-react-hooks"
-import { Barcode as BarcodeIcon, Boxes, Layers, Pencil, Printer, Ruler, Tags } from "lucide-react"
+import {
+  Barcode as BarcodeIcon,
+  Boxes,
+  Layers,
+  Pencil,
+  Printer,
+  Ruler,
+  Tags,
+} from "lucide-react"
 import { toast } from "sonner"
 
 import { Barcode } from "@/components/shared/barcode"
@@ -15,7 +23,14 @@ import { PrintLayout } from "@/components/shared/print-layout"
 import { SectionCard } from "@/components/shared/section-card"
 import { StatusText } from "@/components/shared/status"
 import { Button, buttonVariants } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { tenant } from "@/config/brand.config"
 import { useDb } from "@/core/db/DbProvider"
 import type { Id, LocationRow, ReorderRuleRow } from "@/core/db/schema"
@@ -24,7 +39,14 @@ import { useCan } from "@/core/security/useCan"
 import { nameOf } from "@/core/security/users"
 import { useLocale } from "@/lib/i18n/provider"
 import { cn } from "@/lib/utils"
-import { Field, HIDE, LinesTable, NotFound, PrintPreview, QtyText } from "@/modules/ic/components/scm-ui"
+import {
+  Field,
+  HIDE,
+  LinesTable,
+  NotFound,
+  PrintPreview,
+  QtyText,
+} from "@/modules/ic/components/scm-ui"
 import { stockStatus } from "@/modules/ic/queries"
 
 import { saveReorderRule } from "../commands"
@@ -33,13 +55,16 @@ import { ItemFormDialog } from "./item-form"
 /** /pm/items/[id]: units and conversions, batches and shelf life, reorder rules per location, costs, price, VAT, barcode labels, stock by location. */
 export function ItemDetail({ id }: { id: string }) {
   const db = useDb()
-  const { t, tk, locale, num, dmy } = useLocale()
+  const { t, tk, locale, num, dmy, unit } = useLocale()
   const canEdit = useCan("pm.item.edit")
   const canRule = useCan("pm.reorder.edit")
   const [editing, setEditing] = React.useState(false)
   const [labels, setLabels] = React.useState(false)
   const [copies, setCopies] = React.useState<number | null>(12)
-  const [rule, setRule] = React.useState<{ location: LocationRow; current?: ReorderRuleRow } | null>(null)
+  const [rule, setRule] = React.useState<{
+    location: LocationRow
+    current?: ReorderRuleRow
+  } | null>(null)
 
   const data = useLiveQuery(async () => {
     const item = await db.items.get(id)
@@ -51,26 +76,58 @@ export function ItemDetail({ id }: { id: string }) {
       db.reorderRules.where("itemId").equals(id).toArray(),
       db.stockBalances.where("itemId").equals(id).toArray(),
     ])
-    const batchIds = [...new Set(balances.map((b) => b.batchId).filter(Boolean) as Id[])]
-    const batches = new Map((await db.batches.bulkGet(batchIds)).filter(Boolean).map((b) => [b!.id, b!]))
+    const batchIds = [
+      ...new Set(balances.map((b) => b.batchId).filter(Boolean) as Id[]),
+    ]
+    const batches = new Map(
+      (await db.batches.bulkGet(batchIds))
+        .filter(Boolean)
+        .map((b) => [b!.id, b!])
+    )
     return { item, category, locations, values, rules, balances, batches }
   }, [db, id])
 
   if (data === undefined) return null
-  if (!data.item) return <NotFound title={t("pm.item.notFound")} backHref="/pm" backLabel={t("pm.item.back")} />
+  if (!data.item)
+    return (
+      <NotFound
+        title={t("pm.item.notFound")}
+        backHref="/pm"
+        backLabel={t("pm.item.back")}
+      />
+    )
   const { item, category, locations, values, rules, balances, batches } = data
-  const stockLocations = locations.filter((l) => l.isStockLocation).sort((a, b) => (a.kind === "store" ? -1 : b.kind === "store" ? 1 : a.code.localeCompare(b.code)))
-  const locName = (lid: Id) => nameOf(locations.find((l) => l.id === lid), locale)
-  const onHandBatches = balances.filter((b) => b.qtyBase > 0 || b.quarantinedQty > 0)
+  const stockLocations = locations
+    .filter((l) => l.isStockLocation)
+    .sort((a, b) =>
+      a.kind === "store"
+        ? -1
+        : b.kind === "store"
+          ? 1
+          : a.code.localeCompare(b.code)
+    )
+  const locName = (lid: Id) =>
+    nameOf(
+      locations.find((l) => l.id === lid),
+      locale
+    )
+  const onHandBatches = balances.filter(
+    (b) => b.qtyBase > 0 || b.quarantinedQty > 0
+  )
 
   return (
     <div className="flex flex-col gap-5" data-testid="item-detail">
       <section className="surface-card flex flex-wrap items-start justify-between gap-4 p-5">
         <div className="min-w-0">
-          <span className="text-xs text-muted-foreground">{t("pm.item.kindLabel")}</span>
+          <span className="text-xs text-muted-foreground">
+            {t("pm.item.kindLabel")}
+          </span>
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-xl font-semibold">{nameOf(item, locale)}</h1>
-            <StatusText tone={item.status === "active" ? "success" : "muted"} dot>
+            <StatusText
+              tone={item.status === "active" ? "success" : "muted"}
+              dot
+            >
               {tk(`shared.status.${item.status}`)}
             </StatusText>
           </div>
@@ -84,16 +141,27 @@ export function ItemDetail({ id }: { id: string }) {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {canEdit ? (
-            <Button variant="outline" onClick={() => setEditing(true)} data-testid="item-edit">
+            <Button
+              variant="outline"
+              onClick={() => setEditing(true)}
+              data-testid="item-edit"
+            >
               <Pencil />
               {t("pm.item.edit")}
             </Button>
           ) : null}
-          <Button variant="neutral" onClick={() => setLabels(true)} data-testid="barcode-print">
+          <Button
+            variant="neutral"
+            onClick={() => setLabels(true)}
+            data-testid="barcode-print"
+          >
             <Printer />
             {t("pm.item.printLabels")}
           </Button>
-          <Link href={`/ic/items/${item.id}`} className={buttonVariants({ variant: "neutral" })}>
+          <Link
+            href={`/ic/items/${item.id}`}
+            className={buttonVariants({ variant: "neutral" })}
+          >
             <Layers />
             {t("pm.item.stockCard")}
           </Link>
@@ -105,32 +173,94 @@ export function ItemDetail({ id }: { id: string }) {
           <SectionCard title={t("pm.item.units")} icon={Ruler}>
             <KeyValueGrid
               items={[
-                { label: t("pm.item.baseUnit"), value: item.baseUom, mono: true },
-                { label: t("pm.item.purchaseUnit"), value: t("pm.item.conversion", { unit: item.purchaseUom, qty: num(item.purchaseFactor), base: item.baseUom }) },
+                {
+                  label: t("pm.item.baseUnit"),
+                  value: item.baseUom,
+                  mono: true,
+                },
+                {
+                  label: t("pm.item.purchaseUnit"),
+                  value: t("pm.item.conversion", {
+                    unit: unit(item.purchaseUom),
+                    qty: num(item.purchaseFactor),
+                    base: unit(item.baseUom),
+                  }),
+                },
                 {
                   label: t("pm.item.salesUnit"),
-                  value: item.salesUom ? t("pm.item.conversion", { unit: item.salesUom, qty: num(item.salesFactor ?? 1), base: item.baseUom }) : t("pm.item.noSalesUnit"),
+                  value: item.salesUom
+                    ? t("pm.item.conversion", {
+                        unit: unit(item.salesUom),
+                        qty: num(item.salesFactor ?? 1),
+                        base: unit(item.baseUom),
+                      })
+                    : t("pm.item.noSalesUnit"),
                   wide: true,
                 },
-                { label: t("pm.item.trackBatch"), value: item.trackBatch ? t("pm.item.tracked") : t("pm.item.notTracked") },
-                { label: t("pm.item.shelfLife"), value: item.shelfLifeDays ? t("pm.item.days", { count: num(item.shelfLifeDays) }) : "-" },
+                {
+                  label: t("pm.item.trackBatch"),
+                  value: item.trackBatch
+                    ? t("pm.item.tracked")
+                    : t("pm.item.notTracked"),
+                },
+                {
+                  label: t("pm.item.shelfLife"),
+                  value: item.shelfLifeDays
+                    ? t("pm.item.days", { count: num(item.shelfLifeDays) })
+                    : "-",
+                },
               ]}
             />
           </SectionCard>
-          <SectionCard title={t("pm.item.costs")} icon={Tags} action={<span className="text-xs text-muted-foreground">{t("pm.item.demoValues")}</span>}>
+          <SectionCard
+            title={t("pm.item.costs")}
+            icon={Tags}
+            action={
+              <span className="text-xs text-muted-foreground">
+                {t("pm.item.demoValues")}
+              </span>
+            }
+          >
             <KeyValueGrid
               items={[
-                { label: t("pm.item.standardCost", { unit: item.purchaseUom }), value: <MoneyText poisha={item.standardCostP} /> },
                 {
-                  label: t("pm.item.retailPrice", { unit: item.salesUom ?? item.baseUom }),
-                  value: item.retailPriceP !== undefined ? <MoneyText poisha={item.retailPriceP} /> : "-",
+                  label: t("pm.item.standardCost", {
+                    unit: unit(item.purchaseUom),
+                  }),
+                  value: <MoneyText poisha={item.standardCostP} />,
                 },
-                { label: t("pm.item.vatCategory"), value: tk(`pm.vat.${item.vatCategory}`) },
+                {
+                  label: t("pm.item.retailPrice", {
+                    unit: unit(item.salesUom ?? item.baseUom),
+                  }),
+                  value:
+                    item.retailPriceP !== undefined ? (
+                      <MoneyText poisha={item.retailPriceP} />
+                    ) : (
+                      "-"
+                    ),
+                },
+                {
+                  label: t("pm.item.vatCategory"),
+                  value: tk(`pm.vat.${item.vatCategory}`),
+                },
                 ...stockLocations.map((l) => {
                   const v = values.find((x) => x.locationId === l.id)
                   return {
-                    label: t("pm.item.movingAverage", { location: l.code, unit: item.purchaseUom }),
-                    value: v && v.qtyBase > 0 ? <MoneyText poisha={Math.round((v.valueP / v.qtyBase) * item.purchaseFactor)} /> : t("pm.item.noStock"),
+                    label: t("pm.item.movingAverage", {
+                      location: l.code,
+                      unit: unit(item.purchaseUom),
+                    }),
+                    value:
+                      v && v.qtyBase > 0 ? (
+                        <MoneyText
+                          poisha={Math.round(
+                            (v.valueP / v.qtyBase) * item.purchaseFactor
+                          )}
+                        />
+                      ) : (
+                        t("pm.item.noStock")
+                      ),
                   }
                 }),
               ]}
@@ -139,7 +269,11 @@ export function ItemDetail({ id }: { id: string }) {
         </div>
       </div>
 
-      <SectionCard title={t("pm.item.stockByLocation")} icon={Boxes} subtitle={t("pm.item.reorderRules")}>
+      <SectionCard
+        title={t("pm.item.stockByLocation")}
+        icon={Boxes}
+        subtitle={t("pm.item.reorderRules")}
+      >
         <LinesTable
           head={[
             { label: t("pm.item.location") },
@@ -160,7 +294,10 @@ export function ItemDetail({ id }: { id: string }) {
               <tr key={l.id} data-testid="reorder-rule" data-location={l.code}>
                 <td>
                   {nameOf(l, locale)}{" "}
-                  <span lang="en" className="font-mono text-xs text-muted-foreground">
+                  <span
+                    lang="en"
+                    className="font-mono text-xs text-muted-foreground"
+                  >
                     {l.code}
                   </span>
                 </td>
@@ -170,15 +307,30 @@ export function ItemDetail({ id }: { id: string }) {
                 <td className={cn("text-right", HIDE.sm)}>
                   <MoneyText poisha={v?.valueP ?? 0} />
                 </td>
-                <td className="text-right">{r ? <QtyText value={r.minQty} /> : <span className="text-muted-foreground">-</span>}</td>
-                <td className={cn("text-right", HIDE.sm)}>{r ? <QtyText value={r.maxQty} /> : "-"}</td>
-                <td className={cn("text-right", HIDE.md)}>{r ? <QtyText value={r.reorderQty} /> : "-"}</td>
+                <td className="text-right">
+                  {r ? (
+                    <QtyText value={r.minQty} />
+                  ) : (
+                    <span className="text-muted-foreground">-</span>
+                  )}
+                </td>
+                <td className={cn("text-right", HIDE.sm)}>
+                  {r ? <QtyText value={r.maxQty} /> : "-"}
+                </td>
+                <td className={cn("text-right", HIDE.md)}>
+                  {r ? <QtyText value={r.reorderQty} /> : "-"}
+                </td>
                 <td>
                   <StockBadge status={stockStatus(qty, r?.minQty)} />
                 </td>
                 <td className="text-right">
                   {canRule ? (
-                    <Button variant="link" size="sm" onClick={() => setRule({ location: l, current: r })} data-testid="reorder-rule-edit">
+                    <Button
+                      variant="link"
+                      size="sm"
+                      onClick={() => setRule({ location: l, current: r })}
+                      data-testid="reorder-rule-edit"
+                    >
                       {r ? t("pm.item.editRule") : t("pm.item.addRule")}
                     </Button>
                   ) : null}
@@ -204,16 +356,26 @@ export function ItemDetail({ id }: { id: string }) {
               >
                 {onHandBatches.map((b) => {
                   const batch = b.batchId ? batches.get(b.batchId) : undefined
-                  const status = b.quarantinedQty > 0 ? "quarantine" : batch?.status === "expired" ? "expired" : "ok"
+                  const status =
+                    b.quarantinedQty > 0
+                      ? "quarantine"
+                      : batch?.status === "expired"
+                        ? "expired"
+                        : "ok"
                   return (
                     <tr key={b.id}>
                       <td lang="en" className="font-mono text-xs">
                         {batch?.batchNo ?? t("ic.ui.noBatch")}
                       </td>
                       <td>{locName(b.locationId)}</td>
-                      <td className={HIDE.sm}>{batch?.expiry ? dmy(batch.expiry) : "-"}</td>
+                      <td className={HIDE.sm}>
+                        {batch?.expiry ? dmy(batch.expiry) : "-"}
+                      </td>
                       <td className="text-right">
-                        <QtyText value={b.qtyBase + b.quarantinedQty} uom={item.baseUom} />
+                        <QtyText
+                          value={b.qtyBase + b.quarantinedQty}
+                          uom={item.baseUom}
+                        />
                       </td>
                       <td>
                         {status === "expired" ? (
@@ -221,7 +383,11 @@ export function ItemDetail({ id }: { id: string }) {
                             {tk("shared.status.expired")}
                           </StatusText>
                         ) : (
-                          <StockBadge status={status === "quarantine" ? "quarantine" : "ok"} />
+                          <StockBadge
+                            status={
+                              status === "quarantine" ? "quarantine" : "ok"
+                            }
+                          />
                         )}
                       </td>
                     </tr>
@@ -229,13 +395,18 @@ export function ItemDetail({ id }: { id: string }) {
                 })}
               </LinesTable>
             ) : (
-              <p className="text-[0.8125rem] text-muted-foreground">{t("pm.item.noBatches")}</p>
+              <p className="text-[0.8125rem] text-muted-foreground">
+                {t("pm.item.noBatches")}
+              </p>
             )}
           </SectionCard>
           <SectionCard title={t("pm.item.barcode")} icon={BarcodeIcon}>
             <div className="flex flex-col items-center gap-3">
               <Barcode value={item.barcode || item.sku} />
-              <span lang="en" className="font-mono text-xs text-muted-foreground">
+              <span
+                lang="en"
+                className="font-mono text-xs text-muted-foreground"
+              >
                 {item.sku}
               </span>
             </div>
@@ -244,22 +415,56 @@ export function ItemDetail({ id }: { id: string }) {
       </div>
 
       <ItemFormDialog open={editing} onOpenChange={setEditing} item={item} />
-      <RuleDialog itemId={item.id} unit={item.baseUom} target={rule} onClose={() => setRule(null)} sku={item.sku} />
-      <PrintPreview open={labels} onOpenChange={setLabels} title={t("pm.item.labelsTitle", { sku: item.sku })} docNo={item.sku}>
+      <RuleDialog
+        itemId={item.id}
+        unit={item.baseUom}
+        target={rule}
+        onClose={() => setRule(null)}
+        sku={item.sku}
+      />
+      <PrintPreview
+        open={labels}
+        onOpenChange={setLabels}
+        title={t("pm.item.labelsTitle", { sku: item.sku })}
+        docNo={item.sku}
+      >
         <div className="mb-3 flex items-center gap-3 rounded bg-white/80 p-2 text-[#111]">
           <span className="text-xs">{t("pm.item.copies")}</span>
-          <QtyInput value={copies} onChange={(v) => setCopies(v === null ? null : Math.min(40, Math.max(1, Math.round(v))))} className="w-24" />
+          <QtyInput
+            value={copies}
+            onChange={(v) =>
+              setCopies(
+                v === null ? null : Math.min(40, Math.max(1, Math.round(v)))
+              )
+            }
+            className="w-24"
+          />
         </div>
         <PrintLayout showBrand={false} demoFooter={false}>
           <div className="grid grid-cols-3 gap-2" data-testid="barcode-labels">
             {Array.from({ length: copies ?? 1 }).map((_, i) => (
-              <div key={i} className="flex flex-col items-center gap-0.5 rounded border border-dashed border-[#999] p-2 text-center">
-                <span className="text-[0.625rem] font-semibold">{tenant.shortName.en}</span>
-                <span className="line-clamp-1 text-[0.6875rem]">{item.nameEn}</span>
-                <Barcode value={item.barcode || item.sku} height={34} barWidth={1.2} fontSize={10} plate={false} />
+              <div
+                key={i}
+                className="flex flex-col items-center gap-0.5 rounded border border-dashed border-[#999] p-2 text-center"
+              >
+                <span className="text-[0.625rem] font-semibold">
+                  {tenant.shortName.en}
+                </span>
+                <span className="line-clamp-1 text-[0.6875rem]">
+                  {item.nameEn}
+                </span>
+                <Barcode
+                  value={item.barcode || item.sku}
+                  height={34}
+                  barWidth={1.2}
+                  fontSize={10}
+                  plate={false}
+                />
                 <span lang="en" className="font-mono text-[0.625rem]">
                   {item.sku}
-                  {item.retailPriceP !== undefined ? ` · Tk ${(item.retailPriceP / 100).toFixed(2)}` : ""}
+                  {item.retailPriceP !== undefined
+                    ? ` · Tk ${(item.retailPriceP / 100).toFixed(2)}`
+                    : ""}
                 </span>
               </div>
             ))}
@@ -279,8 +484,13 @@ function RuleDialog(props: {
   onClose: () => void
 }) {
   return (
-    <Dialog open={!!props.target} onOpenChange={(open) => !open && props.onClose()}>
-      <DialogContent data-testid="reorder-rule-dialog">{props.target ? <RuleForm {...props} target={props.target} /> : null}</DialogContent>
+    <Dialog
+      open={!!props.target}
+      onOpenChange={(open) => !open && props.onClose()}
+    >
+      <DialogContent data-testid="reorder-rule-dialog">
+        {props.target ? <RuleForm {...props} target={props.target} /> : null}
+      </DialogContent>
     </Dialog>
   )
 }
@@ -300,9 +510,15 @@ function RuleForm({
 }) {
   const { t, locale } = useLocale()
   const save = useCommand(saveReorderRule)
-  const [min, setMin] = React.useState<number | null>(target.current?.minQty ?? null)
-  const [max, setMax] = React.useState<number | null>(target.current?.maxQty ?? null)
-  const [reorder, setReorder] = React.useState<number | null>(target.current?.reorderQty ?? null)
+  const [min, setMin] = React.useState<number | null>(
+    target.current?.minQty ?? null
+  )
+  const [max, setMax] = React.useState<number | null>(
+    target.current?.maxQty ?? null
+  )
+  const [reorder, setReorder] = React.useState<number | null>(
+    target.current?.reorderQty ?? null
+  )
   return (
     <form
       className="flex flex-col gap-5"
@@ -323,7 +539,11 @@ function RuleForm({
       }}
     >
       <DialogHeader>
-        <DialogTitle>{t("pm.item.ruleTitle", { location: nameOf(target.location, locale) })}</DialogTitle>
+        <DialogTitle>
+          {t("pm.item.ruleTitle", {
+            location: nameOf(target.location, locale),
+          })}
+        </DialogTitle>
         <DialogDescription>
           <span lang="en" className="font-mono">
             {sku}
@@ -333,10 +553,20 @@ function RuleForm({
       </DialogHeader>
       <div className="grid gap-4 sm:grid-cols-3">
         <Field label={t("pm.item.min")}>
-          <QtyInput value={min} onChange={setMin} unit={unit} data-testid="rule-min" />
+          <QtyInput
+            value={min}
+            onChange={setMin}
+            unit={unit}
+            data-testid="rule-min"
+          />
         </Field>
         <Field label={t("pm.item.max")}>
-          <QtyInput value={max} onChange={setMax} unit={unit} data-testid="rule-max" />
+          <QtyInput
+            value={max}
+            onChange={setMax}
+            unit={unit}
+            data-testid="rule-max"
+          />
         </Field>
         <Field label={t("pm.item.reorderQty")}>
           <QtyInput value={reorder} onChange={setReorder} unit={unit} />

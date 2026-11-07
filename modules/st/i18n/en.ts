@@ -45,7 +45,8 @@ export const stEn = {
     },
     home: {
       title: "Stock transactions",
-      subtitle: "Transfers between the Central Store and the studios, adjustments and internal use",
+      subtitle:
+        "Transfers between the Central Store and the studios, adjustments and internal use",
       kpiRequested: "Requests to dispatch",
       kpiTransit: "In transit",
       kpiPending: "Adjustments waiting",
@@ -61,7 +62,8 @@ export const stEn = {
     },
     transfers: {
       title: "Transfers",
-      subtitle: "Request, dispatch with the Mushak 6.5 challan, receive (with discrepancies)",
+      subtitle:
+        "Request, dispatch with the Mushak 6.5 challan, receive (with discrepancies)",
       no: "Transfer",
       date: "Date",
       from: "From",
@@ -79,7 +81,8 @@ export const stEn = {
       submit: "Request transfer",
       requested: "Transfer {no} requested",
       forOrder: "For job order {order}",
-      prefilled: "Filled from the stock check of job order {order}. Check the quantity and request it.",
+      prefilled:
+        "Filled from the stock check of job order {order}. Check the quantity and request it.",
     },
     transfer: {
       kind: "Transfer (Mushak 6.5 challan)",
@@ -101,11 +104,13 @@ export const stEn = {
       note: "Discrepancy note",
       dispatch: "Dispatch",
       dispatchTitle: "Dispatch {no}",
-      dispatchHint: "Stock leaves {location} first expiry first, at its average cost, into transit.",
+      dispatchHint:
+        "Stock leaves {location} first expiry first, at its average cost, into transit.",
       dispatched: "Transfer {no} dispatched",
       receive: "Receive",
       receiveTitle: "Receive {no}",
-      receiveHint: "Count what arrived. A shortfall's value goes to inventory loss.",
+      receiveHint:
+        "Count what arrived. A shortfall's value goes to inventory loss.",
       receivedToast: "Transfer {no} received",
       challan: "Print 6.5 challan",
       cancel: "Cancel request",
@@ -136,7 +141,8 @@ export const stEn = {
     },
     adjustments: {
       title: "Stock adjustments",
-      subtitle: "Damage, expiry, loss, found and corrections; above your limit they wait for approval",
+      subtitle:
+        "Damage, expiry, loss, found and corrections; above your limit they wait for approval",
       no: "Adjustment",
       date: "Date",
       location: "Location",
@@ -159,8 +165,11 @@ export const stEn = {
     },
     issues: {
       title: "Issues",
-      subtitle: "Internal use at a location (with its expense) and the issues to jobs from STL",
+      subtitle:
+        "Internal use at a location (with its expense) and the issues to jobs from STL",
       internal: "Internal use",
+      voucherNo: "Voucher",
+      internalEmpty: "Nothing used internally yet",
       jobs: "Issued to jobs",
       new: "Record internal use",
       newTitle: "Record internal use",
@@ -175,17 +184,20 @@ export const stEn = {
     rules: {
       TRANSFER_SAME_LOCATION: "A transfer needs two different locations.",
       TRANSFER_DUPLICATE_ITEM: "Each item goes on one line of a transfer.",
-      TRANSFER_NOT_REQUESTED: "Transfer {no} is no longer waiting for dispatch.",
+      TRANSFER_NOT_REQUESTED:
+        "Transfer {no} is no longer waiting for dispatch.",
       TRANSFER_NOTHING_SENT: "Transfer {no} has nothing to send.",
       TRANSFER_NOT_DISPATCHED: "Transfer {no} is not in transit.",
-      TRANSFER_OVER_RECEIPT: "More {item} received ({received}) than was sent ({sent}).",
+      TRANSFER_OVER_RECEIPT:
+        "More {item} received ({received}) than was sent ({sent}).",
       ADJUSTMENT_SIGN: "A {reason} adjustment can't move stock that way.",
       ADJUSTMENT_NOT_PENDING: "Adjustment {no} is not waiting for approval.",
     },
     scenarios: {
       e3: {
         title: "Stock-out for a job",
-        summary: "Uttara is short of ceramic coating for a booked SUV job: a transfer from the Central Store with the Mushak 6.5 challan",
+        summary:
+          "Uttara is short of ceramic coating for a booked SUV job: a transfer from the Central Store with the Mushak 6.5 challan",
         cue1: "Order {orderNo} needs {needQty} ml of ceramic coating 2-year ({sku}); Uttara holds {onHandQty} ml. The stock check shows {shortQty} ml short: click Request transfer.",
         cue2: "The request opens filled: Central Store to Uttara Studio, {transferQty} ml, noted for {orderNo}. Click Request transfer.",
         cue3: "In Habib's window (store) open the request in Transfers and click Dispatch: print the Mushak 6.5 challan; the stock is in transit.",

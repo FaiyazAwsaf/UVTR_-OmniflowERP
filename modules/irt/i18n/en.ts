@@ -24,8 +24,10 @@ export const irtEn = {
     rules: {
       IRT_DATASET_UNKNOWN: "Unknown dataset {dataset}.",
       IRT_FIELD_UNKNOWN: "The field {field} is not in {dataset}.",
-      IRT_TOTAL_NOT_NUMERIC: "Only amounts and numbers can be totalled ({field}).",
-      IRT_SYSTEM_REPORT: "{name} is a standard report. Save a copy as your own report instead.",
+      IRT_TOTAL_NOT_NUMERIC:
+        "Only amounts and numbers can be totalled ({field}).",
+      IRT_SYSTEM_REPORT:
+        "{name} is a standard report. Save a copy as your own report instead.",
       IRT_NOT_OWNER: "Only the person who saved {name} can change it.",
       IRT_TIME_INVALID: "Enter the time as HH:MM (24 hours), not {time}.",
       IRT_RECIPIENTS_REQUIRED: "Add at least one recipient.",
@@ -76,16 +78,20 @@ export const irtEn = {
       frs: "FRS statement",
       dataset: "Dataset",
       rows: "{count} rows",
+      rows_one: "{count} row",
       chart: "Chart",
       loading: "Loading",
-      noRowsYet: "No rows yet. This dataset's app may not have recorded anything for these parameters.",
+      noRowsYet:
+        "No rows yet. This dataset's app may not have recorded anything for these parameters.",
       deleted: "Report deleted.",
       deleteTitle: "Delete {name}?",
-      deleteBody: "The saved report and its schedules are removed. Run history stays.",
+      deleteBody:
+        "The saved report and its schedules are removed. Run history stays.",
     },
     catalogue: {
       title: "Report catalogue",
-      subtitle: "Standard reports across the four suites, and the reports people saved. Run one with parameters, a chart, print and CSV.",
+      subtitle:
+        "Standard reports across the four suites, and the reports people saved. Run one with parameters, a chart, print and CSV.",
       search: "Search reports",
       builder: "Report builder",
       saved: "Saved reports",
@@ -95,6 +101,7 @@ export const irtEn = {
       run: "Run",
       owner: "by {name}",
       count: "{count} reports",
+      count_one: "{count} report",
     },
     run: {
       notFound: "No report has the code {code}.",
@@ -109,7 +116,8 @@ export const irtEn = {
       run: "Run report",
       running: "Running",
       frsTitle: "This report is a financial statement",
-      frsBody: "Statements are built in FRS from the general ledger, with comparisons and drill-down to every voucher.",
+      frsBody:
+        "Statements are built in FRS from the general ledger, with comparisons and drill-down to every voucher.",
       saveAs: "Save as my report",
       editReport: "Edit in builder",
       printPreview: "Print preview",
@@ -122,7 +130,8 @@ export const irtEn = {
     },
     builder: {
       title: "Report builder",
-      subtitle: "Pick a dataset, the columns, filters, grouping, totals and a chart. The preview runs on live data as you go.",
+      subtitle:
+        "Pick a dataset, the columns, filters, grouping, totals and a chart. The preview runs on live data as you go.",
       dataset: "Dataset",
       pickDataset: "Choose a dataset",
       columns: "Columns",
@@ -145,7 +154,8 @@ export const irtEn = {
       desc: "Descending",
       range: "Date range",
       preview: "Preview",
-      previewHint: "Runs on live data; changes in other windows show here at once.",
+      previewHint:
+        "Runs on live data; changes in other windows show here at once.",
       save: "Save report",
       saveTitle: "Save the report",
       nameEn: "Name (English)",
@@ -163,7 +173,8 @@ export const irtEn = {
     },
     schedules: {
       title: "Schedules",
-      subtitle: "Reports emailed on a timetable: daily, on Sundays, or on the 1st of the month (simulated email).",
+      subtitle:
+        "Reports emailed on a timetable: daily, on Sundays, or on the 1st of the month (simulated email).",
       new: "New schedule",
       columns: {
         report: "Report",
@@ -181,10 +192,12 @@ export const irtEn = {
       },
       at: "{frequency} at {time}",
       recipientsCount: "{count} recipients",
+      recipientsCount_one: "{count} recipient",
       never: "Not yet",
       paused: "Paused",
       send: "Send now",
       sent: "{name} emailed to {count} recipients.",
+      sent_one: "{name} emailed to {count} recipient.",
       empty: "No schedules yet.",
       formNew: "New schedule",
       formEdit: "Edit schedule",
@@ -221,11 +234,13 @@ export const irtEn = {
       deleted: "Deleted report",
       empty: "No runs yet. Run a report from the catalogue.",
       filters: "{count} filters",
+      filters_one: "{count} filter",
     },
     scenarios: {
       E16: {
         title: "Report builder",
-        summary: "Revenue by service category and studio: build, chart, save, export (IRT)",
+        summary:
+          "Revenue by service category and studio: build, chart, save, export (IRT)",
         cue1: "New report: dataset Invoice lines; columns Category, Location and Net.",
         cue2: "Date range: last 30 days; group by Category, then Location; total the Net.",
         cue3: "Chart: bar. The preview follows every change.",

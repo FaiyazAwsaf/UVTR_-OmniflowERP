@@ -3,7 +3,14 @@
 import * as React from "react"
 import Link from "next/link"
 import { useLiveQuery } from "dexie-react-hooks"
-import { BookCheck, FilePen, FileStack, Hourglass, Plus, Scale } from "lucide-react"
+import {
+  BookCheck,
+  FilePen,
+  FileStack,
+  Hourglass,
+  Plus,
+  Scale,
+} from "lucide-react"
 
 import { DocLink } from "@/components/shared/doc-link"
 import { DocStatus } from "@/components/shared/doc-status"
@@ -43,16 +50,33 @@ export function FaHome() {
   const data = useLiveQuery(async () => {
     if (today < "2000") return null
     const period = await db.periods.where("month").equals(month).first()
-    const monthJournals = period ? await db.journals.where("periodId").equals(period.id).toArray() : []
-    const pending = await db.journals.where("status").equals("pending-approval").toArray()
+    const monthJournals = period
+      ? await db.journals.where("periodId").equals(period.id).toArray()
+      : []
+    const pending = await db.journals
+      .where("status")
+      .equals("pending-approval")
+      .toArray()
     const drafts = await db.journals.where("status").equals("draft").toArray()
-    const recent = await db.journals.orderBy("date").reverse().limit(40).toArray()
+    const recent = await db.journals
+      .orderBy("date")
+      .reverse()
+      .limit(40)
+      .toArray()
     const accounts = await db.accounts.toArray()
-    const lines = await db.journalLines.where("date").belowOrEqual(today).toArray()
+    const lines = await db.journalLines
+      .where("date")
+      .belowOrEqual(today)
+      .toArray()
     const tb = trialBalance(accounts, lines, { from: `${month}-01`, to: today })
-    const periods = (await db.periods.orderBy("startsOn").toArray()).filter((p) => p.startsOn <= today).slice(-2).reverse()
+    const periods = (await db.periods.orderBy("startsOn").toArray())
+      .filter((p) => p.startsOn <= today)
+      .slice(-2)
+      .reverse()
     return {
-      postedThisMonth: monthJournals.filter((j) => j.status === "posted" || j.status === "reversed"),
+      postedThisMonth: monthJournals.filter(
+        (j) => j.status === "posted" || j.status === "reversed"
+      ),
       pending: pending.sort((a, b) => b.updatedAt - a.updatedAt),
       drafts: drafts.sort((a, b) => b.updatedAt - a.updatedAt),
       recent: recent
@@ -60,13 +84,15 @@ export function FaHome() {
         .sort((a, b) => (b.postedAt ?? 0) - (a.postedAt ?? 0))
         .slice(0, 12),
       tb,
-      accountsCount: tb.rows.filter((r) => r.openingP || r.debitP || r.creditP).length,
+      accountsCount: tb.rows.filter((r) => r.openingP || r.debitP || r.creditP)
+        .length,
       periods,
     }
   }, [db, today, month])
 
   const flash = useLiveFlash(data?.tb.totalDebitP)
-  const postedToday = data?.postedThisMonth.filter((j) => j.date === today).length ?? 0
+  const postedToday =
+    data?.postedThisMonth.filter((j) => j.date === today).length ?? 0
   const tbBalanced = data ? data.tb.balanced : true
 
   return (
@@ -76,7 +102,11 @@ export function FaHome() {
         subtitle={t("fa.home.subtitle")}
         actions={
           canCreate ? (
-            <Button nativeButton={false} render={<Link href="/fa/journals/new" />} data-testid="fa-new-voucher">
+            <Button
+              nativeButton={false}
+              render={<Link href="/fa/journals/new" />}
+              data-testid="fa-new-voucher"
+            >
               <Plus />
               {t("fa.home.newVoucher")}
             </Button>
@@ -113,8 +143,12 @@ export function FaHome() {
           variant="purple"
           icon={Scale}
           title={t("fa.home.kpiTb")}
-          value={tbBalanced ? `${t("fa.home.tbBalanced")} ✓` : t("fa.home.tbOff")}
-          caption={t("fa.home.kpiTbCaption", { amount: money(data?.tb.totalDebitP ?? 0) })}
+          value={
+            tbBalanced ? `${t("fa.home.tbBalanced")} ✓` : t("fa.home.tbOff")
+          }
+          caption={t("fa.home.kpiTbCaption", {
+            amount: money(data?.tb.totalDebitP ?? 0),
+          })}
           href="/frs/trial-balance"
           className={flash}
         />
@@ -122,22 +156,52 @@ export function FaHome() {
 
       <div className="grid grid-cols-1 gap-5 min-[1200px]:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="flex min-w-0 flex-col gap-5">
-          <SectionCard title={t("fa.home.pendingTitle")} seeAllHref="/fa/journals?status=pending-approval" icon={Hourglass}>
+          <SectionCard
+            title={t("fa.home.pendingTitle")}
+            seeAllHref="/fa/journals?status=pending-approval"
+            icon={Hourglass}
+          >
             {data && data.pending.length ? (
-              <JournalList rows={data.pending.slice(0, 6)} testId="fa-home-pending" />
+              <JournalList
+                rows={data.pending.slice(0, 6)}
+                testId="fa-home-pending"
+              />
             ) : (
-              <EmptyState icon={Hourglass} title={t("fa.home.pendingEmpty")} size="sm" />
+              <EmptyState
+                icon={Hourglass}
+                title={t("fa.home.pendingEmpty")}
+                size="sm"
+              />
             )}
           </SectionCard>
-          <SectionCard title={t("fa.home.draftsTitle")} seeAllHref="/fa/journals?status=draft" icon={FilePen}>
+          <SectionCard
+            title={t("fa.home.draftsTitle")}
+            seeAllHref="/fa/journals?status=draft"
+            icon={FilePen}
+          >
             {data && data.drafts.length ? (
-              <JournalList rows={data.drafts.slice(0, 6)} testId="fa-home-drafts" />
+              <JournalList
+                rows={data.drafts.slice(0, 6)}
+                testId="fa-home-drafts"
+              />
             ) : (
-              <EmptyState icon={FilePen} title={t("fa.home.draftsEmpty")} size="sm" />
+              <EmptyState
+                icon={FilePen}
+                title={t("fa.home.draftsEmpty")}
+                size="sm"
+              />
             )}
           </SectionCard>
-          <SectionCard title={t("fa.home.recentTitle")} subtitle={t("fa.home.recentHint")} seeAllHref="/fa/journals" icon={FileStack}>
-            <ul className="flex flex-col @container" data-testid="fa-home-recent">
+          <SectionCard
+            title={t("fa.home.recentTitle")}
+            subtitle={t("fa.home.recentHint")}
+            seeAllHref="/fa/journals"
+            icon={FileStack}
+          >
+            <ul
+              className="@container flex flex-col"
+              data-testid="fa-home-recent"
+            >
               {(data?.recent ?? []).map((j) => (
                 <RecentRow key={j.id} journal={j} />
               ))}
@@ -146,7 +210,13 @@ export function FaHome() {
         </div>
 
         <div className="flex flex-col gap-5">
-          <SectionCard title={t("fa.home.tbTitle")} icon={Scale} seeAllHref="/frs/trial-balance" seeAllLabel={t("fa.home.openTb")} size="sm">
+          <SectionCard
+            title={t("fa.home.tbTitle")}
+            icon={Scale}
+            seeAllHref="/frs/trial-balance"
+            seeAllLabel={t("fa.home.openTb")}
+            size="sm"
+          >
             <div className={cn("flex flex-col gap-2 rounded-md", flash)}>
               <BalanceCheck
                 debitP={data?.tb.totalDebitP ?? 0}
@@ -164,19 +234,35 @@ export function FaHome() {
               </p>
             </div>
           </SectionCard>
-          <SectionCard title={t("fa.home.periodsTitle")} subtitle={t("fa.home.periodsHint")} seeAllHref="/fa/periods" seeAllLabel={t("fa.home.closeLink")} size="sm">
+          <SectionCard
+            title={t("fa.home.periodsTitle")}
+            subtitle={t("fa.home.periodsHint")}
+            seeAllHref="/fa/periods"
+            seeAllLabel={t("fa.home.closeLink")}
+            size="sm"
+          >
             <ul className="flex flex-col" data-testid="fa-home-periods">
               {(data?.periods ?? []).map((p) => (
-                <li key={p.id} className="flex items-center justify-between gap-3 border-b border-hairline py-2 last:border-b-0">
+                <li
+                  key={p.id}
+                  className="flex items-center justify-between gap-3 border-b border-hairline py-2 last:border-b-0"
+                >
                   <span className="flex flex-col">
                     <span className="font-medium">{monthLabel(p.month)}</span>
-                    <span lang="en" className="font-mono text-xs text-muted-foreground">
+                    <span
+                      lang="en"
+                      className="font-mono text-xs text-muted-foreground"
+                    >
                       {p.code}
                     </span>
                   </span>
                   <span className="flex flex-col items-end gap-0.5">
                     <DocStatus status={p.status} />
-                    {p.closedBy ? <span className="text-[0.6875rem] text-muted-foreground">{userName(users.get(p.closedBy), locale)}</span> : null}
+                    {p.closedBy ? (
+                      <span className="text-[0.6875rem] text-muted-foreground">
+                        {userName(users.get(p.closedBy), locale)}
+                      </span>
+                    ) : null}
                   </span>
                 </li>
               ))}
@@ -189,12 +275,15 @@ export function FaHome() {
 }
 
 function JournalList({ rows, testId }: { rows: JournalRow[]; testId: string }) {
-  const { dmy, locale } = useLocale()
+  const { dmy, locale, narration } = useLocale()
   const users = useUserMap()
   return (
     <ul className="flex flex-col" data-testid={testId}>
       {rows.map((j) => (
-        <li key={j.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-hairline py-2 text-[0.8125rem] last:border-b-0">
+        <li
+          key={j.id}
+          className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-hairline py-2 text-[0.8125rem] last:border-b-0"
+        >
           <Link
             href={`/fa/journals/${j.id}`}
             lang="en"
@@ -205,8 +294,12 @@ function JournalList({ rows, testId }: { rows: JournalRow[]; testId: string }) {
             {j.journalNo}
           </Link>
           <span className="nums text-muted-foreground">{dmy(j.date)}</span>
-          <span className="min-w-0 flex-1 truncate">{j.narration}</span>
-          <span className="text-xs text-muted-foreground">{userName(users.get(j.preparedBy), locale)}</span>
+          <span className="min-w-0 flex-1 truncate">
+            {narration(j.narration)}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {userName(users.get(j.preparedBy), locale)}
+          </span>
           <MoneyText poisha={j.totalP} className="font-mono" />
           <DocStatus status={j.status} />
         </li>
@@ -219,14 +312,30 @@ function RecentRow({ journal: j }: { journal: JournalRow }) {
   const { t, tk, dmy } = useLocale()
   const flash = useFlashOnChange(j.version)
   return (
-    <li className={cn("flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-hairline py-2 text-[0.8125rem] last:border-b-0", flash)}>
-      <DocLink docType="journals" docId={j.id} docNo={j.journalNo} showApp={false} />
-      <span className="hidden text-xs text-muted-foreground @[36rem]:inline">{tk(`fa.voucherTypes.${j.voucherType}`)}</span>
+    <li
+      className={cn(
+        "flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-hairline py-2 text-[0.8125rem] last:border-b-0",
+        flash
+      )}
+    >
+      <DocLink
+        docType="journals"
+        docId={j.id}
+        docNo={j.journalNo}
+        showApp={false}
+      />
+      <span className="hidden text-xs text-muted-foreground @[36rem]:inline">
+        {tk(`fa.voucherTypes.${j.voucherType}`)}
+      </span>
       <span className="nums text-muted-foreground">{dmy(j.date)}</span>
       <span className="min-w-0 flex-1 truncate">
         {j.source && j.source.docType !== "journals" ? (
           <span data-testid="drill-link">
-            <DocLink docType={j.source.docType} docId={j.source.docId} docNo={j.source.docNo} />
+            <DocLink
+              docType={j.source.docType}
+              docId={j.source.docId}
+              docNo={j.source.docNo}
+            />
           </span>
         ) : (
           <span className="text-muted-foreground">{t("fa.common.manual")}</span>

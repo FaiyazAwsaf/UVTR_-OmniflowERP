@@ -7,7 +7,12 @@ import { motion } from "motion/react"
 import { LayoutGrid, LogOut, PanelLeftClose, PanelLeftOpen } from "lucide-react"
 
 import { ScrollFade } from "@/components/motion/scroll-fade"
-import { activeHref, groupLabelKey, groupNav, navFor } from "@/components/shell/nav"
+import {
+  activeHref,
+  groupLabelKey,
+  groupNav,
+  navFor,
+} from "@/components/shell/nav"
 import { useNavCounts } from "@/components/shell/nav-counts"
 import { useHomeRoute } from "@/components/shell/access"
 import { useSignOut } from "@/components/shell/use-sign-out"
@@ -26,7 +31,7 @@ import { useLocale } from "@/lib/i18n/provider"
 import { SIDEBAR_RAIL_BELOW_PX, useUi } from "@/lib/store"
 
 /** Expanded and rail widths (rem, so they follow the UI scale). */
-export const SIDEBAR_WIDTH = "14.5rem"
+export const SIDEBAR_WIDTH = "16.5rem"
 export const SIDEBAR_RAIL_WIDTH = "4rem"
 
 /** Whether this window's sidebar is currently the icon rail. */
@@ -40,7 +45,13 @@ export function useSidebarCollapsed(): boolean {
  * "UVTR_" in white and "OmniflowERP" in turquoise (D15), with the outlined
  * package chip "SME" (ui_guidelines.md §3).
  */
-export function Wordmark({ className, chip = true }: { className?: string; chip?: boolean }) {
+export function Wordmark({
+  className,
+  chip = true,
+}: {
+  className?: string
+  chip?: boolean
+}) {
   return (
     <span className="inline-flex items-center gap-1.5">
       <span
@@ -88,7 +99,9 @@ export function AppSidebar() {
   const doSignOut = useSignOut()
   const pillId = React.useId()
 
-  const toggleLabel = collapsed ? t("shell.sidebar.expand") : t("shell.sidebar.collapse")
+  const toggleLabel = collapsed
+    ? t("shell.sidebar.expand")
+    : t("shell.sidebar.collapse")
 
   return (
     <motion.aside
@@ -120,7 +133,7 @@ export function AppSidebar() {
               <span className="text-primary">O</span>
             </span>
           ) : (
-            // Sized so the wordmark and its SME chip fit the 232px sidebar.
+            // Sized so the wordmark and its SME chip fit the sidebar.
             <Wordmark className="text-[1.0625rem]" />
           )}
         </Link>
@@ -131,11 +144,18 @@ export function AppSidebar() {
           {groups.map((group) => (
             <div key={group.group}>
               {collapsed ? (
-                <div aria-hidden className="mx-auto mb-2 h-px w-6 bg-sidebar-border" />
+                <div
+                  aria-hidden
+                  className="mx-auto mb-2 h-px w-6 bg-sidebar-border"
+                />
               ) : (
                 <div
                   className="truncate px-2.5 pb-1.5 text-[0.8125rem] text-muted-foreground"
-                  title={group.group === "workspace" ? undefined : tk(`suites.${group.group}.name`)}
+                  title={
+                    group.group === "workspace"
+                      ? undefined
+                      : tk(`suites.${group.group}.name`)
+                  }
                 >
                   {tk(groupLabelKey(group.group))}
                 </div>
@@ -260,9 +280,15 @@ function NavRow({
   // A badge that moves because of another window's commit flashes the row.
   const flash = useSyncFlash(count)
   const slug = item.app ?? item.href.slice(1).replace(/\//g, "-")
+  // In a short window the rail scrolls: keep the open app in view.
+  const ref = React.useRef<HTMLAnchorElement>(null)
+  React.useEffect(() => {
+    if (active) ref.current?.scrollIntoView({ block: "center" })
+  }, [active, collapsed])
 
   const link = (
     <Link
+      ref={ref}
       href={item.href}
       data-testid={`nav-${slug}`}
       aria-current={active ? "page" : undefined}
@@ -302,7 +328,9 @@ function NavRow({
           data-testid={`app-chip-${item.app}`}
           className={cn(
             "relative z-10 shrink-0 rounded-full px-1.5 py-px font-mono text-[0.6875rem] leading-tight font-semibold uppercase",
-            active ? "bg-primary-foreground/15" : "bg-surface-raised text-sidebar-foreground/90"
+            active
+              ? "bg-primary-foreground/15"
+              : "bg-surface-raised text-sidebar-foreground/90"
           )}
         >
           {item.app}

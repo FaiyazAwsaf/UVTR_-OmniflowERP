@@ -24,12 +24,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { findSeedUser, ROLE_DESIGNATION, ROLE_ORDER, SEED_USERS, type SeedUser } from "@/core/security/seed-users"
+import {
+  findSeedUser,
+  ROLE_DESIGNATION,
+  ROLE_ORDER,
+  SEED_USERS,
+  type SeedUser,
+} from "@/core/security/seed-users"
 import { windowKey } from "@/core/session/windowId"
+import { useSession } from "@/core/session/session"
 import { useLocale } from "@/lib/i18n/provider"
 import { cn } from "@/lib/utils"
 
-import { DEMO_LAYOUT, openWindow, userUrl, WALL_COMPANION, windowNameFor, type WallCompanionMessage } from "../launcher/windows"
+import {
+  DEMO_LAYOUT,
+  openWindow,
+  userUrl,
+  WALL_COMPANION,
+  windowNameFor,
+  type WallCompanionMessage,
+} from "../launcher/windows"
 import { ROLE_ICONS } from "../role-icons"
 
 /** Default panes: Advisor (GUL), Technician (GUL), Cashier (GUL), Accountant (plan §9). */
@@ -37,7 +51,8 @@ const DEFAULT_PANES = DEMO_LAYOUT
 
 const storageKey = () => `of:wall:${windowKey()}`
 
-const userName = (u: SeedUser, locale: "en" | "bn") => (locale === "bn" ? u.nameBn : u.nameEn)
+const userName = (u: SeedUser, locale: "en" | "bn") =>
+  locale === "bn" ? u.nameBn : u.nameEn
 
 /**
  * Pane users: `/wall?users=farzana,mahbub` (launchers; missing panes keep
@@ -98,7 +113,9 @@ export function DemoWall() {
   )
   const [expanded, setExpanded] = React.useState<number | null>(null)
   // A pane opened on a scenario's screen (companion) instead of its landing route.
-  const [routes, setRoutes] = React.useState<(string | undefined)[]>(() => DEFAULT_PANES.map(() => undefined))
+  const [routes, setRoutes] = React.useState<(string | undefined)[]>(() =>
+    DEFAULT_PANES.map(() => undefined)
+  )
 
   const choose = (index: number, username: string) => {
     const next = panes.map((id, i) => (i === index ? username : id))
@@ -126,7 +143,9 @@ export function DemoWall() {
         writePanes(next)
         return next
       })
-      setRoutes((current) => current.map((r, i) => (i === target ? data.route : r)))
+      setRoutes((current) =>
+        current.map((r, i) => (i === target ? data.route : r))
+      )
       setReloads((current) => current.map((n, i) => (i === target ? n + 1 : n)))
       setExpanded(null)
     }
@@ -208,7 +227,15 @@ function WallPane({
   const n = num(index + 1)
   const name = userName(user, locale)
   const role = ROLE_DESIGNATION[user.role][locale]
-  const src = userUrl(user.username, { scale: "0.9" }, route)
+  // A pane opens in the wall's language and theme (each pane can switch its own afterwards); read once,
+  // so switching the wall later does not reload the panes and lose their work.
+  const { theme } = useSession()
+  const [look] = React.useState(() => ({ lang: locale, theme }))
+  const src = userUrl(
+    user.username,
+    { scale: "0.9", lang: look.lang, theme: look.theme },
+    route
+  )
   const toggleLabel = expanded ? t("demo.wall.restore") : t("demo.wall.expand")
 
   return (
@@ -262,7 +289,11 @@ function WallPane({
                 <SelectGroup key={code}>
                   <SelectLabel>{ROLE_DESIGNATION[code][locale]}</SelectLabel>
                   {options.map((u) => (
-                    <SelectItem key={u.username} value={u.username} className="pr-8">
+                    <SelectItem
+                      key={u.username}
+                      value={u.username}
+                      className="pr-8"
+                    >
                       <span className="truncate">{userName(u, locale)}</span>
                       <span className="ml-auto pl-3 font-mono text-[0.625rem] text-muted-foreground">
                         {u.home}

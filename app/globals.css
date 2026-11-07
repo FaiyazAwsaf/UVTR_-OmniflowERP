@@ -110,7 +110,8 @@
 
   --destructive: #e0474d;
   --success: #1f9d57;
-  --warning: #c9a400;
+  /* Amber text must read on white: about 4.7:1 (the sample yellow is for the dark theme). */
+  --warning: #8f6f00;
   --info: #2388c4;
 
   --border: #dcd8e0;
@@ -253,9 +254,14 @@
     text-rendering: optimizeLegibility;
     font-size: calc(16px * var(--ui-scale));
   }
+  /* A search box narrower than its placeholder ends in "…" instead of a cut word. */
+  input {
+    text-overflow: ellipsis;
+  }
+  /* Tabular figures only where numbers line up (.nums, MoneyText, right-aligned
+     cells): in Inter they also widen the hyphen, so "three-way" read "three -way". */
   body {
     @apply bg-background text-foreground;
-    font-variant-numeric: tabular-nums;
   }
   /* Bangla gets its own face. Specificity beats the plain `html` rule above,
      which is why `font-sans` must not be applied as a utility on <html>. */

@@ -6,13 +6,23 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { useLiveQuery } from "dexie-react-hooks"
 import { FileText, Plus } from "lucide-react"
 
-import { DataTable, TableSearch, type ColumnDef } from "@/components/motion/data-table"
+import {
+  DataTable,
+  TableSearch,
+  type ColumnDef,
+} from "@/components/motion/data-table"
 import { DocLink } from "@/components/shared/doc-link"
 import { DocStatus } from "@/components/shared/doc-status"
 import { MoneyText } from "@/components/shared/money-text"
 import { PageHeader } from "@/components/shared/page-header"
 import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useDb } from "@/core/db/DbProvider"
 import type { JournalRow, JournalStatus, VoucherType } from "@/core/db/schema"
 import { useCan } from "@/core/security/useCan"
@@ -22,8 +32,25 @@ import { useLocale } from "@/lib/i18n/provider"
 import { usePeriods } from "../queries"
 import { CsvButton, PeriodSelect, Toolbar } from "./common"
 
-const TYPES: VoucherType[] = ["JV", "PV", "RV", "CV", "SV", "PJ", "IV", "SM", "OB", "YC"]
-const STATUSES: JournalStatus[] = ["draft", "pending-approval", "posted", "reversed", "discarded"]
+const TYPES: VoucherType[] = [
+  "JV",
+  "PV",
+  "RV",
+  "CV",
+  "SV",
+  "PJ",
+  "IV",
+  "SM",
+  "OB",
+  "YC",
+]
+const STATUSES: JournalStatus[] = [
+  "draft",
+  "pending-approval",
+  "posted",
+  "reversed",
+  "discarded",
+]
 
 /**
  * The voucher list (plan §9 `/fa/journals`): every voucher, manual and from
@@ -34,12 +61,14 @@ export function JournalsList() {
   const db = useDb()
   const router = useRouter()
   const params = useSearchParams()
-  const { t, tk, dmy, num, locale } = useLocale()
+  const { t, tk, dmy, num, locale, narration } = useLocale()
   const users = useUserMap()
   const periods = usePeriods()
   const canCreate = useCan("fa.journal.create")
   const [type, setType] = React.useState<string>(params.get("type") ?? "all")
-  const [status, setStatus] = React.useState<string>(params.get("status") ?? "all")
+  const [status, setStatus] = React.useState<string>(
+    params.get("status") ?? "all"
+  )
   const [month, setMonth] = React.useState<string>(params.get("month") ?? "all")
   const [query, setQuery] = React.useState(params.get("q") ?? "")
 
@@ -47,7 +76,9 @@ export function JournalsList() {
     let rows: JournalRow[]
     if (month !== "all") {
       const period = await db.periods.where("month").equals(month).first()
-      rows = period ? await db.journals.where("periodId").equals(period.id).toArray() : []
+      rows = period
+        ? await db.journals.where("periodId").equals(period.id).toArray()
+        : []
     } else if (status !== "all") {
       rows = await db.journals.where("status").equals(status).toArray()
     } else if (type !== "all") {
@@ -56,7 +87,11 @@ export function JournalsList() {
       rows = await db.journals.toArray()
     }
     return rows
-      .filter((j) => (type === "all" || j.voucherType === type) && (status === "all" || j.status === status))
+      .filter(
+        (j) =>
+          (type === "all" || j.voucherType === type) &&
+          (status === "all" || j.status === status)
+      )
       .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt)
   }, [db, type, status, month])
 
@@ -67,9 +102,10 @@ export function JournalsList() {
       (j) =>
         j.journalNo.toLowerCase().includes(q) ||
         j.narration.toLowerCase().includes(q) ||
+        narration(j.narration).toLowerCase().includes(q) ||
         (j.source?.docNo ?? "").toLowerCase().includes(q)
     )
-  }, [journals, query])
+  }, [journals, query, narration])
 
   const columns = React.useMemo<ColumnDef<JournalRow, unknown>[]>(
     () => [
@@ -95,7 +131,11 @@ export function JournalsList() {
         id: "date",
         header: t("fa.common.date"),
         accessorKey: "date",
-        cell: ({ row }) => <span className="nums whitespace-nowrap">{dmy(row.original.date)}</span>,
+        cell: ({ row }) => (
+          <span className="nums whitespace-nowrap">
+            {dmy(row.original.date)}
+          </span>
+        ),
       },
       {
         id: "narration",
@@ -104,9 +144,12 @@ export function JournalsList() {
         meta: { hideBelow: "md" },
         cell: ({ row }) => (
           <span className="flex min-w-0 flex-col">
-            <span className="line-clamp-1 max-w-[28rem]">{row.original.narration}</span>
+            <span className="line-clamp-1 max-w-[28rem]">
+              {narration(row.original.narration)}
+            </span>
             <span className="text-[0.6875rem] text-muted-foreground">
-              {tk(`fa.voucherTypes.${row.original.voucherType}`)} · {userName(users.get(row.original.preparedBy), locale)}
+              {tk(`fa.voucherTypes.${row.original.voucherType}`)} ·{" "}
+              {userName(users.get(row.original.preparedBy), locale)}
             </span>
           </span>
         ),
@@ -127,7 +170,9 @@ export function JournalsList() {
               />
             </span>
           ) : (
-            <span className="text-muted-foreground">{t("fa.common.manual")}</span>
+            <span className="text-muted-foreground">
+              {t("fa.common.manual")}
+            </span>
           ),
       },
       {
@@ -137,9 +182,14 @@ export function JournalsList() {
         meta: { align: "right", className: "font-mono" },
         cell: ({ row }) => <MoneyText poisha={row.original.totalP} />,
       },
-      { id: "status", header: t("fa.common.status"), accessorKey: "status", cell: ({ row }) => <DocStatus status={row.original.status} /> },
+      {
+        id: "status",
+        header: t("fa.common.status"),
+        accessorKey: "status",
+        cell: ({ row }) => <DocStatus status={row.original.status} />,
+      },
     ],
-    [t, tk, dmy, users, locale]
+    [t, tk, dmy, users, locale, narration]
   )
 
   const csvColumns = [
@@ -176,7 +226,11 @@ export function JournalsList() {
               }
             />
             {canCreate ? (
-              <Button nativeButton={false} render={<Link href="/fa/journals/new" />} data-testid="journal-new">
+              <Button
+                nativeButton={false}
+                render={<Link href="/fa/journals/new" />}
+                data-testid="journal-new"
+              >
                 <Plus />
                 {t("fa.journals.newVoucher")}
               </Button>
@@ -194,29 +248,64 @@ export function JournalsList() {
         emptyTitle={t("fa.journals.empty")}
         toolbar={
           <Toolbar className="w-full">
-            <TableSearch value={query} onChange={setQuery} placeholder={t("fa.common.search")} />
-            <Select value={type} onValueChange={(v) => v && setType(v as string)}>
-              <SelectTrigger className="min-w-36" data-testid="journal-filter-type" aria-label={t("fa.common.type")}>
-                <SelectValue>{() => (type === "all" ? t("fa.common.allTypes") : tk(`fa.voucherTypes.${type}`))}</SelectValue>
+            <TableSearch
+              value={query}
+              onChange={setQuery}
+              placeholder={t("fa.common.search")}
+            />
+            <Select
+              value={type}
+              onValueChange={(v) => v && setType(v as string)}
+            >
+              <SelectTrigger
+                className="min-w-36"
+                data-testid="journal-filter-type"
+                aria-label={t("fa.common.type")}
+              >
+                <SelectValue>
+                  {() =>
+                    type === "all"
+                      ? t("fa.common.allTypes")
+                      : tk(`fa.voucherTypes.${type}`)
+                  }
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("fa.common.allTypes")}</SelectItem>
                 {TYPES.map((v) => (
                   <SelectItem key={v} value={v}>
                     {tk(`fa.voucherTypes.${v}`)}
-                    <span lang="en" className="ml-auto pl-3 font-mono text-xs text-muted-foreground">
+                    <span
+                      lang="en"
+                      className="ml-auto pl-3 font-mono text-xs text-muted-foreground"
+                    >
                       {v}
                     </span>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <Select value={status} onValueChange={(v) => v && setStatus(v as string)}>
-              <SelectTrigger className="min-w-36" data-testid="journal-filter-status" aria-label={t("fa.common.status")}>
-                <SelectValue>{() => (status === "all" ? t("fa.common.allStatuses") : tk(`shared.status.${status}`))}</SelectValue>
+            <Select
+              value={status}
+              onValueChange={(v) => v && setStatus(v as string)}
+            >
+              <SelectTrigger
+                className="min-w-36"
+                data-testid="journal-filter-status"
+                aria-label={t("fa.common.status")}
+              >
+                <SelectValue>
+                  {() =>
+                    status === "all"
+                      ? t("fa.common.allStatuses")
+                      : tk(`shared.status.${status}`)
+                  }
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t("fa.common.allStatuses")}</SelectItem>
+                <SelectItem value="all">
+                  {t("fa.common.allStatuses")}
+                </SelectItem>
                 {STATUSES.map((s) => (
                   <SelectItem key={s} value={s}>
                     {tk(`shared.status.${s}`)}
@@ -235,7 +324,10 @@ export function JournalsList() {
                 {t("fa.common.allPeriods")}
               </Button>
             ) : null}
-            <span className="ml-auto text-xs text-muted-foreground" data-testid="journal-count">
+            <span
+              className="ml-auto text-xs text-muted-foreground"
+              data-testid="journal-count"
+            >
               {t("fa.journals.count", { count: num(filtered.length) })}
             </span>
           </Toolbar>

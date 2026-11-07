@@ -30,13 +30,15 @@ export const apEn = {
       VendorPaid: "Vendor paid: {no}, ৳{amount}",
     },
     home: {
-      subtitle: "What we owe vendors, what falls due and what waits for approval",
+      subtitle:
+        "What we owe vendors, what falls due and what waits for approval",
       outstanding: "Payable",
       dueWeek: "Due this week",
       overdue: "Overdue",
       onHold: "Bills on hold",
       billsOpen: "{count} open bills",
       billsCount: "{count} bills",
+      billsCount_one: "{count} bill",
       dueList: "Due in the next 7 days",
       holdList: "On hold (three-way match)",
       pendingPayments: "Payments waiting for approval",
@@ -47,7 +49,12 @@ export const apEn = {
       noPayments: "No payments yet",
       due: "due {date}",
     },
-    method: { "bank-transfer": "Bank transfer", cheque: "Cheque", cash: "Cash", bkash: "bKash" },
+    method: {
+      "bank-transfer": "Bank transfer",
+      cheque: "Cheque",
+      cash: "Cash",
+      bkash: "bKash",
+    },
     expenseTag: {
       RENT: "Rent",
       UTILITIES: "Electricity, water and gas",
@@ -86,9 +93,11 @@ export const apEn = {
       colMatch: "Match",
       colStatus: "Status",
       count: "{count} bills",
+      count_one: "{count} bill",
     },
     form: {
-      subtitle: "A goods bill is matched to the PO and the GRN line by line; an expense bill posts at once",
+      subtitle:
+        "A goods bill is matched to the PO and the GRN line by line; an expense bill posts at once",
       kind: "Kind",
       goods: "Goods (from GRN)",
       expense: "Expense",
@@ -98,12 +107,14 @@ export const apEn = {
       dueDate: "Due date",
       dueHint: "Default: the vendor's terms",
       mushak: "The vendor issued a Mushak 6.3",
-      mushakHint: "With a 6.3 the input VAT is claimed; without it, it is a cost",
+      mushakHint:
+        "With a 6.3 the input VAT is claimed; without it, it is a cost",
       grns: "Goods received, not yet billed",
       noGrns: "This vendor has nothing received and not yet billed.",
       pickVendor: "Choose a vendor to see its GRNs.",
       matchTitle: "Three-way match",
-      matchHint: "Quantity must equal accepted, not returned and not yet billed; price within {pct}% of the PO",
+      matchHint:
+        "Quantity must equal accepted, not returned and not yet billed; price within {pct}% of the PO",
       colItem: "Item",
       colPo: "PO",
       colGrn: "GRN",
@@ -130,7 +141,8 @@ export const apEn = {
       total: "Bill total",
       ppv: "Price difference to PPV",
       resultMatched: "Matched: the bill posts at once (R13).",
-      resultMismatch: "Mismatch: the bill goes on hold and waits for release by an approver.",
+      resultMismatch:
+        "Mismatch: the bill goes on hold and waits for release by an approver.",
       reason: "Note for the approver",
       save: "Save bill",
       saved: "Bill {no} posted",
@@ -153,13 +165,16 @@ export const apEn = {
       actual: "Bill",
       lines: "Lines",
       linked: "Linked documents",
+      grossTotal: "Bill total, VAT included",
       po: "PO",
       grn: "GRN",
       journal: "Voucher",
       payments: "Payments",
       approval: "Release",
-      onHoldBanner: "On hold: the bill failed the three-way match. An approver with the bill release permission releases it; the price difference goes to PPV.",
-      rejectedBanner: "The release was rejected. Record the vendor's corrected bill instead.",
+      onHoldBanner:
+        "On hold: the bill failed the three-way match. An approver with the bill release permission releases it; the price difference goes to PPV.",
+      rejectedBanner:
+        "The release was rejected. Record the vendor's corrected bill instead.",
       pay: "Pay",
       mushak: "Mushak 6.3",
       yes: "Yes",
@@ -179,10 +194,12 @@ export const apEn = {
       colNet: "Paid",
       colStatus: "Status",
       count: "{count} payments",
+      count_one: "{count} payment",
       statusAll: "All statuses",
     },
     pay: {
-      subtitle: "Select bills; AIT and VDS follow the vendor's tax category (demo values)",
+      subtitle:
+        "Select bills; AIT and VDS follow the vendor's tax category (demo values)",
       vendor: "Vendor",
       bills: "Open bills",
       noBills: "This vendor has no open posted bills.",
@@ -229,7 +246,8 @@ export const apEn = {
       printCertificate: "Print Mushak 6.6",
       printTds: "Print TDS certificate",
       printVoucher: "Print payment voucher",
-      pendingBanner: "Waiting for approval: the payment is above the preparer's limit.",
+      pendingBanner:
+        "Waiting for approval: the payment is above the preparer's limit.",
       rejectedBanner: "The payment was rejected. Nothing posted.",
       voucherTitle: "Payment voucher",
       payee: "Payee",
@@ -246,10 +264,12 @@ export const apEn = {
       vatDeducted: "VAT deducted",
       tdsTitle: "Certificate of tax deducted at source",
       tdsDeducted: "Tax deducted",
-      depositNote: "Deposited to the treasury by the 15th of the next month (simulated).",
+      depositNote:
+        "Deposited to the treasury by the 15th of the next month (simulated).",
     },
     aging: {
-      subtitle: "Open posted bills by days past the due date; totals tie to the payables account",
+      subtitle:
+        "Open posted bills by days past the due date; totals tie to the payables account",
       colParty: "Vendor",
       ties: "Ties to trade payables (2110)",
       tiesNot: "Differs from trade payables (2110) by {amount}",
@@ -274,7 +294,8 @@ export const apEn = {
     scenarios: {
       E5: {
         title: "Three-way mismatch",
-        summary: "A vendor bill priced above the PO goes on hold; the accounts manager releases it",
+        summary:
+          "A vendor bill priced above the PO goes on hold; the accounts manager releases it",
         cue1: "The new bill is open on Gloss & Guard's {grnNo} (for {poNo}) with their invoice {vendorRef}.",
         cue2: "On the coating kits line, type the vendor's price {invoicePriceP}. The PO says {poPriceP}, so the match shows +{pct}%.",
         cue3: "Leave the polish at {polishPriceP} and save: the bill of {totalP} goes on hold.",
@@ -283,7 +304,8 @@ export const apEn = {
       },
       E6: {
         title: "Pay with withholding",
-        summary: "A security bill paid by cheque with AIT and VDS withheld, approved by the accounts manager",
+        summary:
+          "A security bill paid by cheque with AIT and VDS withheld, approved by the accounts manager",
         cue1: "Prime Guard's bill {billNo} is ticked: {netP} + VAT {vatP} = {grossP}.",
         cue2: "Choose Cheque and type cheque number {chequeNo}.",
         cue3: "AIT {aitP} and VDS {vdsP} are withheld: {payP} is paid.",
@@ -294,9 +316,11 @@ export const apEn = {
     rules: {
       NOT_A_VENDOR: "{party} is not a vendor.",
       GRN_VENDOR_MISMATCH: "GRN {grn} belongs to another vendor.",
-      BILL_QTY_EXCEEDS: "{item}: billed {qty}, but only {available} is received and not yet billed.",
+      BILL_QTY_EXCEEDS:
+        "{item}: billed {qty}, but only {available} is received and not yet billed.",
       BILL_NOT_ON_HOLD: "Bill {no} is not on hold.",
-      BILL_ON_HOLD: "Bill {no} is on hold and can't be paid until it is released.",
+      BILL_ON_HOLD:
+        "Bill {no} is on hold and can't be paid until it is released.",
       PAYMENT_NOT_PENDING: "Payment {no} is not waiting for approval.",
     },
   },

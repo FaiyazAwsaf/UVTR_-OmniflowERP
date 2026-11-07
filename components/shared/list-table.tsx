@@ -10,6 +10,7 @@ import {
 } from "lucide-react"
 
 import { EmptyState } from "@/components/shared/empty-state"
+import { keepShort, ScrollX } from "@/components/shared/scroll-x"
 import { Button } from "@/components/ui/button"
 import { useLocale } from "@/lib/i18n/provider"
 import { cn } from "@/lib/utils"
@@ -95,9 +96,9 @@ export function ListTable<T>({
       className={cn("@container/list flex min-w-0 flex-col", className)}
       data-slot="list-table"
     >
-      <div className="min-w-0 overflow-x-auto">
+      <ScrollX>
         {/* Document numbers, codes and amounts (mono) never wrap mid-identifier. */}
-        <table className="w-full border-separate border-spacing-0 text-[0.8125rem] [&_td_.font-mono]:whitespace-nowrap">
+        <table className="w-full border-separate border-spacing-0 text-[0.8125rem] [&_td_.font-mono]:whitespace-nowrap [&_td_.nums]:whitespace-nowrap">
           <thead>
             <tr>
               {columns.map((c) => {
@@ -175,7 +176,7 @@ export function ListTable<T>({
                         c.className
                       )}
                     >
-                      {c.cell(row)}
+                      {keepShort(c.cell(row))}
                     </td>
                   ))}
                 </tr>
@@ -203,13 +204,12 @@ export function ListTable<T>({
             </tfoot>
           ) : null}
         </table>
-      </div>
+      </ScrollX>
       {rows && !list.length
         ? (empty ?? (
             <EmptyState
               icon={<Search />}
               title={t("common.noResults")}
-              description={t("common.noResultsHint")}
               size="sm"
             />
           ))

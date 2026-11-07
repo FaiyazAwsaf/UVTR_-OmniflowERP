@@ -24,7 +24,13 @@ import { useCommand } from "@/core/engine/useCommand"
 import { PERMISSIONS } from "@/core/security/registry"
 import { useCan } from "@/core/security/useCan"
 import { useLocale } from "@/lib/i18n/provider"
-import { Field, ListTable, Mono, OptionSelect, type ListColumn } from "@/modules/sac/components/kit"
+import {
+  Field,
+  ListTable,
+  Mono,
+  OptionSelect,
+  type ListColumn,
+} from "@/modules/sac/components/kit"
 import { personName, roleName } from "@/modules/sac/queries"
 
 import { saveSodRule } from "../commands"
@@ -43,7 +49,12 @@ export function SodScreen() {
   const conflicts = React.useMemo(
     () =>
       data
-        ? conflictsReport({ rules: data.rules, roles: data.roles, keysByRole: keySets(data), rolesByUser: data.rolesByUser })
+        ? conflictsReport({
+            rules: data.rules,
+            roles: data.roles,
+            keysByRole: keySets(data),
+            rolesByUser: data.rolesByUser,
+          })
         : undefined,
     [data]
   )
@@ -51,20 +62,42 @@ export function SodScreen() {
   const keyCell = (k: string) => (
     <span className="flex min-w-0 flex-col">
       <span className="truncate">{keyLabel(k)}</span>
-      {k !== ANY_APPROVE ? <Mono className="truncate text-muted-foreground">{k}</Mono> : <Mono className="text-muted-foreground">*.approve</Mono>}
+      {k !== ANY_APPROVE ? (
+        <Mono className="truncate text-muted-foreground">{k}</Mono>
+      ) : (
+        <Mono className="text-muted-foreground">*.approve</Mono>
+      )}
     </span>
   )
 
   const ruleColumns: ListColumn<SodRuleRow>[] = [
-    { id: "code", header: t("rbac.sod.columns.code"), cell: (r) => <Mono className="font-semibold">{r.code}</Mono> },
+    {
+      id: "code",
+      header: t("rbac.sod.columns.code"),
+      cell: (r) => (
+        <Mono className="font-semibold whitespace-nowrap">{r.code}</Mono>
+      ),
+    },
     {
       id: "description",
       header: t("rbac.sod.columns.description"),
       className: "whitespace-normal max-w-[22rem]",
       cell: (r) => (locale === "bn" ? r.descriptionBn : r.descriptionEn),
     },
-    { id: "a", header: t("rbac.sod.columns.a"), hideBelow: "lg", className: "max-w-56", cell: (r) => keyCell(r.permissionA) },
-    { id: "b", header: t("rbac.sod.columns.b"), hideBelow: "lg", className: "max-w-56", cell: (r) => keyCell(r.permissionB) },
+    {
+      id: "a",
+      header: t("rbac.sod.columns.a"),
+      hideBelow: "lg",
+      className: "max-w-56",
+      cell: (r) => keyCell(r.permissionA),
+    },
+    {
+      id: "b",
+      header: t("rbac.sod.columns.b"),
+      hideBelow: "lg",
+      className: "max-w-56",
+      cell: (r) => keyCell(r.permissionB),
+    },
     {
       id: "mode",
       header: t("rbac.sod.columns.mode"),
@@ -79,7 +112,9 @@ export function SodScreen() {
       header: t("rbac.sod.columns.status"),
       hideBelow: "md",
       cell: (r) => (
-        <StatusText tone={r.active ? "success" : "muted"}>{r.active ? t("rbac.common.active") : t("rbac.common.inactive")}</StatusText>
+        <StatusText tone={r.active ? "success" : "muted"}>
+          {r.active ? t("rbac.common.active") : t("rbac.common.inactive")}
+        </StatusText>
       ),
     },
     {
@@ -88,7 +123,12 @@ export function SodScreen() {
       align: "right",
       cell: (r) =>
         canEdit ? (
-          <Button variant="link" size="sm" onClick={() => setEditing(r)} data-testid="sod-edit">
+          <Button
+            variant="link"
+            size="sm"
+            onClick={() => setEditing(r)}
+            data-testid="sod-edit"
+          >
             <Pencil />
             {t("rbac.sod.edit")}
           </Button>
@@ -108,7 +148,11 @@ export function SodScreen() {
       cell: (c) => (
         <span className="flex min-w-0 flex-col">
           <Link
-            href={c.kind === "role" ? `/rbac/roles/${c.subjectId}` : `/sac/users/${c.subjectId}`}
+            href={
+              c.kind === "role"
+                ? `/rbac/roles/${c.subjectId}`
+                : `/sac/users/${c.subjectId}`
+            }
             className="truncate font-medium hover:underline"
           >
             {subjectName(c)}
@@ -116,7 +160,11 @@ export function SodScreen() {
           <span className="text-xs text-muted-foreground">
             {c.kind === "role"
               ? t("rbac.sod.kindRole")
-              : t("rbac.sod.via", { roles: c.roleIds.map((id) => roleName(data?.roleById.get(id), locale)).join(" + ") })}
+              : t("rbac.sod.via", {
+                  roles: c.roleIds
+                    .map((id) => roleName(data?.roleById.get(id), locale))
+                    .join(" + "),
+                })}
           </span>
         </span>
       ),
@@ -126,9 +174,18 @@ export function SodScreen() {
       header: t("rbac.sod.rule"),
       cell: (c) => (
         <span className="flex flex-col">
-          <Mono className="font-semibold">{c.hit.rule.code}</Mono>
-          <StatusText tone={c.hit.rule.mode === "block" ? "destructive" : "warning"} className="text-xs">
-            {t(c.hit.rule.mode === "block" ? "rbac.sod.mode.block" : "rbac.sod.mode.warn")}
+          <Mono className="font-semibold whitespace-nowrap">
+            {c.hit.rule.code}
+          </Mono>
+          <StatusText
+            tone={c.hit.rule.mode === "block" ? "destructive" : "warning"}
+            className="text-xs"
+          >
+            {t(
+              c.hit.rule.mode === "block"
+                ? "rbac.sod.mode.block"
+                : "rbac.sod.mode.warn"
+            )}
           </StatusText>
         </span>
       ),
@@ -170,12 +227,23 @@ export function SodScreen() {
           ) : null
         }
       />
-      <SectionCard title={t("rbac.sod.rules")} icon={Scale} size="sm" action={<StatusPill tone="muted">{num(data?.rules.length ?? 0)}</StatusPill>}>
+      <SectionCard
+        title={t("rbac.sod.rules")}
+        icon={Scale}
+        size="sm"
+        action={
+          <StatusPill tone="muted">{num(data?.rules.length ?? 0)}</StatusPill>
+        }
+      >
         <ListTable
           rows={data?.rules}
           columns={ruleColumns}
           rowKey={(r) => r.id}
-          rowProps={(r) => ({ "data-testid": "sod-rule", "data-code": r.code, "data-mode": r.mode })}
+          rowProps={(r) => ({
+            "data-testid": "sod-rule",
+            "data-code": r.code,
+            "data-mode": r.mode,
+          })}
         />
       </SectionCard>
       <SectionCard
@@ -183,7 +251,11 @@ export function SodScreen() {
         subtitle={t("rbac.sod.conflictsHint")}
         icon={ShieldAlert}
         size="sm"
-        action={<StatusPill tone={conflicts?.length ? "warning" : "success"}>{num(conflicts?.length ?? 0)}</StatusPill>}
+        action={
+          <StatusPill tone={conflicts?.length ? "warning" : "success"}>
+            {num(conflicts?.length ?? 0)}
+          </StatusPill>
+        }
       >
         <ListTable
           rows={conflicts}
@@ -193,9 +265,16 @@ export function SodScreen() {
             "data-testid": "sod-conflict",
             "data-rule": c.hit.rule.code,
             "data-kind": c.kind,
-            "data-subject": c.kind === "role" ? data?.roleById.get(c.subjectId)?.code : data?.userById.get(c.subjectId)?.username,
+            "data-subject":
+              c.kind === "role"
+                ? data?.roleById.get(c.subjectId)?.code
+                : data?.userById.get(c.subjectId)?.username,
           })}
-          empty={<p className="py-6 text-center text-sm text-muted-foreground">{t("rbac.sod.noConflicts")}</p>}
+          empty={
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              {t("rbac.sod.noConflicts")}
+            </p>
+          }
         />
       </SectionCard>
       <SodRuleDialog rule={editing} onClose={() => setEditing(null)} />
@@ -213,9 +292,18 @@ type Draft = {
   active: boolean
 }
 
-const KEY_ITEMS = [{ key: ANY_APPROVE }, ...PERMISSIONS.map((p) => ({ key: p.key }))]
+const KEY_ITEMS = [
+  { key: ANY_APPROVE },
+  ...PERMISSIONS.map((p) => ({ key: p.key })),
+]
 
-function SodRuleDialog({ rule, onClose }: { rule: SodRuleRow | "new" | null; onClose: () => void }) {
+function SodRuleDialog({
+  rule,
+  onClose,
+}: {
+  rule: SodRuleRow | "new" | null
+  onClose: () => void
+}) {
   const { t } = useLocale()
   const { keyLabel } = useRbacFormat()
   const command = useCommand(saveSodRule)
@@ -228,7 +316,15 @@ function SodRuleDialog({ rule, onClose }: { rule: SodRuleRow | "new" | null; onC
       rule === null
         ? null
         : rule === "new"
-          ? { code: "", permissionA: null, permissionB: null, mode: "warn", descriptionEn: "", descriptionBn: "", active: true }
+          ? {
+              code: "",
+              permissionA: null,
+              permissionB: null,
+              mode: "warn",
+              descriptionEn: "",
+              descriptionBn: "",
+              active: true,
+            }
           : {
               code: rule.code,
               permissionA: rule.permissionA,
@@ -240,7 +336,8 @@ function SodRuleDialog({ rule, onClose }: { rule: SodRuleRow | "new" | null; onC
             }
     )
   }
-  const set = <K extends keyof Draft>(field: K, value: Draft[K]) => setDraft((d) => (d ? { ...d, [field]: value } : d))
+  const set = <K extends keyof Draft>(field: K, value: Draft[K]) =>
+    setDraft((d) => (d ? { ...d, [field]: value } : d))
   const valid =
     !!draft &&
     /^[A-Z0-9][A-Z0-9-]{2,15}$/.test(draft.code) &&
@@ -269,7 +366,12 @@ function SodRuleDialog({ rule, onClose }: { rule: SodRuleRow | "new" | null; onC
     onClose()
   }
 
-  const keyPicker = (value: string | null, onChange: (key: string | null) => void, testId: string, allowAny: boolean) => (
+  const keyPicker = (
+    value: string | null,
+    onChange: (key: string | null) => void,
+    testId: string,
+    allowAny: boolean
+  ) => (
     <SearchPicker
       items={allowAny ? KEY_ITEMS : KEY_ITEMS.slice(1)}
       value={value}
@@ -293,7 +395,9 @@ function SodRuleDialog({ rule, onClose }: { rule: SodRuleRow | "new" | null; onC
       <DialogContent className="sm:max-w-xl" data-testid="sod-form">
         <DialogHeader>
           <DialogTitle className="text-[1.0625rem] font-semibold">
-            {rule === "new" || rule === null ? t("rbac.sod.formNew") : t("rbac.sod.formEdit", { code: rule.code })}
+            {rule === "new" || rule === null
+              ? t("rbac.sod.formNew")
+              : t("rbac.sod.formEdit", { code: rule.code })}
           </DialogTitle>
         </DialogHeader>
         {draft ? (
@@ -302,7 +406,12 @@ function SodRuleDialog({ rule, onClose }: { rule: SodRuleRow | "new" | null; onC
               <Input
                 lang="en"
                 value={draft.code}
-                onChange={(e) => set("code", e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ""))}
+                onChange={(e) =>
+                  set(
+                    "code",
+                    e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, "")
+                  )
+                }
                 className="font-mono"
                 data-testid="sod-code"
               />
@@ -320,17 +429,48 @@ function SodRuleDialog({ rule, onClose }: { rule: SodRuleRow | "new" | null; onC
                 ]}
               />
             </Field>
-            <Field label={t("rbac.sod.a")}>{keyPicker(draft.permissionA, (k) => set("permissionA", k), "sod-a", false)}</Field>
-            <Field label={t("rbac.sod.b")}>{keyPicker(draft.permissionB, (k) => set("permissionB", k), "sod-b", true)}</Field>
-            <Field label={t("rbac.sod.descriptionEn")} className="sm:col-span-2">
-              <Input value={draft.descriptionEn} onChange={(e) => set("descriptionEn", e.target.value)} data-testid="sod-description-en" />
+            <Field label={t("rbac.sod.a")}>
+              {keyPicker(
+                draft.permissionA,
+                (k) => set("permissionA", k),
+                "sod-a",
+                false
+              )}
             </Field>
-            <Field label={t("rbac.sod.descriptionBn")} className="sm:col-span-2">
-              <Input value={draft.descriptionBn} onChange={(e) => set("descriptionBn", e.target.value)} data-testid="sod-description-bn" />
+            <Field label={t("rbac.sod.b")}>
+              {keyPicker(
+                draft.permissionB,
+                (k) => set("permissionB", k),
+                "sod-b",
+                true
+              )}
+            </Field>
+            <Field
+              label={t("rbac.sod.descriptionEn")}
+              className="sm:col-span-2"
+            >
+              <Input
+                value={draft.descriptionEn}
+                onChange={(e) => set("descriptionEn", e.target.value)}
+                data-testid="sod-description-en"
+              />
+            </Field>
+            <Field
+              label={t("rbac.sod.descriptionBn")}
+              className="sm:col-span-2"
+            >
+              <Input
+                value={draft.descriptionBn}
+                onChange={(e) => set("descriptionBn", e.target.value)}
+                data-testid="sod-description-bn"
+              />
             </Field>
             <label className="flex items-center justify-between gap-3 rounded-md border border-border p-3 text-[0.8125rem] sm:col-span-2">
               {t("rbac.sod.active")}
-              <Switch checked={draft.active} onCheckedChange={(on) => set("active", !!on)} />
+              <Switch
+                checked={draft.active}
+                onCheckedChange={(on) => set("active", !!on)}
+              />
             </label>
           </div>
         ) : null}
@@ -338,7 +478,11 @@ function SodRuleDialog({ rule, onClose }: { rule: SodRuleRow | "new" | null; onC
           <Button variant="neutral" onClick={onClose}>
             {t("rbac.common.cancel")}
           </Button>
-          <Button onClick={submit} disabled={!valid || command.pending} data-testid="sod-save">
+          <Button
+            onClick={submit}
+            disabled={!valid || command.pending}
+            data-testid="sod-save"
+          >
             {t("rbac.sod.save")}
           </Button>
         </DialogFooter>

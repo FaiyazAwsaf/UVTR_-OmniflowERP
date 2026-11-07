@@ -33,11 +33,14 @@ export const sacEn = {
       PolicyChanged: "Security policy changed",
     },
     rules: {
-      SAC_USERNAME_INVALID: "The username {username} is not valid: 3 to 24 lower-case letters, digits, dots or dashes, starting with a letter.",
+      SAC_USERNAME_INVALID:
+        "The username {username} is not valid: 3 to 24 lower-case letters, digits, dots or dashes, starting with a letter.",
       SAC_USERNAME_TAKEN: "The username {username} is already in use.",
-      SAC_USERNAME_FIXED: "A username can't change after the account is created.",
+      SAC_USERNAME_FIXED:
+        "A username can't change after the account is created.",
       SAC_LOCATION_UNKNOWN: "Unknown location {location}.",
-      SAC_HOME_NOT_ALLOWED: "The home location must be one of the user's locations.",
+      SAC_HOME_NOT_ALLOWED:
+        "The home location must be one of the user's locations.",
       SAC_OWN_STATUS: "You can't disable or enable your own account.",
       SAC_OWN_RESET: "Change your own password from the user menu instead.",
       SAC_USE_UNLOCK: "{user} is locked. Unlock the account instead.",
@@ -65,12 +68,14 @@ export const sacEn = {
     },
     users: {
       title: "Users",
-      subtitle: "Accounts, roles and sign-in status for everyone in the company.",
+      subtitle:
+        "Accounts, roles and sign-in status for everyone in the company.",
       new: "New user",
       search: "Search name, username or phone",
       kpi: {
         active: "Active users",
         activeCaption: "of {count} accounts",
+        activeCaption_one: "of {count} account",
         locked: "Locked",
         lockedCaption: "after failed sign-ins",
         sessions: "Signed in now",
@@ -95,7 +100,8 @@ export const sacEn = {
     form: {
       newTitle: "New user",
       editTitle: "Edit {name}",
-      newHint: "The user gets a one-time temporary password and must change it at the first sign-in. Assign roles in RBAC.",
+      newHint:
+        "The user gets a one-time temporary password and must change it at the first sign-in. Assign roles in RBAC.",
       username: "Username",
       usernameHint: "The sign-in name. It can't change later.",
       nameEn: "Name (English)",
@@ -132,7 +138,8 @@ export const sacEn = {
       unlock: "Unlock",
       disable: "Disable",
       enable: "Enable",
-      lockedBanner: "Locked after {count} failed sign-in attempts. Unlock to let {name} sign in again.",
+      lockedBanner:
+        "Locked after {count} failed sign-in attempts. Unlock to let {name} sign in again.",
       disabledBanner: "Disabled: {name} can't sign in.",
       mustChange: "Must change the password at the next sign-in.",
       profile: "Profile",
@@ -144,6 +151,7 @@ export const sacEn = {
       mfa: "Multi-factor sign-in",
       passwordSet: "Password set",
       passwordAge: "{count} days ago",
+      passwordAge_one: "{count} day ago",
       passwordExpired: "Past the {count}-day expiry (not enforced in the demo)",
       lastLogin: "Last sign-in",
       failed: "Failed attempts",
@@ -160,16 +168,19 @@ export const sacEn = {
       noActivity: "No changes recorded since the last reset.",
       seeAll: "See all",
       resetTitle: "Reset the password of {name}?",
-      resetBody: "A one-time temporary password replaces the current one. {name} must change it at the next sign-in.",
+      resetBody:
+        "A one-time temporary password replaces the current one. {name} must change it at the next sign-in.",
       resetConfirm: "Reset password",
       disableTitle: "Disable {name}?",
-      disableBody: "{name} can't sign in until enabled again. Their open windows are signed out at once.",
+      disableBody:
+        "{name} can't sign in until enabled again. Their open windows are signed out at once.",
       disableConfirm: "Disable",
       enableTitle: "Enable {name}?",
       enableBody: "{name} can sign in again.",
       enableConfirm: "Enable",
       unlockTitle: "Unlock {name}?",
-      unlockBody: "Failed attempts go back to zero and {name} can sign in again.",
+      unlockBody:
+        "Failed attempts go back to zero and {name} can sign in again.",
       unlockConfirm: "Unlock",
       disabled: "{name} is disabled.",
       enabled: "{name} is enabled.",
@@ -177,7 +188,8 @@ export const sacEn = {
     },
     sessions: {
       title: "Active sessions",
-      subtitle: "Every signed-in window. Ending a session returns that window to the sign-in screen at once.",
+      subtitle:
+        "Every signed-in window. Ending a session returns that window to the sign-in screen at once.",
       columns: {
         user: "User",
         location: "Location",
@@ -193,7 +205,8 @@ export const sacEn = {
       },
       end: "End session",
       endTitle: "End the session of {name}?",
-      endBody: "That window returns to the sign-in screen with a notice. Unsaved work in it is lost.",
+      endBody:
+        "That window returns to the sign-in screen with a notice. Unsaved work in it is lost.",
       endConfirm: "End session",
       endedToast: "Session of {name} ended.",
       ownHint: "Your own window: sign out from the user menu.",
@@ -205,11 +218,13 @@ export const sacEn = {
         forced: "Ended by an administrator",
         timeout: "Idle timeout",
       },
-      idleNote: "Idle time is wall-clock time: the demo clock never signs anyone out. Quick demo sign-ins are exempt from the idle timeout.",
+      idleNote:
+        "Idle time is wall-clock time: the demo clock never signs anyone out. Quick demo sign-ins are exempt from the idle timeout.",
     },
     logins: {
       title: "Login history",
-      subtitle: "Every sign-in attempt: successes, wrong passwords, lockouts and MFA codes.",
+      subtitle:
+        "Every sign-in attempt: successes, wrong passwords, lockouts and MFA codes.",
       columns: {
         at: "Date and time",
         user: "User",
@@ -227,15 +242,18 @@ export const sacEn = {
     },
     policy: {
       title: "Security policy",
-      subtitle: "Password, lockout and session rules. They apply to the next sign-in in every window.",
+      subtitle:
+        "Password, lockout and session rules. They apply to the next sign-in in every window.",
       passwords: "Passwords",
       minLength: "Minimum length",
       requireDigit: "Require a digit",
       expiry: "Password expiry (days)",
-      expiryHint: "Shown on user profiles; not enforced in the demo. 0 means never.",
+      expiryHint:
+        "Shown on user profiles; not enforced in the demo. 0 means never.",
       lockout: "Lockout and sessions",
       lockoutThreshold: "Lock after failed attempts",
-      lockoutHint: "The account locks after this many wrong passwords or codes in a row.",
+      lockoutHint:
+        "The account locks after this many wrong passwords or codes in a row.",
       idle: "Idle timeout (minutes)",
       idleHint: "Measured in wall-clock time; quick demo sign-ins are exempt.",
       mfa: "Multi-factor sign-in",
@@ -244,7 +262,9 @@ export const sacEn = {
       revert: "Undo changes",
       saved: "Security policy saved.",
       mfaTurnedOn: "Multi-factor sign-in turned on for {count} users.",
-      readOnly: "You can view the policy. Changing it needs Configure the security policy.",
+      mfaTurnedOn_one: "Multi-factor sign-in turned on for {count} user.",
+      readOnly:
+        "You can view the policy. Changing it needs Configure the security policy.",
       range: "Between {min} and {max}",
       stats: "In effect",
       mustChange: "Must change password",
@@ -254,10 +274,12 @@ export const sacEn = {
     },
     audit: {
       title: "Audit trail",
-      subtitle: "Every change, with who, when, where and why. Hash-chained: altering any row breaks the chain.",
+      subtitle:
+        "Every change, with who, when, where and why. Hash-chained: altering any row breaks the chain.",
       verify: "Verify chain",
       verifying: "Verifying",
       intact: "Chain intact: {count} rows",
+      intact_one: "Chain intact: {count} row",
       broken: "Chain broken at row {seq}",
       jump: "Show row {seq}",
       filters: {
@@ -316,7 +338,8 @@ export const sacEn = {
     scenarios: {
       E14: {
         title: "Lockout and forced sign-out",
-        summary: "Five wrong passwords lock a user; unlock; end a session live (SAC)",
+        summary:
+          "Five wrong passwords lock a user; unlock; end a session live (SAC)",
         cue1: "In another window, open the sign-in screen and type a wrong password for {user} {attempts} times.",
         cue2: "Shuvo shows Locked in this user list at once; the launcher shows the lock too.",
         cue3: "Open Shuvo and Unlock: he signs in again with demo1234.",

@@ -3,16 +3,29 @@
 import * as React from "react"
 
 import { TenantMark } from "@/components/shared/tenant-mark"
-import { locations, printHeader, tenant, type LocationCode } from "@/config/brand.config"
+import {
+  locations,
+  printHeader,
+  tenant,
+  type LocationCode,
+} from "@/config/brand.config"
 import { cn } from "@/lib/utils"
 import { useLocale } from "@/lib/i18n/provider"
 
 export type PaperSize = "A4" | "A5" | "receipt" | "label"
 
-const PAPER: Record<PaperSize, { width: string; minHeight: string; page: string; pad: string }> = {
+const PAPER: Record<
+  PaperSize,
+  { width: string; minHeight: string; page: string; pad: string }
+> = {
   A4: { width: "210mm", minHeight: "297mm", page: "A4", pad: "14mm" },
   A5: { width: "148mm", minHeight: "210mm", page: "A5", pad: "10mm" },
-  receipt: { width: "80mm", minHeight: "120mm", page: "80mm 200mm", pad: "5mm" },
+  receipt: {
+    width: "80mm",
+    minHeight: "120mm",
+    page: "80mm 200mm",
+    pad: "5mm",
+  },
   label: { width: "70mm", minHeight: "45mm", page: "70mm 45mm", pad: "3mm" },
 }
 
@@ -40,13 +53,21 @@ function printCss(page: string) {
   return `@media print {
   @page { size: ${page}; margin: 0; }
   html, body { background: #fff !important; }
-  body * { visibility: hidden !important; }
-  [data-print-root], [data-print-root] * { visibility: visible !important; }
-  /* Dialogs and the app frame hold the sheet in fixed, clipped boxes; on paper
-     they become ordinary flow so a long sheet runs onto as many pages as it
-     needs (a fixed element repeats on every page and clips). */
-  *:has([data-print-root]) { position: static !important; transform: none !important; overflow: visible !important; max-height: none !important; height: auto !important; inset: auto !important; }
-  [data-print-root] { position: absolute !important; left: 0; top: 0; margin: 0 !important; box-shadow: none !important; border-radius: 0 !important; }
+  /* Only the sheet goes on paper: every branch of the page that does not lead
+     to it is removed (not just hidden), so it takes no room and adds no
+     pages. */
+  *:has([data-print-root]) > *:not([data-print-root]):not(:has([data-print-root])) { display: none !important; }
+  /* The sheet's ancestors (the app frame, a dialog centred with translate and
+     animated with scale) become plain blocks at the page origin, so a long
+     sheet runs onto as many pages as it needs. Tailwind v4 moves dialogs with
+     the separate translate and scale properties, not transform. */
+  *:has([data-print-root]) {
+    display: block !important; position: static !important; inset: auto !important;
+    transform: none !important; translate: none !important; scale: none !important; rotate: none !important; animation: none !important;
+    overflow: visible !important; width: auto !important; max-width: none !important; height: auto !important; max-height: none !important; min-height: 0 !important;
+    margin: 0 !important; padding: 0 !important; border: 0 !important; background: transparent !important; box-shadow: none !important; outline: 0 !important;
+  }
+  [data-print-root] { position: static !important; margin: 0 !important; box-shadow: none !important; border-radius: 0 !important; }
 }`
 }
 
@@ -88,7 +109,9 @@ export function PrintLayout({
 }) {
   const { locale } = useLocale()
   const paper = PAPER[size]
-  const locationRow = location ? locations.find((l) => l.code === location) : undefined
+  const locationRow = location
+    ? locations.find((l) => l.code === location)
+    : undefined
   const small = size === "label" || size === "receipt"
 
   return (
@@ -119,7 +142,12 @@ export function PrintLayout({
           <div className="flex min-w-0 items-center gap-3">
             <TenantMark size={small ? 24 : 40} />
             <div className="min-w-0">
-              <div className={cn("leading-tight font-bold", small ? "text-xs" : "text-lg")}>
+              <div
+                className={cn(
+                  "leading-tight font-bold",
+                  small ? "text-xs" : "text-lg"
+                )}
+              >
                 {tenant.legalName.en}
               </div>
               {!small ? (
@@ -140,7 +168,12 @@ export function PrintLayout({
           {title || docNo || meta ? (
             <div className="shrink-0 text-right">
               {title ? (
-                <div className={cn("font-bold uppercase", small ? "text-[0.625rem]" : "text-sm tracking-wide")}>
+                <div
+                  className={cn(
+                    "font-bold uppercase",
+                    small ? "text-[0.625rem]" : "text-sm tracking-wide"
+                  )}
+                >
                   {title}
                 </div>
               ) : null}
@@ -149,7 +182,9 @@ export function PrintLayout({
                   {docNo}
                 </div>
               ) : null}
-              {meta ? <div className="mt-1 text-[0.6875rem] text-[#555]">{meta}</div> : null}
+              {meta ? (
+                <div className="mt-1 text-[0.6875rem] text-[#555]">{meta}</div>
+              ) : null}
             </div>
           ) : null}
         </header>
@@ -161,7 +196,9 @@ export function PrintLayout({
         <footer className="mt-4 flex items-end justify-between gap-4 border-t border-[#e0e0e0] pt-2 text-[0.625rem] text-[#555]">
           <div className="min-w-0">{footer}</div>
           {demoFooter ? (
-            <div className="shrink-0 italic">{printHeader.demoNote[locale]}</div>
+            <div className="shrink-0 italic">
+              {printHeader.demoNote[locale]}
+            </div>
           ) : null}
         </footer>
       ) : null}

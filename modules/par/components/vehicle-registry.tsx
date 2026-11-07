@@ -15,7 +15,13 @@ import { useLocale } from "@/lib/i18n/provider"
 import { cn } from "@/lib/utils"
 
 import { regSearchKey, VEHICLE_CLASS_LIST } from "../lib"
-import { CsvButton, ListTable, NativeSelect, SearchBox, type Column } from "./kit"
+import {
+  CsvButton,
+  ListTable,
+  NativeSelect,
+  SearchBox,
+  type Column,
+} from "./kit"
 
 type Row = { vehicle: VehicleRow; owner: PartyRow | undefined; key: string }
 
@@ -24,12 +30,15 @@ export function VehicleRegistry() {
   const db = useDb()
   const params = useSearchParams()
   const focus = params.get("id")
-  const { t, tk, locale, num } = useLocale()
+  const { t, tk, locale, num, colour } = useLocale()
   const [query, setQuery] = React.useState("")
   const [cls, setCls] = React.useState("")
 
   const data = useLiveQuery(async () => {
-    const [vehicles, parties] = await Promise.all([db.vehicles.toArray(), db.parties.toArray()])
+    const [vehicles, parties] = await Promise.all([
+      db.vehicles.toArray(),
+      db.parties.toArray(),
+    ])
     const byId = new Map(parties.map((p) => [p.id, p]))
     return vehicles
       .sort((a, b) => a.regNo.localeCompare(b.regNo))
@@ -38,14 +47,19 @@ export function VehicleRegistry() {
         return {
           vehicle,
           owner,
-          key: regSearchKey(`${vehicle.regNo} ${vehicle.regNoBn} ${vehicle.make} ${vehicle.model} ${owner?.nameEn ?? ""} ${owner?.nameBn ?? ""} ${owner?.phone ?? ""}`),
+          key: regSearchKey(
+            `${vehicle.regNo} ${vehicle.regNoBn} ${vehicle.make} ${vehicle.model} ${owner?.nameEn ?? ""} ${owner?.nameBn ?? ""} ${owner?.phone ?? ""}`
+          ),
         }
       })
   }, [db])
 
   const rows = React.useMemo(() => {
     const q = regSearchKey(query)
-    let list = (data ?? []).filter((r) => (!cls || r.vehicle.vehicleClass === cls) && (!q || r.key.includes(q)))
+    let list = (data ?? []).filter(
+      (r) =>
+        (!cls || r.vehicle.vehicleClass === cls) && (!q || r.key.includes(q))
+    )
     if (focus && !q) {
       const hit = list.find((r) => r.vehicle.id === focus)
       if (hit) list = [hit, ...list.filter((r) => r !== hit)]
@@ -54,13 +68,20 @@ export function VehicleRegistry() {
   }, [data, query, cls, focus])
 
   const columns: Column<Row>[] = [
-    { key: "reg", header: t("par.registry.colReg"), sortValue: (r) => r.vehicle.regNo, cell: (r) => <RegPlate regNo={r.vehicle.regNo} /> },
+    {
+      key: "reg",
+      header: t("par.registry.colReg"),
+      sortValue: (r) => r.vehicle.regNo,
+      cell: (r) => <RegPlate regNo={r.vehicle.regNo} />,
+    },
     {
       key: "vehicle",
       header: t("par.registry.colVehicle"),
       sortValue: (r) => `${r.vehicle.make} ${r.vehicle.model}`,
       cell: (r) => (
-        <span className={cn("flex flex-col", !r.vehicle.active && "opacity-60")}>
+        <span
+          className={cn("flex flex-col", !r.vehicle.active && "opacity-60")}
+        >
           <span className="font-medium">
             {r.vehicle.make} {r.vehicle.model}
           </span>
@@ -70,9 +91,26 @@ export function VehicleRegistry() {
         </span>
       ),
     },
-    { key: "class", header: t("par.registry.colClass"), hide: "sm", cell: (r) => tk(`reports.enum.vehicleClass.${r.vehicle.vehicleClass}`) },
-    { key: "colour", header: t("par.registry.colColour"), hide: "lg", cell: (r) => r.vehicle.colour },
-    { key: "year", header: t("par.registry.colYear"), hide: "lg", align: "right", sortValue: (r) => r.vehicle.year, cell: (r) => num(r.vehicle.year, { useGrouping: false }) },
+    {
+      key: "class",
+      header: t("par.registry.colClass"),
+      hide: "sm",
+      cell: (r) => tk(`reports.enum.vehicleClass.${r.vehicle.vehicleClass}`),
+    },
+    {
+      key: "colour",
+      header: t("par.registry.colColour"),
+      hide: "lg",
+      cell: (r) => colour(r.vehicle.colour),
+    },
+    {
+      key: "year",
+      header: t("par.registry.colYear"),
+      hide: "lg",
+      align: "right",
+      sortValue: (r) => r.vehicle.year,
+      cell: (r) => num(r.vehicle.year, { useGrouping: false }),
+    },
     {
       key: "owner",
       header: t("par.registry.colOwner"),
@@ -80,7 +118,10 @@ export function VehicleRegistry() {
       sortValue: (r) => r.owner?.nameEn ?? "",
       cell: (r) =>
         r.owner ? (
-          <Link href={`/par/${r.owner.id}`} className="text-link hover:underline">
+          <Link
+            href={`/par/${r.owner.id}`}
+            className="text-link hover:underline"
+          >
             {nameOf(r.owner, locale)}
           </Link>
         ) : (
@@ -92,7 +133,12 @@ export function VehicleRegistry() {
       header: t("par.registry.colLastService"),
       hide: "lg",
       sortValue: (r) => r.vehicle.lastServiceAt ?? 0,
-      cell: (r) => (r.vehicle.lastServiceAt ? <DateText value={r.vehicle.lastServiceAt} /> : <span className="text-muted-foreground">-</span>),
+      cell: (r) =>
+        r.vehicle.lastServiceAt ? (
+          <DateText value={r.vehicle.lastServiceAt} />
+        ) : (
+          <span className="text-muted-foreground">-</span>
+        ),
     },
   ]
 
@@ -105,7 +151,13 @@ export function VehicleRegistry() {
           <CsvButton
             exportKey="par.export"
             fileName="vehicles"
-            rows={rows.map((r) => ({ regNo: r.vehicle.regNo, make: r.vehicle.make, model: r.vehicle.model, vehicleClass: r.vehicle.vehicleClass, owner: r.owner?.nameEn ?? "" }))}
+            rows={rows.map((r) => ({
+              regNo: r.vehicle.regNo,
+              make: r.vehicle.make,
+              model: r.vehicle.model,
+              vehicleClass: r.vehicle.vehicleClass,
+              owner: r.owner?.nameEn ?? "",
+            }))}
             columns={[
               { key: "regNo", label: t("par.registry.colReg") },
               { key: "make", label: t("par.vehicle.make") },
@@ -118,24 +170,39 @@ export function VehicleRegistry() {
       />
       <section className="surface-card flex flex-col gap-4 p-4 md:p-5">
         <div className="flex flex-wrap items-center gap-2">
-          <SearchBox value={query} onChange={setQuery} placeholder={t("par.registry.searchPlaceholder")} testId="vehicle-search" />
+          <SearchBox
+            value={query}
+            onChange={setQuery}
+            placeholder={t("par.registry.searchPlaceholder")}
+            testId="vehicle-search"
+          />
           <NativeSelect
             value={cls}
             onChange={setCls}
             placeholder={t("common.all")}
             ariaLabel={t("par.registry.colClass")}
             className="w-48"
-            options={VEHICLE_CLASS_LIST.map((c) => ({ value: c, label: tk(`reports.enum.vehicleClass.${c}`) }))}
+            options={VEHICLE_CLASS_LIST.map((c) => ({
+              value: c,
+              label: tk(`reports.enum.vehicleClass.${c}`),
+            }))}
           />
-          <span className="ml-auto text-xs text-muted-foreground">{t("par.registry.count", { count: num(rows.length) })}</span>
+          <span className="ml-auto text-xs text-muted-foreground">
+            {t("par.registry.count", { count: num(rows.length) })}
+          </span>
         </div>
         <ListTable
           rows={data ? rows : undefined}
           columns={columns}
           rowKey={(r) => r.vehicle.id}
           rowTestId="vehicle-row"
-          rowAttrs={(r) => ({ reg: r.vehicle.regNo, "vehicle-id": r.vehicle.id })}
-          rowClassName={(r) => (r.vehicle.id === focus ? "bg-primary-soft" : undefined)}
+          rowAttrs={(r) => ({
+            reg: r.vehicle.regNo,
+            "vehicle-id": r.vehicle.id,
+          })}
+          rowClassName={(r) =>
+            r.vehicle.id === focus ? "bg-primary-soft" : undefined
+          }
         />
       </section>
     </div>

@@ -18,9 +18,11 @@ export const sdEn = {
       GoodsDelivered: "Goods delivered: {no} for {order}",
     },
     rules: {
-      SD_NOT_READY: "Order {no} has not passed QC yet, so it can't be handed over.",
+      SD_NOT_READY:
+        "Order {no} has not passed QC yet, so it can't be handed over.",
       SD_CHECKLIST: "Tick every item of the handover checklist first.",
-      SD_NOT_GOODS_ORDER: "Order {no} is not a goods order waiting for delivery.",
+      SD_NOT_GOODS_ORDER:
+        "Order {no} is not a goods order waiting for delivery.",
       SD_OVER_DELIVERY: "Only {open} of {item} are left to deliver.",
     },
     checklist: {
@@ -55,10 +57,12 @@ export const sdEn = {
     handover: {
       openOrder: "Open order",
       notReady: "Not ready for handover",
-      notReadyHint: "The vehicle hands over once every task is done and QC has passed.",
+      notReadyHint:
+        "The vehicle hands over once every task is done and QC has passed.",
       qcSummary: "QC summary",
       passedBy: "Passed by {name}",
       attempts: "{count} checks",
+      attempts_one: "{count} check",
       photos: "Photos",
       angles: {
         front: "Front",
@@ -71,7 +75,8 @@ export const sdEn = {
       signature: "Customer signature",
       signHere: "Sign here",
       submit: "Hand over vehicle",
-      completeFirst: "Tick the checklist and take the customer's signature first.",
+      completeFirst:
+        "Tick the checklist and take the customer's signature first.",
       done: "{no} handed over, gate pass {gp}",
       handedOver: "Handed over",
       gatePass: "Gate pass",
@@ -97,7 +102,8 @@ export const sdEn = {
       none: "No deliveries yet",
       return: "Credit note",
       noReturns: "No returns",
-      returnsHint: "Credit notes that put returned goods back on the shelf show here.",
+      returnsHint:
+        "Credit notes that put returned goods back on the shelf show here.",
       challan: "Delivery challan",
       receivedBy: "Received by",
     },

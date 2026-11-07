@@ -23,12 +23,17 @@ export const frsEn = {
       TaxPaid: "Tax deposited: {no}, {kind} for {month}, ৳{amount}",
     },
     rules: {
-      MONTH_NOT_ENDED: "{month} has not ended yet. Returns and deposits are for whole months.",
+      MONTH_NOT_ENDED:
+        "{month} has not ended yet. Returns and deposits are for whole months.",
       VAT_ALREADY_SUBMITTED: "The VAT return for {month} is already submitted.",
-      VAT_PREVIOUS_MONTH: "Submit the VAT return for {month} first. Returns go in order (the carry-forward runs from month to month).",
-      TAX_BANK_ONLY: "Tax is deposited from a bank account, not from {account}.",
-      VAT_RETURN_MISSING: "Submit the VAT return for {month} before depositing its VAT.",
-      NOTHING_DUE: "Nothing is due: the {kind} for {month} is already deposited, or there is none.",
+      VAT_PREVIOUS_MONTH:
+        "Submit the VAT return for {month} first. Returns go in order (the carry-forward runs from month to month).",
+      TAX_BANK_ONLY:
+        "Tax is deposited from a bank account, not from {account}.",
+      VAT_RETURN_MISSING:
+        "Submit the VAT return for {month} before depositing its VAT.",
+      NOTHING_DUE:
+        "Nothing is due: the {kind} for {month} is already deposited, or there is none.",
     },
     common: {
       month: "Month",
@@ -52,8 +57,10 @@ export const frsEn = {
       drill: "Open the ledger",
       exportCsv: "Export CSV",
       print: "Print",
-      locationNote: "With a location chosen, only lines carrying that location count, so the totals need not balance.",
-      sourceNote: "Every figure opens its ledger; every ledger line opens its voucher and source document.",
+      locationNote:
+        "With a location chosen, only lines carrying that location count, so the totals need not balance.",
+      sourceNote:
+        "Every figure opens its ledger; every ledger line opens its voucher and source document.",
       simulated: "Simulated",
       demoValues: "Demo values",
       none: "None",
@@ -100,13 +107,15 @@ export const frsEn = {
     },
     tb: {
       title: "Trial balance",
-      subtitle: "Every postable account with opening, period debits and credits and closing; groups subtotalled",
+      subtitle:
+        "Every postable account with opening, period debits and credits and closing; groups subtotalled",
       noLines: "No balances in this range.",
       groupTotal: "Total {name}",
     },
     pl: {
       title: "Profit and loss",
-      subtitle: "Net revenue to profit before tax; the year-end closing voucher is left out",
+      subtitle:
+        "Net revenue to profit before tax; the year-end closing voucher is left out",
       views: {
         studios: "By studio",
         months: "By month",
@@ -136,7 +145,8 @@ export const frsEn = {
     },
     bs: {
       title: "Balance sheet",
-      subtitle: "Assets, liabilities and equity at a date; the current year's result is computed, not posted",
+      subtitle:
+        "Assets, liabilities and equity at a date; the current year's result is computed, not posted",
       nonCurrentAssets: "Non-current assets",
       currentAssets: "Current assets",
       totalAssets: "Total assets",
@@ -154,7 +164,8 @@ export const frsEn = {
     },
     cf: {
       title: "Cash flow",
-      subtitle: "Indirect method; the total is checked against the change in cash, bank, wallets and card clearing",
+      subtitle:
+        "Indirect method; the total is checked against the change in cash, bank, wallets and card clearing",
       operating: "Operating activities",
       profitBeforeTax: "Profit before tax",
       depreciation: "Add back depreciation",
@@ -173,7 +184,8 @@ export const frsEn = {
     },
     vat: {
       title: "VAT",
-      subtitle: "Mushak 6.1 purchase and 6.2 sales registers, the 9.1 return summary and tax deposits",
+      subtitle:
+        "Mushak 6.1 purchase and 6.2 sales registers, the 9.1 return summary and tax deposits",
       tabs: {
         summary: "Return (9.1)",
         purchases: "Purchase register (6.1)",
@@ -193,10 +205,12 @@ export const frsEn = {
       submittedRef: "Submitted to NBR e-VAT: {ref}",
       submit: "Submit return",
       submitTitle: "Submit the VAT return for {month}?",
-      submitBody: "The return goes to NBR e-VAT (simulated) and the settlement voucher posts today: VAT payable is set off against the credits.",
+      submitBody:
+        "The return goes to NBR e-VAT (simulated) and the settlement voucher posts today: VAT payable is set off against the credits.",
       submitted: "VAT return for {month} submitted ({ref})",
       settlement: "Settlement voucher",
-      registerNote: "The return comes from the ledger; the registers list the documents behind it.",
+      registerNote:
+        "The return comes from the ledger; the registers list the documents behind it.",
       bill: "Bill",
       vendorRef: "Vendor's invoice",
       vendor: "Vendor",
@@ -211,6 +225,7 @@ export const frsEn = {
       debitNote: "Debit note",
       creditNote: "Credit note",
       rows: "{count} documents",
+      rows_one: "{count} document",
       monthDue: "The return and deposits for {month} are due on {date}.",
       printTitle: "VAT return (summary), Mushak 9.1",
       printFor: "Tax period {month}",
@@ -232,7 +247,8 @@ export const frsEn = {
       challan: "Challan",
       pay: "Deposit",
       payTitle: "Deposit {kind} for {month}?",
-      payBody: "{amount} goes from {bank} to the treasury with a challan (simulated). The voucher posts today.",
+      payBody:
+        "{amount} goes from {bank} to the treasury with a challan (simulated). The voucher posts today.",
       bank: "From bank account",
       paidToast: "{no} deposited: {amount}",
       needReturn: "Submit the return first",
@@ -240,7 +256,8 @@ export const frsEn = {
     },
     wht: {
       title: "Withholding tax",
-      subtitle: "AIT (TDS) and VDS deducted from vendor payments, and deductions by corporate customers on their receipts",
+      subtitle:
+        "AIT (TDS) and VDS deducted from vendor payments, and deductions by corporate customers on their receipts",
       tabs: {
         ait: "AIT (TDS) on payments",
         vds: "VDS on payments (6.6)",
@@ -261,6 +278,7 @@ export const frsEn = {
       aitDeducted: "AIT deducted",
       totals: "Totals",
       rows: "{count} documents",
+      rows_one: "{count} document",
     },
   },
 }
