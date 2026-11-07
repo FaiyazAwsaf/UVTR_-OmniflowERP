@@ -24,6 +24,7 @@ export const parScenarios: ScenarioDef[] = [
         refs: { partyId: PTY.greenway },
         params: {
           party: party?.nameEn ?? "",
+          partyBn: party?.nameBn || party?.nameEn || "",
           phone: party?.phone ?? "",
           first: `01711-${stamp}`,
           second: `01811-${stamp}`,

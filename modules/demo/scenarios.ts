@@ -11,13 +11,14 @@ import { advanceOf, bringJourneyTo, clearJourney, JOURNEY, journeyInvoice, STAGE
  * wherever it stands, never undoing the presenter's live work.
  */
 
-async function vehicleLine(kit: ScenarioKit): Promise<{ regNo: string; vehicle: string; customer: string }> {
+async function vehicleLine(kit: ScenarioKit): Promise<{ regNo: string; vehicle: string; customer: string; customerBn: string }> {
   const vehicle = await kit.db.vehicles.get(JOURNEY.vehicleId)
   const party = await kit.db.parties.get(JOURNEY.partyId)
   return {
     regNo: vehicle?.regNo ?? "",
     vehicle: vehicle ? `${vehicle.make} ${vehicle.model}` : "",
     customer: party?.nameEn ?? "",
+    customerBn: party?.nameBn || party?.nameEn || "",
   }
 }
 
