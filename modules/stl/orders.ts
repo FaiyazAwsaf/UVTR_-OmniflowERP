@@ -155,16 +155,18 @@ export async function takeDeposit(
   return receipt
 }
 
-/** The booking SMS (document number, date, time and deposit only). */
+/** The booking SMS (document number, date, time and the deposit when one was taken). */
 export async function sendBookingSms(tx: Tx, order: SalesOrderRow, depositP: Poisha) {
   const party = await tx.get("parties", order.partyId)
-  if (!party.smsConsent || !party.phone || depositP <= 0) return
+  if (!party.smsConsent || !party.phone) return
+  const when = { orderNo: order.orderNo, date: smsDate(order.scheduledAt), time: dhakaTime(order.scheduledAt) }
   queueSms(tx, {
     to: party.phone,
     partyId: party.id,
     lang: "en",
-    templateId: "booking-confirmed",
-    params: { orderNo: order.orderNo, date: smsDate(order.scheduledAt), time: dhakaTime(order.scheduledAt), amount: smsMoney(depositP) },
+    ...(depositP > 0
+      ? { templateId: "booking-confirmed", params: { ...when, amount: smsMoney(depositP) } }
+      : { templateId: "booking-booked", params: when }),
   })
 }
 
