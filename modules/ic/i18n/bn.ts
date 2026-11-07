@@ -21,7 +21,7 @@ export const icBn: typeof icEn = {
       count_approve: "গণনার পার্থক্য অনুমোদন",
     },
     events: {
-      StockBelowReorder: "{sku} পুনঃক্রয় স্তরে বা তার নিচে ({qty}, সর্বনিম্ন {min})",
+      StockBelowReorder: "{location}-এ {sku} পুনঃক্রয় স্তরে বা তার নিচে ({qty}, সর্বনিম্ন {min})",
       CountOpened: "গণনা {no} খোলা হয়েছে ({lines} লাইন)",
       CountPosted: "গণনা {no} পোস্ট হয়েছে ({variances}টি পার্থক্য)",
       ExpiryAlert: "{sku}-এর ব্যাচ {batch}-এর মেয়াদ {days} দিনে শেষ",

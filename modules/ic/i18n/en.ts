@@ -19,7 +19,7 @@ export const icEn = {
       count_approve: "Approve count variances",
     },
     events: {
-      StockBelowReorder: "{sku} at or below its reorder level ({qty} of minimum {min})",
+      StockBelowReorder: "{sku} at or below its reorder level at {location} ({qty} of minimum {min})",
       CountOpened: "Count {no} opened ({lines} lines)",
       CountPosted: "Count {no} posted ({variances} variances)",
       ExpiryAlert: "Batch {batch} of {sku} expires in {days} days",
