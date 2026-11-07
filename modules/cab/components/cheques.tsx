@@ -66,7 +66,7 @@ export function Cheques() {
 
   const focused = data?.find((r) => r.cheque.id === focus)
   const dir = focused && focused.cheque.direction !== direction && !query && !status ? focused.cheque.direction : direction
-  const rows = React.useMemo(() => {
+  const rows = (() => {
     const q = query.trim().toLowerCase()
     const list = (data ?? []).filter(
       (r) => r.cheque.direction === dir && (!status || r.cheque.status === status) && (!q || r.cheque.chequeNo.includes(q) || (r.party?.nameEn.toLowerCase().includes(q) ?? false))
@@ -75,7 +75,7 @@ export function Cheques() {
     const open = (s: string) => (s === "in-hand" || s === "deposited" || s === "issued" || s === "presented" ? 0 : 1)
     const rank = (r: Row) => (r.cheque.id === focus ? -1 : open(r.cheque.status))
     return list.sort((a, b) => rank(a) - rank(b))
-  }, [data, dir, status, query, focus])
+  })()
 
   const act = async (c: ChequeRow, action: "deposit" | "clear" | "bounce" | "present", reason = "") => {
     const r = await update.run({ chequeId: c.id, action, expectedStatus: c.status, reason })
@@ -85,7 +85,7 @@ export function Cheques() {
     }
   }
 
-  const calendar = React.useMemo(() => {
+  const calendar = (() => {
     if (!today) return []
     const inHand = (data ?? []).filter((r) => r.cheque.direction === "received" && r.cheque.status === "in-hand")
     return Array.from({ length: 14 }, (_, i) => {
@@ -93,9 +93,45 @@ export function Cheques() {
       const list = inHand.filter((r) => (i === 0 ? r.cheque.chequeDate <= day : r.cheque.chequeDate === day))
       return { day, count: list.length, amountP: list.reduce((s, r) => s + r.cheque.amountP, 0) }
     })
-  }, [data, today])
+  })()
 
   const canUpdate = can("cab.cheque.update")
+  /** The steps a cheque can take next (deposit, clear, bounce, present); `prefix` keeps the detail panel's test ids apart. */
+  const actionsFor = (c: ChequeRow, prefix = "cheque") => {
+    if (!canUpdate) return null
+    const due = !today || c.chequeDate <= today
+    const btn = (label: string, testId: string, onClick: () => void, opts: { disabled?: boolean; destructive?: boolean } = {}) => (
+      <Button
+        key={testId}
+        size="xs"
+        variant={opts.destructive ? "destructive-outline" : "outline"}
+        data-testid={testId}
+        disabled={opts.disabled || update.pending}
+        onClick={(e) => {
+          e.stopPropagation()
+          onClick()
+        }}
+      >
+        {label}
+      </Button>
+    )
+    const out: React.ReactNode[] = []
+    if (c.direction === "received") {
+      if (c.status === "in-hand") {
+        out.push(due ? btn(t("cab.cheques.deposit"), `${prefix}-deposit`, () => act(c, "deposit")) : <span key="due" className="text-xs text-muted-foreground">{t("cab.cheques.notDue", { date: dmy(c.chequeDate) })}</span>)
+        out.push(btn(t("cab.cheques.bounce"), `${prefix}-bounce`, () => setBouncing(c), { destructive: true }))
+      } else if (c.status === "deposited") {
+        out.push(btn(t("cab.cheques.clear"), `${prefix}-clear`, () => act(c, "clear")))
+        out.push(btn(t("cab.cheques.bounce"), `${prefix}-bounce`, () => setBouncing(c), { destructive: true }))
+      }
+    } else if (c.status === "issued") {
+      out.push(btn(t("cab.cheques.present"), `${prefix}-present`, () => act(c, "present")))
+    } else if (c.status === "presented") {
+      out.push(btn(t("cab.cheques.clear"), `${prefix}-clear`, () => act(c, "clear")))
+    }
+    return out.length ? <div className="flex flex-wrap justify-end gap-1">{out}</div> : null
+  }
+
   const columns: Column<Row>[] = [
     {
       key: "no",
@@ -141,40 +177,7 @@ export function Cheques() {
     {
       key: "actions",
       header: "",
-      cell: ({ cheque: c }) => {
-        if (!canUpdate) return null
-        const due = !today || c.chequeDate <= today
-        const btn = (label: string, testId: string, onClick: () => void, opts: { disabled?: boolean; destructive?: boolean } = {}) => (
-          <Button
-            key={testId}
-            size="xs"
-            variant={opts.destructive ? "destructive-outline" : "outline"}
-            data-testid={testId}
-            disabled={opts.disabled || update.pending}
-            onClick={(e) => {
-              e.stopPropagation()
-              onClick()
-            }}
-          >
-            {label}
-          </Button>
-        )
-        const out: React.ReactNode[] = []
-        if (c.direction === "received") {
-          if (c.status === "in-hand") {
-            out.push(due ? btn(t("cab.cheques.deposit"), "cheque-deposit", () => act(c, "deposit")) : <span key="due" className="text-xs text-muted-foreground">{t("cab.cheques.notDue", { date: dmy(c.chequeDate) })}</span>)
-            out.push(btn(t("cab.cheques.bounce"), "cheque-bounce", () => setBouncing(c), { destructive: true }))
-          } else if (c.status === "deposited") {
-            out.push(btn(t("cab.cheques.clear"), "cheque-clear", () => act(c, "clear")))
-            out.push(btn(t("cab.cheques.bounce"), "cheque-bounce", () => setBouncing(c), { destructive: true }))
-          }
-        } else if (c.status === "issued") {
-          out.push(btn(t("cab.cheques.present"), "cheque-present", () => act(c, "present")))
-        } else if (c.status === "presented") {
-          out.push(btn(t("cab.cheques.clear"), "cheque-clear", () => act(c, "clear")))
-        }
-        return <div className="flex flex-wrap justify-end gap-1">{out}</div>
-      },
+      cell: ({ cheque: c }) => actionsFor(c),
     },
   ]
 
@@ -199,6 +202,7 @@ export function Cheques() {
           />
         }
       />
+      {focused ? <ChequeDetail row={focused} actions={actionsFor(focused.cheque, "cheque-detail")} /> : null}
       <SectionCard title={t("cab.cheques.calendar")} subtitle={t("cab.cheques.calendarHint")} size="sm" icon={CalendarDays}>
         <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-7" data-testid="pdc-calendar">
           {calendar.map((d) => (
@@ -216,7 +220,6 @@ export function Cheques() {
           ))}
         </div>
       </SectionCard>
-      {focused ? <ChequeDetail row={focused} /> : null}
       <section className="surface-card flex flex-col gap-4 p-4 md:p-5">
         <div className="flex flex-wrap items-center gap-2">
           <Pills
@@ -273,7 +276,7 @@ export function Cheques() {
  * reserves on which invoices (outstanding again after a bounce), and the
  * customer's notice once it bounced (numbers, dates and amounts only).
  */
-function ChequeDetail({ row }: { row: Row }) {
+function ChequeDetail({ row, actions }: { row: Row; actions: React.ReactNode }) {
   const db = useDb()
   const { t, locale, dmy } = useLocale()
   const { cheque, receipt, party } = row
@@ -293,7 +296,12 @@ function ChequeDetail({ row }: { row: Row }) {
       title={t("cab.cheques.detailTitle", { no: cheque.chequeNo })}
       subtitle={`${nameOf(party, locale)} · ${cheque.bankName}`}
       size="sm"
-      action={<DocStatus status={cheque.status} />}
+      action={
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          <DocStatus status={cheque.status} />
+          {actions}
+        </div>
+      }
     >
       <div className="flex flex-col gap-3" data-testid="cheque-detail" data-cheque-no={cheque.chequeNo} data-status={cheque.status}>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

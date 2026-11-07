@@ -54,11 +54,9 @@ for (const lang of LANGS) {
       await launch(page, "E8", "cheque-detail")
       await shot(page, `E8-${tag}`)
       await page.getByRole("button", { name: lang === "en" ? "Close the cue card" : "নির্দেশনা কার্ড বন্ধ করুন" }).click()
-      const no = (await page.getByTestId("cheque-detail").getAttribute("data-cheque-no"))!
-      const row = page.locator(`[data-testid="cheque-row"][data-cheque-no="${no}"]`)
-      await row.getByTestId("cheque-deposit").click()
+      await page.getByTestId("cheque-detail").getByTestId("cheque-detail-deposit").click()
       await expect(page.getByTestId("cheque-detail")).toHaveAttribute("data-status", "deposited")
-      await row.getByTestId("cheque-bounce").click()
+      await page.getByTestId("cheque-detail").getByTestId("cheque-detail-bounce").click()
       await page.getByTestId("bounce-dialog").getByTestId("reason-confirm").click()
       await expect(page.getByTestId("cheque-notice")).toBeVisible()
       await page.evaluate(() => window.scrollTo(0, 0))

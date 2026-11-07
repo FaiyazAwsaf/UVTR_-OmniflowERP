@@ -169,10 +169,10 @@ test("E8: Metro's fresh post-dated cheque is deposited and bounces; its invoice 
     const invoice = detail.getByTestId("cheque-invoice").first()
     const reserves = (await detail.getByTestId("cheque-invoice").count()) > 0
     const before = reserves ? Number(await invoice.getAttribute("data-available")) : 0
-    const row = page.locator(`[data-testid="cheque-row"][data-cheque-no="${chequeNo}"]`)
-    await row.getByTestId("cheque-deposit").click()
+    await expect(page.getByTestId("cheque-row").first()).toHaveAttribute("data-cheque-no", chequeNo)
+    await detail.getByTestId("cheque-detail-deposit").click()
     await expect(detail).toHaveAttribute("data-status", "deposited")
-    await row.getByTestId("cheque-bounce").click()
+    await detail.getByTestId("cheque-detail-bounce").click()
     await page.getByTestId("bounce-dialog").getByTestId("reason-confirm").click()
     await expect(detail).toHaveAttribute("data-status", "bounced")
     if (reserves) await expect.poll(async () => Number(await invoice.getAttribute("data-available"))).toBeGreaterThan(before)
