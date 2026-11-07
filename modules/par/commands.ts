@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import type { PartyRow } from "@/core/db/schema"
+import type { PartyRow, VehicleRow } from "@/core/db/schema"
 import { nextDocNo } from "@/core/docs/numbering"
 import { defineCommand } from "@/core/engine/defineCommand"
 import { PermissionDenied } from "@/core/engine/errors"
@@ -50,7 +50,9 @@ export const partyFields = z
     type: z.enum(["individual", "company"]),
     nameEn: z.string().trim().min(2),
     nameBn: z.string().trim().default(""),
-    segment: z.enum(ALL_SEGMENTS as [PartyRow["segment"], ...PartyRow["segment"][]]),
+    segment: z.enum(
+      ALL_SEGMENTS as [PartyRow["segment"], ...PartyRow["segment"][]]
+    ),
     phone: z.string().trim().min(5),
     email: optText,
     addresses: z.array(address).default([]),
@@ -62,37 +64,134 @@ export const partyFields = z
     creditLimitP: z.number().int().min(0).default(0),
     paymentTermsDays: z.number().int().min(0).max(365).default(0),
     priceListId: optText,
-    vendorTaxCategory: z.enum(["goods", "services", "rent", "professional", "utility", "exempt"]).optional(),
+    vendorTaxCategory: z
+      .enum(["goods", "services", "rent", "professional", "utility", "exempt"])
+      .optional(),
     deductsVds: z.boolean().default(false),
     deductsAit: z.boolean().default(false),
     smsConsent: z.boolean().default(true),
     notes: optText,
   })
-  .refine((p) => p.isCustomer || p.isVendor, { message: "customer or vendor", path: ["isCustomer"] })
+  .refine((p) => p.isCustomer || p.isVendor, {
+    message: "customer or vendor",
+    path: ["isCustomer"],
+  })
 
 export type PartyFieldsInput = z.input<typeof partyFields>
 
 /** The create or edit keys the party's kinds need (customer, vendor or both). */
-function requireKindKeys(tx: Tx, p: { isCustomer: boolean; isVendor: boolean }, verb: "create" | "edit") {
-  const needed = [p.isCustomer ? `par.customer.${verb}` : null, p.isVendor ? `par.vendor.${verb}` : null].filter(Boolean) as string[]
-  for (const key of needed) if (!tx.can(key)) throw new PermissionDenied(tx.command, tx.actor.userId, [key])
+function requireKindKeys(
+  tx: Tx,
+  p: { isCustomer: boolean; isVendor: boolean },
+  verb: "create" | "edit"
+) {
+  const needed = [
+    p.isCustomer ? `par.customer.${verb}` : null,
+    p.isVendor ? `par.vendor.${verb}` : null,
+  ].filter(Boolean) as string[]
+  for (const key of needed)
+    if (!tx.can(key))
+      throw new PermissionDenied(tx.command, tx.actor.userId, [key])
 }
 
 /** Refuse a BIN or NID another party already uses (plan §6.2). */
-async function refuseDuplicateIds(tx: Tx, p: { bin?: string; nid?: string }, selfId?: string) {
+async function refuseDuplicateIds(
+  tx: Tx,
+  p: { bin?: string; nid?: string },
+  selfId?: string
+) {
   if (p.bin) {
-    const same = (await tx.list("parties", "bin", p.bin)).filter((x) => x.id !== selfId)
-    if (same.length) tx.reject("DUPLICATE_BIN", { bin: p.bin, party: same[0].nameEn })
+    const same = (await tx.list("parties", "bin", p.bin)).filter(
+      (x) => x.id !== selfId
+    )
+    if (same.length)
+      tx.reject("DUPLICATE_BIN", { bin: p.bin, party: same[0].nameEn })
   }
   if (p.nid) {
-    const same = (await tx.list("parties", "nid", p.nid)).filter((x) => x.id !== selfId)
-    if (same.length) tx.reject("DUPLICATE_NID", { nid: p.nid, party: same[0].nameEn })
+    const same = (await tx.list("parties", "nid", p.nid)).filter(
+      (x) => x.id !== selfId
+    )
+    if (same.length)
+      tx.reject("DUPLICATE_NID", { nid: p.nid, party: same[0].nameEn })
   }
 }
 
-async function defaultPriceList(tx: Tx, segment: PartyRow["segment"]): Promise<string | undefined> {
-  const lists = await tx.list("priceLists", "code", defaultPriceListCode(segment))
+async function defaultPriceList(
+  tx: Tx,
+  segment: PartyRow["segment"]
+): Promise<string | undefined> {
+  const lists = await tx.list(
+    "priceLists",
+    "code",
+    defaultPriceListCode(segment)
+  )
   return lists.find((l) => l.status === "published")?.id
+}
+
+/**
+ * A new party in the current commit (par.createParty, and STL's quick add
+ * from the quotation and booking screens): the kind's create key, BIN/NID
+ * unique, credit fields only with `par.credit.edit`, the segment's price list.
+ */
+export async function createPartyTx(
+  tx: Tx,
+  input: z.output<typeof partyFields>
+): Promise<{ party: PartyRow; code: string }> {
+  requireKindKeys(tx, input, "create")
+  await refuseDuplicateIds(tx, input)
+  const credit = tx.can("par.credit.edit")
+  const vendorOnly = input.isVendor && !input.isCustomer
+  if (!credit) {
+    const defaults = {
+      creditLimitP: 0,
+      priceListId: undefined,
+      deductsVds: false,
+      deductsAit: false,
+      customerTermsDays: 0,
+    }
+    const asked = creditFieldsOf({ ...input, priceListId: input.priceListId })
+    if (!sameCreditFields(asked, defaults))
+      tx.reject("CREDIT_EDIT_DENIED", {}, { audit: true })
+  }
+  const priceListId = input.isCustomer
+    ? (input.priceListId ?? (await defaultPriceList(tx, input.segment)))
+    : undefined
+  const code = await nextDocNo(tx, input.isCustomer ? "C" : "V")
+  const party = tx.insert("parties", {
+    code,
+    isCustomer: input.isCustomer,
+    isVendor: input.isVendor,
+    type: input.type,
+    nameEn: input.nameEn,
+    nameBn: input.nameBn || input.nameEn,
+    segment: input.segment,
+    phone: input.phone,
+    email: input.email,
+    addresses: input.addresses.filter((a) => a.line || a.area),
+    contacts: input.contacts,
+    bin: input.bin,
+    tin: input.tin,
+    nid: input.nid,
+    tradeLicense: input.tradeLicense,
+    creditLimitP: input.creditLimitP,
+    paymentTermsDays: input.paymentTermsDays || (vendorOnly ? 30 : 0),
+    priceListId,
+    vendorTaxCategory: input.isVendor
+      ? (input.vendorTaxCategory ?? "goods")
+      : undefined,
+    deductsVds: input.deductsVds,
+    deductsAit: input.deductsAit,
+    status: "active",
+    smsConsent: input.smsConsent,
+    avatarSeed: code,
+    notes: input.notes,
+  })
+  tx.emit("PartyCreated", {
+    refs: { partyId: party.id },
+    params: { code, name: party.nameEn },
+    locationId: null,
+  })
+  return { party, code }
 }
 
 /** `par.createParty`: a customer (C-<6>) or vendor (V-<4>); duplicate warning in the UI, BIN/NID refused here. */
@@ -101,55 +200,7 @@ export const createParty = defineCommand({
   permission: ["par.customer.create", "par.vendor.create"],
   input: partyFields,
   async run(tx, input) {
-    requireKindKeys(tx, input, "create")
-    await refuseDuplicateIds(tx, input)
-    const credit = tx.can("par.credit.edit")
-    const vendorOnly = input.isVendor && !input.isCustomer
-    if (!credit) {
-      const defaults = {
-        creditLimitP: 0,
-        priceListId: undefined,
-        deductsVds: false,
-        deductsAit: false,
-        customerTermsDays: 0,
-      }
-      const asked = creditFieldsOf({ ...input, priceListId: input.priceListId })
-      if (!sameCreditFields(asked, defaults)) tx.reject("CREDIT_EDIT_DENIED", {}, { audit: true })
-    }
-    const priceListId = input.isCustomer ? (input.priceListId ?? (await defaultPriceList(tx, input.segment))) : undefined
-    const code = await nextDocNo(tx, input.isCustomer ? "C" : "V")
-    const party = tx.insert("parties", {
-      code,
-      isCustomer: input.isCustomer,
-      isVendor: input.isVendor,
-      type: input.type,
-      nameEn: input.nameEn,
-      nameBn: input.nameBn || input.nameEn,
-      segment: input.segment,
-      phone: input.phone,
-      email: input.email,
-      addresses: input.addresses.filter((a) => a.line || a.area),
-      contacts: input.contacts,
-      bin: input.bin,
-      tin: input.tin,
-      nid: input.nid,
-      tradeLicense: input.tradeLicense,
-      creditLimitP: input.creditLimitP,
-      paymentTermsDays: input.paymentTermsDays || (vendorOnly ? 30 : 0),
-      priceListId,
-      vendorTaxCategory: input.isVendor ? (input.vendorTaxCategory ?? "goods") : undefined,
-      deductsVds: input.deductsVds,
-      deductsAit: input.deductsAit,
-      status: "active",
-      smsConsent: input.smsConsent,
-      avatarSeed: code,
-      notes: input.notes,
-    })
-    tx.emit("PartyCreated", {
-      refs: { partyId: party.id },
-      params: { code, name: party.nameEn },
-      locationId: null,
-    })
+    const { party, code } = await createPartyTx(tx, input)
     return { partyId: party.id, code }
   },
 })
@@ -158,14 +209,35 @@ export const createParty = defineCommand({
 export const updateParty = defineCommand({
   name: "par.updateParty",
   permission: ["par.customer.edit", "par.vendor.edit"],
-  input: z.object({ partyId: z.string(), expectedVersion: z.number().int(), fields: partyFields }),
+  input: z.object({
+    partyId: z.string(),
+    expectedVersion: z.number().int(),
+    fields: partyFields,
+  }),
   async run(tx, input) {
-    const party = await tx.get("parties", input.partyId, { expectedVersion: input.expectedVersion })
+    const party = await tx.get("parties", input.partyId, {
+      expectedVersion: input.expectedVersion,
+    })
     const f = input.fields
-    requireKindKeys(tx, { isCustomer: party.isCustomer || f.isCustomer, isVendor: party.isVendor || f.isVendor }, "edit")
+    requireKindKeys(
+      tx,
+      {
+        isCustomer: party.isCustomer || f.isCustomer,
+        isVendor: party.isVendor || f.isVendor,
+      },
+      "edit"
+    )
     await refuseDuplicateIds(tx, f, party.id)
-    const next = { ...f, priceListId: f.isCustomer ? (f.priceListId ?? party.priceListId) : undefined }
-    if (!tx.can("par.credit.edit") && !sameCreditFields(creditFieldsOf(party), creditFieldsOf(next))) {
+    const next = {
+      ...f,
+      priceListId: f.isCustomer
+        ? (f.priceListId ?? party.priceListId)
+        : undefined,
+    }
+    if (
+      !tx.can("par.credit.edit") &&
+      !sameCreditFields(creditFieldsOf(party), creditFieldsOf(next))
+    ) {
       tx.reject("CREDIT_EDIT_DENIED", {}, { audit: true })
     }
     const updated = await tx.update("parties", party.id, {
@@ -186,13 +258,19 @@ export const updateParty = defineCommand({
       creditLimitP: next.creditLimitP,
       paymentTermsDays: next.paymentTermsDays,
       priceListId: next.priceListId,
-      vendorTaxCategory: f.isVendor ? (f.vendorTaxCategory ?? party.vendorTaxCategory ?? "goods") : undefined,
+      vendorTaxCategory: f.isVendor
+        ? (f.vendorTaxCategory ?? party.vendorTaxCategory ?? "goods")
+        : undefined,
       deductsVds: next.deductsVds,
       deductsAit: next.deductsAit,
       smsConsent: f.smsConsent,
       notes: f.notes,
     })
-    tx.emit("PartyUpdated", { refs: { partyId: party.id }, params: { code: party.code }, locationId: null })
+    tx.emit("PartyUpdated", {
+      refs: { partyId: party.id },
+      params: { code: party.code },
+      locationId: null,
+    })
     return { partyId: updated.id, version: updated.version }
   },
 })
@@ -208,8 +286,11 @@ export const setPartyStatus = defineCommand({
     expectedVersion: z.number().int().optional(),
   }),
   async run(tx, input) {
-    const party = await tx.get("parties", input.partyId, { expectedVersion: input.expectedVersion })
-    if (party.status === input.status) tx.reject("PARTY_STATUS_SAME", { status: input.status })
+    const party = await tx.get("parties", input.partyId, {
+      expectedVersion: input.expectedVersion,
+    })
+    if (party.status === input.status)
+      tx.reject("PARTY_STATUS_SAME", { status: input.status })
     if (input.status !== "active" && !input.reason) tx.reject("REASON_REQUIRED")
     await tx.update("parties", party.id, {
       status: input.status,
@@ -232,44 +313,59 @@ const vehicleFields = z.object({
   model: z.string().trim().min(1),
   year: z.number().int().min(1950).max(2100),
   colour: z.string().trim().default(""),
-  vehicleClass: z.enum(VEHICLE_CLASS_LIST as ["HB", "SD", "SUV", "LSUV", "MPV"]),
+  vehicleClass: z.enum(
+    VEHICLE_CLASS_LIST as ["HB", "SD", "SUV", "LSUV", "MPV"]
+  ),
   vin: optText,
   notes: optText,
 })
 
 async function refuseDuplicateReg(tx: Tx, regNo: string, selfId?: string) {
-  const same = (await tx.list("vehicles", "regNo", regNo)).filter((v) => v.id !== selfId)
+  const same = (await tx.list("vehicles", "regNo", regNo)).filter(
+    (v) => v.id !== selfId
+  )
   if (same.length) tx.reject("DUPLICATE_REGISTRATION", { regNo })
+}
+
+export const addVehicleInput = vehicleFields.extend({ partyId: z.string() })
+
+/** A customer's vehicle in the current commit (par.addVehicle and STL's quick add); the registration is unique. */
+export async function addVehicleTx(
+  tx: Tx,
+  input: z.output<typeof addVehicleInput>
+): Promise<VehicleRow> {
+  const party = await tx.get("parties", input.partyId)
+  if (!party.isCustomer) tx.reject("NOT_A_CUSTOMER", { party: party.nameEn })
+  const regNo = normalizeRegNo(input.regNo)
+  await refuseDuplicateReg(tx, regNo)
+  const vehicle = tx.insert("vehicles", {
+    partyId: party.id,
+    regNo,
+    regNoBn: input.regNoBn || regNoToBangla(regNo),
+    make: input.make,
+    model: input.model,
+    year: input.year,
+    colour: input.colour,
+    vehicleClass: input.vehicleClass,
+    vin: input.vin,
+    notes: input.notes,
+    active: true,
+  })
+  tx.emit("VehicleAdded", {
+    refs: { partyId: party.id, vehicleId: vehicle.id },
+    params: { regNo, party: party.nameEn },
+    locationId: null,
+  })
+  return vehicle
 }
 
 /** `par.addVehicle`: a customer's vehicle; the registration is unique (VehicleAdded). */
 export const addVehicle = defineCommand({
   name: "par.addVehicle",
   permission: "par.customer.create",
-  input: vehicleFields.extend({ partyId: z.string() }),
+  input: addVehicleInput,
   async run(tx, input) {
-    const party = await tx.get("parties", input.partyId)
-    if (!party.isCustomer) tx.reject("NOT_A_CUSTOMER", { party: party.nameEn })
-    const regNo = normalizeRegNo(input.regNo)
-    await refuseDuplicateReg(tx, regNo)
-    const vehicle = tx.insert("vehicles", {
-      partyId: party.id,
-      regNo,
-      regNoBn: input.regNoBn || regNoToBangla(regNo),
-      make: input.make,
-      model: input.model,
-      year: input.year,
-      colour: input.colour,
-      vehicleClass: input.vehicleClass,
-      vin: input.vin,
-      notes: input.notes,
-      active: true,
-    })
-    tx.emit("VehicleAdded", {
-      refs: { partyId: party.id, vehicleId: vehicle.id },
-      params: { regNo, party: party.nameEn },
-      locationId: null,
-    })
+    const vehicle = await addVehicleTx(tx, input)
     return { vehicleId: vehicle.id }
   },
 })
@@ -284,12 +380,17 @@ export const updateVehicle = defineCommand({
     active: z.boolean().default(true),
   }),
   async run(tx, input) {
-    const vehicle = await tx.get("vehicles", input.vehicleId, { expectedVersion: input.expectedVersion })
+    const vehicle = await tx.get("vehicles", input.vehicleId, {
+      expectedVersion: input.expectedVersion,
+    })
     const regNo = normalizeRegNo(input.regNo)
     await refuseDuplicateReg(tx, regNo, vehicle.id)
     await tx.update("vehicles", vehicle.id, {
       regNo,
-      regNoBn: regNo === vehicle.regNo ? (input.regNoBn || vehicle.regNoBn) : (input.regNoBn || regNoToBangla(regNo)),
+      regNoBn:
+        regNo === vehicle.regNo
+          ? input.regNoBn || vehicle.regNoBn
+          : input.regNoBn || regNoToBangla(regNo),
       make: input.make,
       model: input.model,
       year: input.year,

@@ -8,7 +8,12 @@ import type { Id, QcItem, SalesOrderRow } from "@/core/db/schema"
 import { nextDocNo } from "@/core/docs/numbering"
 import { defineCommand } from "@/core/engine/defineCommand"
 import type { Tx } from "@/core/engine/types"
-import { localizeDigits } from "@/lib/i18n/format"
+import {
+  addVehicleInput,
+  addVehicleTx,
+  createPartyTx,
+  partyFields,
+} from "@/modules/par/commands"
 import { loadCatalogue } from "@/modules/pc/catalogue"
 import { recipeFor, type PricedDraft } from "@/modules/pc/pricing"
 
@@ -42,7 +47,14 @@ import {
 
 const discountApproval = async (
   tx: Tx,
-  input: { discountPct: number; docType: "quotations" | "salesOrders"; docId: Id; docNo: string; locationId: Id; inline?: z.infer<typeof INLINE> }
+  input: {
+    discountPct: number
+    docType: "quotations" | "salesOrders"
+    docId: Id
+    docNo: string
+    locationId: Id
+    inline?: z.infer<typeof INLINE>
+  }
 ) => {
   if (input.discountPct <= 0) return undefined
   const outcome = await requireApproval(tx, {
@@ -85,13 +97,24 @@ export const saveQuotation = defineCommand({
     inline: INLINE.optional(),
   }),
   async run(tx, input) {
-    const existing = input.quotationId ? await tx.get("quotations", input.quotationId, { expectedVersion: input.expectedVersion }) : undefined
-    if (existing && existing.status !== "draft" && existing.status !== "sent") tx.reject("STL_QUOTE_CLOSED", { no: existing.quoteNo })
-    const locationId = existing?.locationId ?? input.locationId ?? tx.actor.locationId ?? tx.reject("STL_NO_LOCATION")
+    const existing = input.quotationId
+      ? await tx.get("quotations", input.quotationId, {
+          expectedVersion: input.expectedVersion,
+        })
+      : undefined
+    if (existing && existing.status !== "draft" && existing.status !== "sent")
+      tx.reject("STL_QUOTE_CLOSED", { no: existing.quoteNo })
+    const locationId =
+      existing?.locationId ??
+      input.locationId ??
+      tx.actor.locationId ??
+      tx.reject("STL_NO_LOCATION")
     tx.requireLocation(locationId)
     const priced = await priceForParty(tx, input)
     const today = tx.today()
-    const quoteNo = existing?.quoteNo ?? (await nextDocNo(tx, "QT", { location: locationId, date: today }))
+    const quoteNo =
+      existing?.quoteNo ??
+      (await nextDocNo(tx, "QT", { location: locationId, date: today }))
     const fields = {
       locationId,
       partyId: priced.party.id,
@@ -111,15 +134,40 @@ export const saveQuotation = defineCommand({
       ? await tx.update("quotations", existing.id, fields)
       : tx.insert("quotations", { quoteNo, status: "draft", ...fields })
     // Keep an earlier approval when the percent did not change.
-    const keep = existing?.discountApprovalId && existing.discountPct === input.discountPct
+    const keep =
+      existing?.discountApprovalId && existing.discountPct === input.discountPct
     const approvalId = keep
       ? existing.discountApprovalId
-      : await discountApproval(tx, { ...input, docType: "quotations", docId: quotation.id, docNo: quoteNo, locationId })
-    quotation = await tx.update("quotations", quotation.id, { discountApprovalId: input.discountPct > 0 ? approvalId : undefined })
-    if (existing) for (const old of await tx.list("quotationLines", "quotationId", existing.id)) await tx.remove("quotationLines", old.id)
-    priced.lines.forEach((l, i) => tx.insert("quotationLines", { quotationId: quotation.id, lineNo: i + 1, ...lineFields(l) }))
+      : await discountApproval(tx, {
+          ...input,
+          docType: "quotations",
+          docId: quotation.id,
+          docNo: quoteNo,
+          locationId,
+        })
+    quotation = await tx.update("quotations", quotation.id, {
+      discountApprovalId: input.discountPct > 0 ? approvalId : undefined,
+    })
+    if (existing)
+      for (const old of await tx.list(
+        "quotationLines",
+        "quotationId",
+        existing.id
+      ))
+        await tx.remove("quotationLines", old.id)
+    priced.lines.forEach((l, i) =>
+      tx.insert("quotationLines", {
+        quotationId: quotation.id,
+        lineNo: i + 1,
+        ...lineFields(l),
+      })
+    )
     tx.emit("QuotationSaved", {
-      refs: { quotationId: quotation.id, partyId: priced.party.id, vehicleId: priced.vehicle?.id },
+      refs: {
+        quotationId: quotation.id,
+        partyId: priced.party.id,
+        vehicleId: priced.vehicle?.id,
+      },
       params: { no: quoteNo },
       locationId,
     })
@@ -147,11 +195,18 @@ const lineFields = (l: PricedDraft) => ({
 export const sendQuotation = defineCommand({
   name: "stl.sendQuotation",
   permission: "stl.quote.create",
-  input: z.object({ quotationId: z.string(), channel: z.enum(["sms", "email"]), expectedVersion: z.number().optional() }),
+  input: z.object({
+    quotationId: z.string(),
+    channel: z.enum(["sms", "email"]),
+    expectedVersion: z.number().optional(),
+  }),
   async run(tx, input) {
-    const quotation = await tx.get("quotations", input.quotationId, { expectedVersion: input.expectedVersion })
+    const quotation = await tx.get("quotations", input.quotationId, {
+      expectedVersion: input.expectedVersion,
+    })
     tx.requireLocation(quotation.locationId)
-    if (quotation.status !== "draft" && quotation.status !== "sent") tx.reject("STL_QUOTE_CLOSED", { no: quotation.quoteNo })
+    if (quotation.status !== "draft" && quotation.status !== "sent")
+      tx.reject("STL_QUOTE_CLOSED", { no: quotation.quoteNo })
     const party = await tx.get("parties", quotation.partyId)
     if (input.channel === "sms") {
       if (!party.phone) tx.reject("STL_NO_PHONE")
@@ -160,7 +215,11 @@ export const sendQuotation = defineCommand({
         partyId: party.id,
         lang: "en",
         templateId: "quotation-sent",
-        params: { quoteNo: quotation.quoteNo, amount: smsMoney(quotation.totalP), date: smsDate(quotation.validUntil) },
+        params: {
+          quoteNo: quotation.quoteNo,
+          amount: smsMoney(quotation.totalP),
+          date: smsDate(quotation.validUntil),
+        },
       })
     } else {
       const email = party.email ?? tx.reject("STL_NO_EMAIL")
@@ -172,8 +231,15 @@ export const sendQuotation = defineCommand({
         refs: { quotationId: quotation.id, partyId: party.id },
       })
     }
-    await tx.update("quotations", quotation.id, { status: "sent", sentAt: tx.now() })
-    tx.emit("QuotationSent", { refs: { quotationId: quotation.id, partyId: party.id }, params: { no: quotation.quoteNo }, locationId: quotation.locationId })
+    await tx.update("quotations", quotation.id, {
+      status: "sent",
+      sentAt: tx.now(),
+    })
+    tx.emit("QuotationSent", {
+      refs: { quotationId: quotation.id, partyId: party.id },
+      params: { no: quotation.quoteNo },
+      locationId: quotation.locationId,
+    })
     return { quoteNo: quotation.quoteNo }
   },
 })
@@ -210,7 +276,10 @@ async function bookOrder(
   const { priced } = input
   const lines = input.lines ?? priced.lines
   const today = tx.today()
-  const orderNo = await nextDocNo(tx, "SO", { location: input.locationId, date: today })
+  const orderNo = await nextDocNo(tx, "SO", {
+    location: input.locationId,
+    date: today,
+  })
   const scheduledAt = input.scheduledAt ?? tx.now()
   const minutes = lines.reduce((s, l) => s + l.durationMin, 0)
   const totals = {
@@ -244,10 +313,18 @@ async function bookOrder(
   insertOrderLines(tx, order.id, lines)
   if (input.promotionId) {
     const promo = await tx.find("promotions", input.promotionId)
-    if (promo && lines.some((l) => l.discountP > 0)) await tx.update("promotions", promo.id, { usedCount: promo.usedCount + 1 })
+    if (promo && lines.some((l) => l.discountP > 0))
+      await tx.update("promotions", promo.id, {
+        usedCount: promo.usedCount + 1,
+      })
   }
   tx.emit("OrderBooked", {
-    refs: { orderId: order.id, partyId: order.partyId, vehicleId: order.vehicleId, quotationId: input.quotationId },
+    refs: {
+      orderId: order.id,
+      partyId: order.partyId,
+      vehicleId: order.vehicleId,
+      quotationId: input.quotationId,
+    },
     params: { no: orderNo },
     locationId: input.locationId,
   })
@@ -263,16 +340,31 @@ async function bookOrder(
 export const acceptQuotation = defineCommand({
   name: "stl.acceptQuotation",
   permission: "stl.order.create",
-  input: z.object({ quotationId: z.string(), expectedVersion: z.number().optional(), ...SCHEDULE }),
+  input: z.object({
+    quotationId: z.string(),
+    expectedVersion: z.number().optional(),
+    ...SCHEDULE,
+  }),
   async run(tx, input) {
-    const quotation = await tx.get("quotations", input.quotationId, { expectedVersion: input.expectedVersion })
+    const quotation = await tx.get("quotations", input.quotationId, {
+      expectedVersion: input.expectedVersion,
+    })
     tx.requireLocation(quotation.locationId)
-    if (quotation.status !== "draft" && quotation.status !== "sent") tx.reject("STL_QUOTE_CLOSED", { no: quotation.quoteNo })
-    if (quotation.validUntil < tx.today()) tx.reject("STL_QUOTE_EXPIRED", { no: quotation.quoteNo, date: quotation.validUntil })
+    if (quotation.status !== "draft" && quotation.status !== "sent")
+      tx.reject("STL_QUOTE_CLOSED", { no: quotation.quoteNo })
+    if (quotation.validUntil < tx.today())
+      tx.reject("STL_QUOTE_EXPIRED", {
+        no: quotation.quoteNo,
+        date: quotation.validUntil,
+      })
     const party = await tx.get("parties", quotation.partyId)
-    const vehicle = quotation.vehicleId ? await tx.get("vehicles", quotation.vehicleId) : undefined
+    const vehicle = quotation.vehicleId
+      ? await tx.get("vehicles", quotation.vehicleId)
+      : undefined
     const catalogue = await loadCatalogue(tx)
-    const qLines = (await tx.list("quotationLines", "quotationId", quotation.id)).sort((a, b) => a.lineNo - b.lineNo)
+    const qLines = (
+      await tx.list("quotationLines", "quotationId", quotation.id)
+    ).sort((a, b) => a.lineNo - b.lineNo)
     const lines: PricedDraft[] = qLines.map((l) => ({
       ...lineFields(l as unknown as PricedDraft),
       grossP: Math.round(l.qty * l.unitPriceP),
@@ -303,12 +395,16 @@ export const acceptQuotation = defineCommand({
       advisorId: tx.actor.userId,
       scheduledAt: input.scheduledAt,
       promisedAt: input.promisedAt,
-      conditionNotes: input.conditionNotes ?? (quotation.inspectionNotes || undefined),
+      conditionNotes:
+        input.conditionNotes ?? (quotation.inspectionNotes || undefined),
       odometerKm: input.odometerKm,
       deposit: input.deposit,
       idempotencyKey: input.idempotencyKey,
     })
-    await tx.update("quotations", quotation.id, { status: "accepted", orderId: order.id })
+    await tx.update("quotations", quotation.id, {
+      status: "accepted",
+      orderId: order.id,
+    })
     tx.emit("QuotationAccepted", {
       refs: { quotationId: quotation.id, orderId: order.id, partyId: party.id },
       params: { no: quotation.quoteNo },
@@ -333,7 +429,8 @@ export const createOrder = defineCommand({
     ...SCHEDULE,
   }),
   async run(tx, input) {
-    const locationId = input.locationId ?? tx.actor.locationId ?? tx.reject("STL_NO_LOCATION")
+    const locationId =
+      input.locationId ?? tx.actor.locationId ?? tx.reject("STL_NO_LOCATION")
     tx.requireLocation(locationId)
     const priced = await priceForParty(tx, input)
     const order = await bookOrder(tx, {
@@ -349,8 +446,17 @@ export const createOrder = defineCommand({
       deposit: input.deposit,
       idempotencyKey: input.idempotencyKey,
     })
-    const approvalId = await discountApproval(tx, { ...input, docType: "salesOrders", docId: order.id, docNo: order.orderNo, locationId })
-    if (approvalId) await tx.update("salesOrders", order.id, { discountApprovalId: approvalId })
+    const approvalId = await discountApproval(tx, {
+      ...input,
+      docType: "salesOrders",
+      docId: order.id,
+      docNo: order.orderNo,
+      locationId,
+    })
+    if (approvalId)
+      await tx.update("salesOrders", order.id, {
+        discountApprovalId: approvalId,
+      })
     return { orderId: order.id, orderNo: order.orderNo }
   },
 })
@@ -373,30 +479,54 @@ export const scheduleOrder = defineCommand({
     expectedVersion: z.number().optional(),
     bayId: z.string(),
     start: z.number(),
-    assignments: z.array(z.object({ orderLineId: z.string(), technicianId: z.string() })).min(1),
+    assignments: z
+      .array(z.object({ orderLineId: z.string(), technicianId: z.string() }))
+      .min(1),
   }),
   async run(tx, input) {
-    const order = await tx.get("salesOrders", input.orderId, { expectedVersion: input.expectedVersion })
+    const order = await tx.get("salesOrders", input.orderId, {
+      expectedVersion: input.expectedVersion,
+    })
     tx.requireLocation(order.locationId)
-    if (order.status !== "booked" && order.status !== "in-progress") tx.reject("STL_ORDER_STATUS", { no: order.orderNo })
+    if (order.status !== "booked" && order.status !== "in-progress")
+      tx.reject("STL_ORDER_STATUS", { no: order.orderNo })
     const bay = await tx.get("bays", input.bayId)
-    if (bay.locationId !== order.locationId || !bay.active) tx.reject("STL_BAY_LOCATION", { bay: bay.code })
+    if (bay.locationId !== order.locationId || !bay.active)
+      tx.reject("STL_BAY_LOCATION", { bay: bay.code })
     const catalogue = await loadCatalogue(tx)
-    const lines = (await tx.list("salesOrderLines", "orderId", order.id)).filter(isTaskLine).sort((a, b) => a.lineNo - b.lineNo)
+    const lines = (await tx.list("salesOrderLines", "orderId", order.id))
+      .filter(isTaskLine)
+      .sort((a, b) => a.lineNo - b.lineNo)
     const tasks = await tx.list("jobTasks", "orderId", order.id)
-    const techOf = new Map(input.assignments.map((a) => [a.orderLineId, a.technicianId]))
+    const techOf = new Map(
+      input.assignments.map((a) => [a.orderLineId, a.technicianId])
+    )
     let cursor = input.start
     let scheduled = 0
     for (const line of lines) {
       const task = tasks.find((t) => t.orderLineId === line.id)
       if (task && task.status !== "queued") continue
       if (line.status === "done") continue
-      const technicianId = techOf.get(line.id) ?? task?.technicianId ?? tx.reject("STL_NO_TECHNICIAN", { line: line.descriptionEn })
+      const technicianId =
+        techOf.get(line.id) ??
+        task?.technicianId ??
+        tx.reject("STL_NO_TECHNICIAN", { line: line.descriptionEn })
       await assertTechnician(tx, technicianId, order.locationId)
       const minutes = lineMinutes(catalogue, line)
       const end = cursor + minutes * MINUTE
-      await assertFree(tx, { orderId: order.id, bayId: bay.id, technicianId, start: cursor, end })
-      const fields = { bayId: bay.id, technicianId, plannedStart: cursor, plannedMinutes: minutes }
+      await assertFree(tx, {
+        orderId: order.id,
+        bayId: bay.id,
+        technicianId,
+        start: cursor,
+        end,
+      })
+      const fields = {
+        bayId: bay.id,
+        technicianId,
+        plannedStart: cursor,
+        plannedMinutes: minutes,
+      }
       if (task) await tx.update("jobTasks", task.id, fields)
       else
         tx.insert("jobTasks", {
@@ -411,8 +541,16 @@ export const scheduleOrder = defineCommand({
       scheduled += 1
     }
     if (!scheduled) tx.reject("STL_NOTHING_TO_SCHEDULE", { no: order.orderNo })
-    await tx.update("salesOrders", order.id, { bayId: bay.id, scheduledAt: input.start, promisedAt: cursor + 30 * MINUTE })
-    tx.emit("JobScheduled", { refs: { orderId: order.id }, params: { no: order.orderNo, bay: bay.code }, locationId: order.locationId })
+    await tx.update("salesOrders", order.id, {
+      bayId: bay.id,
+      scheduledAt: input.start,
+      promisedAt: cursor + 30 * MINUTE,
+    })
+    tx.emit("JobScheduled", {
+      refs: { orderId: order.id },
+      params: { no: order.orderNo, bay: bay.code },
+      locationId: order.locationId,
+    })
     return { orderId: order.id, promisedAt: cursor + 30 * MINUTE }
   },
 })
@@ -431,15 +569,20 @@ export const updateOrder = defineCommand({
     complaintNote: z.string().optional(),
   }),
   async run(tx, input) {
-    const order = await tx.get("salesOrders", input.orderId, { expectedVersion: input.expectedVersion })
+    const order = await tx.get("salesOrders", input.orderId, {
+      expectedVersion: input.expectedVersion,
+    })
     tx.requireLocation(order.locationId)
-    if (order.status === "cancelled") tx.reject("STL_ORDER_STATUS", { no: order.orderNo })
+    if (order.status === "cancelled")
+      tx.reject("STL_ORDER_STATUS", { no: order.orderNo })
     const patch: Partial<SalesOrderRow> = {}
     if (input.promisedAt !== undefined) patch.promisedAt = input.promisedAt
-    if (input.conditionNotes !== undefined) patch.conditionNotes = input.conditionNotes
+    if (input.conditionNotes !== undefined)
+      patch.conditionNotes = input.conditionNotes
     if (input.odometerKm !== undefined) patch.odometerKm = input.odometerKm
     if (input.photoCount !== undefined) patch.photoCount = input.photoCount
-    if (input.complaintNote !== undefined) patch.complaintNote = input.complaintNote
+    if (input.complaintNote !== undefined)
+      patch.complaintNote = input.complaintNote
     await tx.update("salesOrders", order.id, patch)
     return { orderId: order.id }
   },
@@ -449,17 +592,33 @@ export const updateOrder = defineCommand({
 export const cancelOrder = defineCommand({
   name: "stl.cancelOrder",
   permission: "stl.order.cancel",
-  input: z.object({ orderId: z.string(), reason: z.string().trim().min(3), expectedVersion: z.number().optional() }),
+  input: z.object({
+    orderId: z.string(),
+    reason: z.string().trim().min(3),
+    expectedVersion: z.number().optional(),
+  }),
   async run(tx, input) {
-    const order = await tx.get("salesOrders", input.orderId, { expectedVersion: input.expectedVersion })
+    const order = await tx.get("salesOrders", input.orderId, {
+      expectedVersion: input.expectedVersion,
+    })
     tx.requireLocation(order.locationId)
-    if (!["booked", "in-progress", "qc"].includes(order.status)) tx.reject("STL_ORDER_STATUS", { no: order.orderNo })
+    if (!["booked", "in-progress", "qc"].includes(order.status))
+      tx.reject("STL_ORDER_STATUS", { no: order.orderNo })
     for (const line of await tx.list("salesOrderLines", "orderId", order.id)) {
-      if (line.status === "open" && line.qtyDelivered === 0) await tx.update("salesOrderLines", line.id, { status: "cancelled" })
+      if (line.status === "open" && line.qtyDelivered === 0)
+        await tx.update("salesOrderLines", line.id, { status: "cancelled" })
     }
-    await tx.update("salesOrders", order.id, { status: "cancelled", cancelReason: input.reason, cancelledAt: tx.now() })
+    await tx.update("salesOrders", order.id, {
+      status: "cancelled",
+      cancelReason: input.reason,
+      cancelledAt: tx.now(),
+    })
     tx.auditContext({ reason: input.reason })
-    tx.emit("OrderCancelled", { refs: { orderId: order.id, partyId: order.partyId }, params: { no: order.orderNo }, locationId: order.locationId })
+    tx.emit("OrderCancelled", {
+      refs: { orderId: order.id, partyId: order.partyId },
+      params: { no: order.orderNo },
+      locationId: order.locationId,
+    })
     return { orderId: order.id }
   },
 })
@@ -471,17 +630,34 @@ export const cancelOrder = defineCommand({
 export const startTask = defineCommand({
   name: "stl.startTask",
   permission: "stl.job.work",
-  input: z.object({ taskId: z.string(), expectedVersion: z.number().optional() }),
+  input: z.object({
+    taskId: z.string(),
+    expectedVersion: z.number().optional(),
+  }),
   async run(tx, input) {
-    const task = await tx.get("jobTasks", input.taskId, { expectedVersion: input.expectedVersion })
+    const task = await tx.get("jobTasks", input.taskId, {
+      expectedVersion: input.expectedVersion,
+    })
     tx.requireLocation(task.locationId)
     assertOwnTask(tx, task)
     if (task.status !== "queued") tx.reject("STL_TASK_STATUS")
     const order = await tx.get("salesOrders", task.orderId)
-    if (order.status !== "booked" && order.status !== "in-progress") tx.reject("STL_ORDER_STATUS", { no: order.orderNo })
-    await tx.update("jobTasks", task.id, { status: "in-progress", startedAt: tx.now() })
-    if (order.status === "booked") await tx.update("salesOrders", order.id, { status: "in-progress", startedAt: tx.now() })
-    tx.emit("TaskStarted", { refs: { orderId: order.id, taskId: task.id }, params: { no: order.orderNo }, locationId: order.locationId })
+    if (order.status !== "booked" && order.status !== "in-progress")
+      tx.reject("STL_ORDER_STATUS", { no: order.orderNo })
+    await tx.update("jobTasks", task.id, {
+      status: "in-progress",
+      startedAt: tx.now(),
+    })
+    if (order.status === "booked")
+      await tx.update("salesOrders", order.id, {
+        status: "in-progress",
+        startedAt: tx.now(),
+      })
+    tx.emit("TaskStarted", {
+      refs: { orderId: order.id, taskId: task.id },
+      params: { no: order.orderNo },
+      locationId: order.locationId,
+    })
     return { orderId: order.id }
   },
 })
@@ -494,25 +670,36 @@ export const startTask = defineCommand({
 export const finishTask = defineCommand({
   name: "stl.finishTask",
   permission: "stl.job.work",
-  input: z.object({ taskId: z.string(), expectedVersion: z.number().optional() }),
+  input: z.object({
+    taskId: z.string(),
+    expectedVersion: z.number().optional(),
+  }),
   async run(tx, input) {
-    const task = await tx.get("jobTasks", input.taskId, { expectedVersion: input.expectedVersion })
+    const task = await tx.get("jobTasks", input.taskId, {
+      expectedVersion: input.expectedVersion,
+    })
     tx.requireLocation(task.locationId)
     assertOwnTask(tx, task)
     if (task.status !== "in-progress") tx.reject("STL_TASK_STATUS")
     const order = await tx.get("salesOrders", task.orderId)
-    if (order.status !== "in-progress") tx.reject("STL_ORDER_STATUS", { no: order.orderNo })
+    if (order.status !== "in-progress")
+      tx.reject("STL_ORDER_STATUS", { no: order.orderNo })
     const line = await tx.get("salesOrderLines", task.orderLineId)
     const now = tx.now()
     await tx.update("jobTasks", task.id, {
       status: "done",
       finishedAt: now,
-      minutes: Math.max(1, Math.round((now - (task.startedAt ?? now)) / MINUTE)),
+      minutes: Math.max(
+        1,
+        Math.round((now - (task.startedAt ?? now)) / MINUTE)
+      ),
     })
     await tx.update("salesOrderLines", line.id, { status: "done" })
 
     let valueP = 0
-    const consumed = (await tx.list("jobConsumptions", "orderId", order.id)).some((c) => c.orderLineId === line.id && c.kind === "recipe")
+    const consumed = (
+      await tx.list("jobConsumptions", "orderId", order.id)
+    ).some((c) => c.orderLineId === line.id && c.kind === "recipe")
     if (line.kind === "service" && !consumed) {
       const catalogue = await loadCatalogue(tx)
       const recipe = recipeFor(catalogue, line.refId, line.vehicleClass ?? "SD")
@@ -521,20 +708,35 @@ export const finishTask = defineCommand({
         orderLineId: line.id,
         taskId: task.id,
         locationId: task.locationId,
-        lines: recipe.map((r) => ({ itemId: r.itemId, qtyBase: r.qtyBase, standardQty: r.qtyBase })),
+        lines: recipe.map((r) => ({
+          itemId: r.itemId,
+          qtyBase: r.qtyBase,
+          standardQty: r.qtyBase,
+        })),
         kind: "recipe",
         by: task.technicianId,
         narration: `Consumables used, ${order.orderNo}`,
       })
       if (recipe.length) {
-        tx.emit("ConsumablesIssued", { refs: { orderId: order.id, taskId: task.id }, params: { no: order.orderNo }, locationId: order.locationId })
+        tx.emit("ConsumablesIssued", {
+          refs: { orderId: order.id, taskId: task.id },
+          params: { no: order.orderNo },
+          locationId: order.locationId,
+        })
       }
     }
-    tx.emit("TaskFinished", { refs: { orderId: order.id, taskId: task.id }, params: { no: order.orderNo }, locationId: order.locationId })
+    tx.emit("TaskFinished", {
+      refs: { orderId: order.id, taskId: task.id },
+      params: { no: order.orderNo },
+      locationId: order.locationId,
+    })
 
-    const lines = (await tx.list("salesOrderLines", "orderId", order.id)).filter(isTaskLine)
+    const lines = (
+      await tx.list("salesOrderLines", "orderId", order.id)
+    ).filter(isTaskLine)
     const allDone = lines.every((l) => l.status === "done")
-    if (allDone) await tx.update("salesOrders", order.id, { status: "qc", qcAt: now })
+    if (allDone)
+      await tx.update("salesOrders", order.id, { status: "qc", qcAt: now })
     return { orderId: order.id, valueP, toQc: allDone }
   },
 })
@@ -553,14 +755,19 @@ export const recordConsumption = defineCommand({
   async run(tx, input) {
     const order = await tx.get("salesOrders", input.orderId)
     tx.requireLocation(order.locationId)
-    if (!["booked", "in-progress", "qc"].includes(order.status)) tx.reject("STL_ORDER_STATUS", { no: order.orderNo })
+    if (!["booked", "in-progress", "qc"].includes(order.status))
+      tx.reject("STL_ORDER_STATUS", { no: order.orderNo })
     const tasks = await tx.list("jobTasks", "orderId", order.id)
-    const task = input.taskId ? tasks.find((t) => t.id === input.taskId) : tasks.find((t) => t.technicianId === tx.actor.userId)
+    const task = input.taskId
+      ? tasks.find((t) => t.id === input.taskId)
+      : tasks.find((t) => t.technicianId === tx.actor.userId)
     if (input.taskId && !task) tx.reject("STL_TASK_STATUS")
     if (task) assertOwnTask(tx, task)
-    else if (!tx.can("stl.order.edit", order.locationId)) tx.reject("STL_NOT_YOUR_TASK", {}, { audit: true })
+    else if (!tx.can("stl.order.edit", order.locationId))
+      tx.reject("STL_NOT_YOUR_TASK", {}, { audit: true })
     const item = await tx.get("items", input.itemId)
-    if (item.kind === "retail") tx.reject("PC_RECIPE_RETAIL", { item: item.sku })
+    if (item.kind === "retail")
+      tx.reject("PC_RECIPE_RETAIL", { item: item.sku })
     const by = task?.technicianId ?? tx.actor.userId
     if (input.kind === "extra") {
       await issueToJob(tx, {
@@ -585,7 +792,11 @@ export const recordConsumption = defineCommand({
         narration: `Unused consumables returned, ${order.orderNo}`,
       })
     }
-    tx.emit("ConsumablesIssued", { refs: { orderId: order.id, itemId: item.id }, params: { no: order.orderNo }, locationId: order.locationId })
+    tx.emit("ConsumablesIssued", {
+      refs: { orderId: order.id, itemId: item.id },
+      params: { no: order.orderNo },
+      locationId: order.locationId,
+    })
     return { orderId: order.id }
   },
 })
@@ -607,30 +818,78 @@ export const qcCheck = defineCommand({
   input: z.object({
     orderId: z.string(),
     expectedVersion: z.number().optional(),
-    items: z.array(z.object({ key: z.string(), ok: z.boolean(), note: z.string().optional() })).min(1),
+    items: z
+      .array(
+        z.object({
+          key: z.string(),
+          ok: z.boolean(),
+          note: z.string().optional(),
+        })
+      )
+      .min(1),
   }),
   async run(tx, input) {
-    const order = await tx.get("salesOrders", input.orderId, { expectedVersion: input.expectedVersion })
+    const order = await tx.get("salesOrders", input.orderId, {
+      expectedVersion: input.expectedVersion,
+    })
     tx.requireLocation(order.locationId)
-    const lines = (await tx.list("salesOrderLines", "orderId", order.id)).filter(isTaskLine)
-    const reworkDone = order.status === "in-progress" && lines.length > 0 && lines.every((l) => l.status === "done")
-    if (order.status !== "qc" && !reworkDone) tx.reject("STL_ORDER_STATUS", { no: order.orderNo })
-    const items: QcItem[] = input.items.map((i) => ({ key: i.key, ok: i.ok, note: i.note?.trim() || undefined }))
+    const lines = (
+      await tx.list("salesOrderLines", "orderId", order.id)
+    ).filter(isTaskLine)
+    const reworkDone =
+      order.status === "in-progress" &&
+      lines.length > 0 &&
+      lines.every((l) => l.status === "done")
+    if (order.status !== "qc" && !reworkDone)
+      tx.reject("STL_ORDER_STATUS", { no: order.orderNo })
+    const items: QcItem[] = input.items.map((i) => ({
+      key: i.key,
+      ok: i.ok,
+      note: i.note?.trim() || undefined,
+    }))
     const pass = items.every((i) => i.ok)
     const now = tx.now()
-    tx.insert("qcChecks", { orderId: order.id, items, result: pass ? "pass" : "fail", checkedBy: tx.actor.userId, at: now })
+    tx.insert("qcChecks", {
+      orderId: order.id,
+      items,
+      result: pass ? "pass" : "fail",
+      checkedBy: tx.actor.userId,
+      at: now,
+    })
     const refs = { orderId: order.id, partyId: order.partyId }
     if (pass) {
-      await tx.update("salesOrders", order.id, { status: "ready", readyAt: now, qcAt: order.qcAt ?? now })
-      tx.emit("QcPassed", { refs, params: { no: order.orderNo }, locationId: order.locationId })
-      tx.emit("OrderReady", { refs, params: { no: order.orderNo }, locationId: order.locationId })
+      await tx.update("salesOrders", order.id, {
+        status: "ready",
+        readyAt: now,
+        qcAt: order.qcAt ?? now,
+      })
+      tx.emit("QcPassed", {
+        refs,
+        params: { no: order.orderNo },
+        locationId: order.locationId,
+      })
+      tx.emit("OrderReady", {
+        refs,
+        params: { no: order.orderNo },
+        locationId: order.locationId,
+      })
       const party = await tx.get("parties", order.partyId)
       if (party.smsConsent && party.phone) {
-        queueSms(tx, { to: party.phone, partyId: party.id, lang: "en", templateId: "vehicle-ready", params: { orderNo: order.orderNo } })
+        queueSms(tx, {
+          to: party.phone,
+          partyId: party.id,
+          lang: "en",
+          templateId: "vehicle-ready",
+          params: { orderNo: order.orderNo },
+        })
       }
     } else {
       await tx.update("salesOrders", order.id, { status: "in-progress" })
-      tx.emit("QcFailed", { refs, params: { no: order.orderNo }, locationId: order.locationId })
+      tx.emit("QcFailed", {
+        refs,
+        params: { no: order.orderNo },
+        locationId: order.locationId,
+      })
     }
     return { result: pass ? ("pass" as const) : ("fail" as const) }
   },
@@ -640,13 +899,12 @@ export const qcCheck = defineCommand({
  * Quick add customer (advisor and cashier screens)
  * ================================================================== */
 
-const toBanglaReg = (regNo: string) => localizeDigits(regNo, "bn")
-
 /**
  * A new retail customer with a vehicle from the quotation or booking screen
- * (plan §9 "quick add"), guarded by par.customer.create like PAR's own
- * create. Unique registration; duplicate phone numbers are refused here
- * (PAR's full form handles look-alike names).
+ * (plan §9 "quick add"), through PAR's own create and add-vehicle steps
+ * (par.customer.create, unique registration, the retail price list) in one
+ * commit. A phone number already on file is refused here, so the advisor
+ * picks the existing customer (PAR's full form only warns about look-alikes).
  */
 export const quickAddCustomer = defineCommand({
   name: "stl.quickAddCustomer",
@@ -654,7 +912,10 @@ export const quickAddCustomer = defineCommand({
   input: z.object({
     nameEn: z.string().trim().min(2),
     nameBn: z.string().trim().optional(),
-    phone: z.string().trim().regex(/^01\d{3}-?\d{6}$/),
+    phone: z
+      .string()
+      .trim()
+      .regex(/^01\d{3}-?\d{6}$/),
     vehicle: z
       .object({
         regNo: z.string().trim().min(4),
@@ -667,51 +928,40 @@ export const quickAddCustomer = defineCommand({
       .optional(),
   }),
   async run(tx, input) {
-    const phone = input.phone.includes("-") ? input.phone : `${input.phone.slice(0, 5)}-${input.phone.slice(5)}`
+    const phone = input.phone.includes("-")
+      ? input.phone
+      : `${input.phone.slice(0, 5)}-${input.phone.slice(5)}`
     const [samePhone] = await tx.list("parties", "phone", phone)
-    if (samePhone) tx.reject("STL_PHONE_TAKEN", { name: samePhone.nameEn, code: samePhone.code })
-    const regNo = input.vehicle?.regNo.toUpperCase()
-    if (regNo) {
-      const [sameReg] = await tx.list("vehicles", "regNo", regNo)
-      if (sameReg) tx.reject("STL_REG_TAKEN", { regNo })
-    }
-    const retail = (await tx.list("priceLists", "code", "RETAIL")).sort((a, b) => (a.validFrom < b.validFrom ? -1 : 1))[0]
-    const code = await nextDocNo(tx, "C")
-    const party = tx.insert("parties", {
-      code,
-      isCustomer: true,
-      isVendor: false,
-      type: "individual",
-      nameEn: input.nameEn,
-      nameBn: input.nameBn || input.nameEn,
-      segment: "retail",
-      phone,
-      addresses: [],
-      contacts: [],
-      creditLimitP: 0,
-      paymentTermsDays: 0,
-      priceListId: retail?.id,
-      deductsVds: false,
-      deductsAit: false,
-      status: "active",
-      smsConsent: true,
-      avatarSeed: code,
-    })
-    tx.emit("PartyCreated", { refs: { partyId: party.id }, params: { code, name: party.nameEn } })
+    if (samePhone)
+      tx.reject("STL_PHONE_TAKEN", {
+        name: samePhone.nameEn,
+        code: samePhone.code,
+      })
+    const { party } = await createPartyTx(
+      tx,
+      partyFields.parse({
+        isCustomer: true,
+        isVendor: false,
+        type: "individual",
+        nameEn: input.nameEn,
+        nameBn: input.nameBn,
+        segment: "retail",
+        phone,
+      })
+    )
     let vehicleId: Id | undefined
-    if (input.vehicle && regNo) {
-      vehicleId = tx.insert("vehicles", {
-        partyId: party.id,
-        regNo,
-        regNoBn: toBanglaReg(regNo),
-        make: input.vehicle.make,
-        model: input.vehicle.model,
-        year: input.vehicle.year ?? 2020,
-        colour: input.vehicle.colour,
-        vehicleClass: input.vehicle.vehicleClass,
-        active: true,
-      }).id
-      tx.emit("VehicleAdded", { refs: { partyId: party.id, vehicleId }, params: { regNo } })
+    if (input.vehicle) {
+      const { year, ...vehicle } = input.vehicle
+      vehicleId = (
+        await addVehicleTx(
+          tx,
+          addVehicleInput.parse({
+            ...vehicle,
+            year: year ?? 2020,
+            partyId: party.id,
+          })
+        )
+      ).id
     }
     return { partyId: party.id, vehicleId }
   },

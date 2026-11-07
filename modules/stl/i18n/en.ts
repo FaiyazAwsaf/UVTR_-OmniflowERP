@@ -62,7 +62,6 @@ export const stlEn = {
       STL_PRICING: "A line could not be priced ({problem}).",
       STL_QUOTE_CLOSED: "Quotation {no} is already closed.",
       STL_QUOTE_EXPIRED: "Quotation {no} expired on {date}. Revise it to renew its validity.",
-      STL_REG_TAKEN: "Registration {regNo} is already in the vehicle register.",
       STL_RETURN_EXCEEDS: "More than was issued to this job ({issued} of {item}).",
       STL_TASK_STATUS: "This task is not at a step where this can be done.",
       STL_VEHICLE_PARTY: "Vehicle {regNo} belongs to another customer.",

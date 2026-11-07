@@ -64,7 +64,6 @@ export const stlBn: typeof stlEn = {
       STL_PRICING: "একটি লাইনের মূল্য নির্ধারণ করা যায়নি ({problem})।",
       STL_QUOTE_CLOSED: "কোটেশন {no} ইতিমধ্যে বন্ধ।",
       STL_QUOTE_EXPIRED: "কোটেশন {no}-এর মেয়াদ {date}-এ শেষ হয়েছে। নবায়ন করতে সংশোধন করুন।",
-      STL_REG_TAKEN: "রেজিস্ট্রেশন {regNo} গাড়ির তালিকায় আগেই আছে।",
       STL_RETURN_EXCEEDS: "এই কাজে যা ইস্যু হয়েছে তার চেয়ে বেশি ({item}-এর {issued})।",
       STL_TASK_STATUS: "এই কাজটি এমন ধাপে নেই যেখানে এটি করা যায়।",
       STL_VEHICLE_PARTY: "গাড়ি {regNo} অন্য গ্রাহকের।",
