@@ -40,7 +40,7 @@ export function ErpShell({ children }: { children: React.ReactNode }) {
         <TopBar user={user} />
         <main
           id="main"
-          className="flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto px-4 pt-2 pb-6 xl:px-6"
+          className="flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto px-4 pt-2 pb-[max(1.5rem,var(--cue-space,0px))] xl:px-6"
         >
           {allowed ? children : <AccessDenied pathname={pathname} />}
         </main>

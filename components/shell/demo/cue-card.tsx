@@ -23,24 +23,45 @@ import { cn } from "@/lib/utils"
  * steps with the current one highlighted. Renders nothing otherwise.
  */
 export function CueCard() {
-  const { t, tk, num, locale } = useLocale()
+  const { t, tk, num, money, locale } = useLocale()
   const { cue } = useSession()
   const [minimised, setMinimised] = React.useState(false)
   const scenario = cue
     ? SCENARIOS.find((s) => s.id === cue.scenarioId)
     : undefined
+  // While the card is open, the page's scroll area gets room at the bottom
+  // (--cue-space) so anything under the card can be scrolled clear of it.
+  const cardRef = React.useRef<HTMLElement | null>(null)
+  const shownCard = !!(cue && scenario)
+  React.useEffect(() => {
+    const root = document.documentElement
+    const el = cardRef.current
+    if (!shownCard || !el) {
+      root.style.removeProperty("--cue-space")
+      return
+    }
+    const update = () => root.style.setProperty("--cue-space", `${Math.ceil(el.getBoundingClientRect().height) + 32}px`)
+    update()
+    const observer = new ResizeObserver(update)
+    observer.observe(el)
+    return () => {
+      observer.disconnect()
+      root.style.removeProperty("--cue-space")
+    }
+  }, [shownCard, minimised])
   if (!cue || !scenario) return null
 
   const total = scenario.cueKeys.length
   const step = Math.min(Math.max(cue.step, 0), Math.max(total - 1, 0))
   const title = tk(scenario.titleKey)
   const params = cue.params ?? {}
-  // Numbers read in the window's numerals; strings (names, document numbers and
-  // accession numbers) are shown as the setup gave them.
+  // Amounts (keys ending in "P", integer poisha) read as money and other
+  // numbers in the window's numerals; strings (names, document numbers,
+  // registrations) are shown as the setup gave them.
   const shown = Object.fromEntries(
     Object.entries(params).map(([key, value]) => [
       key,
-      typeof value === "number" ? localizeDigits(String(value), locale) : value,
+      typeof value === "number" ? (key.endsWith("P") ? money(value) : localizeDigits(String(value), locale)) : value,
     ])
   )
   const go = (next: number) =>
@@ -56,6 +77,7 @@ export function CueCard() {
         aria-label={t("demo.cue.expand")}
         className="fixed bottom-4 left-4 z-40 flex max-w-[calc(100vw-2rem)] items-center gap-2 rounded-full bg-popover px-3 py-1.5 text-xs text-popover-foreground shadow-lg ring-1 ring-foreground/10"
         data-testid="cue-card"
+        ref={cardRef as React.RefObject<HTMLButtonElement>}
       >
         <span className="font-mono text-primary">{scenario.id}</span>
         <span className="truncate">{progress}</span>
@@ -69,6 +91,7 @@ export function CueCard() {
       aria-label={t("demo.cue.label")}
       className="fixed bottom-4 left-4 z-40 flex max-h-[min(24rem,calc(100svh-6rem))] w-[20rem] max-w-[calc(100vw-2rem)] flex-col rounded-lg bg-popover text-popover-foreground shadow-lg ring-1 ring-foreground/10"
       data-testid="cue-card"
+      ref={cardRef}
       data-scenario-id={scenario.id}
       data-step={step}
     >
@@ -86,6 +109,7 @@ export function CueCard() {
           aria-label={t("demo.cue.minimise")}
           title={t("demo.cue.minimise")}
           onClick={() => setMinimised(true)}
+          data-testid="cue-minimise"
         >
           <Minus />
         </Button>
@@ -95,6 +119,7 @@ export function CueCard() {
           aria-label={t("demo.cue.close")}
           title={t("demo.cue.close")}
           onClick={close}
+          data-testid="cue-close"
         >
           <X />
         </Button>
