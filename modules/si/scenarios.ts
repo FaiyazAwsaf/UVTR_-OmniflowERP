@@ -136,7 +136,8 @@ const e2: ScenarioDef = {
       const orderIds = await deliverJobs(kit, party, extra, "e2x")
       // The pending fresh orders stay out of this invoice: bill only the extra work.
       const extraTotal = (await db.salesOrders.bulkGet(orderIds)).reduce((s, o) => s + (o?.totalP ?? 0), 0)
-      const needsOverride = (await readPartyExposure(db, party.id)) + extraTotal > limitP
+      const status = (await db.parties.get(party.id))?.status ?? party.status
+      const needsOverride = status !== "active" || (await readPartyExposure(db, party.id)) + extraTotal > limitP
       const out = await kit.run(
         issueInvoice,
         {
