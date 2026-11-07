@@ -121,9 +121,14 @@ function TransferDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (
   const [date, setDate] = React.useState("")
   const [ref, setRef] = React.useState("")
   const accounts = data?.accounts ?? []
-  const fromOptions = accounts.filter((a) => can("cab.transfer.create", a.locationId ?? null))
+  const fromOptions = accounts.filter((a) => can("cab.transfer.create", a.locationId ?? "loc_hq"))
   const fromId = from || fromOptions.find((a) => a.kind === "cash-till" && a.locationId === actor?.locationId)?.id || fromOptions[0]?.id || ""
-  const toId = to || accounts.find((a) => a.id !== fromId && a.kind === "bank")?.id || ""
+  const fromAcc = accounts.find((a) => a.id === fromId)
+  const toId =
+    to ||
+    accounts.find((a) => a.id !== fromId && a.accountTag === (fromAcc?.kind === "cash-till" ? "BANK_COLLECTION" : "BANK_MAIN"))?.id ||
+    accounts.find((a) => a.id !== fromId && a.kind === "bank")?.id ||
+    ""
   const balance = data?.balance.get(fromId) ?? 0
   const valid = !!fromId && !!toId && fromId !== toId && (amountP ?? 0) > 0 && (amountP ?? 0) + (feesP ?? 0) <= balance
   return (
@@ -194,8 +199,8 @@ export function TopUpDialog({ open, onOpenChange, pettyId }: { open: boolean; on
   const accounts = data?.accounts ?? []
   const boxes = accounts.filter((a) => a.kind === "petty-cash" && can("cab.pettycash.create", a.locationId ?? null))
   const pettyAcc = boxes.find((a) => a.id === (petty || pettyId)) ?? boxes[0]
-  const sources = accounts.filter((a) => a.kind === "bank" || a.kind === "cash-till")
-  const fromId = from || sources.find((a) => a.kind === "bank")?.id || ""
+  const sources = accounts.filter((a) => (a.kind === "bank" || a.kind === "cash-till") && can("cab.pettycash.create", a.locationId ?? "loc_hq"))
+  const fromId = from || sources.find((a) => a.kind === "bank")?.id || sources.find((a) => a.locationId === pettyAcc?.locationId)?.id || sources[0]?.id || ""
   const shortfall = pettyAcc ? (pettyAcc.imprestP ?? 0) - (data?.balance.get(pettyAcc.id) ?? 0) : 0
   const valid = !!pettyAcc && !!fromId && ((amountP ?? 0) > 0 || shortfall > 0)
   return (

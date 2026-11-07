@@ -70,7 +70,8 @@ export const transferFunds = defineCommand({
     if (input.fromAccountId === input.toAccountId) tx.reject("SAME_ACCOUNT")
     const from = await tx.get("cashBankAccounts", input.fromAccountId)
     const to = await tx.get("cashBankAccounts", input.toAccountId)
-    tx.requireLocation(from.locationId)
+    // Accounts without a location (banks, wallets) belong to Head Office for scope.
+    tx.requireLocation(from.locationId ?? HQ)
     const date = input.date ?? tx.today()
     if (date > tx.today()) tx.reject("FUTURE_DATE", { date })
     await requireFunds(tx, from, input.amountP + input.feesP)
@@ -130,6 +131,7 @@ export const topUpPettyCash = defineCommand({
     tx.requireLocation(petty.locationId)
     const from = await tx.get("cashBankAccounts", input.fromAccountId)
     if (from.id === petty.id) tx.reject("SAME_ACCOUNT")
+    tx.requireLocation(from.locationId ?? HQ)
     const balance = await tagBalanceP(tx, petty.accountTag)
     const amountP = input.amountP ?? (petty.imprestP ?? 0) - balance
     if (amountP <= 0) tx.reject("PETTY_AT_IMPREST", { account: petty.nameEn })

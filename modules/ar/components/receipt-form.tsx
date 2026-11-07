@@ -267,6 +267,7 @@ export function ReceiptForm() {
                     setManualAlloc(true)
                     setAlloc({})
                   }}
+                  data-testid="alloc-clear"
                 >
                   {t("ar.form.clearAllocation")}
                 </Button>
@@ -333,7 +334,7 @@ export function ReceiptForm() {
         </div>
 
         <div className="flex min-w-0 flex-col gap-4">
-          <SectionCard title={t("ar.form.deductions")} size="sm" subtitle={party ? undefined : undefined}>
+          <SectionCard title={t("ar.form.deductions")} size="sm">
             <p className="mb-3 text-xs text-muted-foreground">{t("ar.form.deductionsHint")}</p>
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
               <Field label={t("ar.form.vds")}>
