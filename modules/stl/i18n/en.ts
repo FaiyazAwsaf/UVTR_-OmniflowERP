@@ -151,7 +151,8 @@ export const stlEn = {
       bookOrder: "Book order",
       accepted: "Order {no} booked",
       printTitle: "Quotation",
-      discountEdit: "Discount on this quotation",
+      discountTitle: "Discount on {no}",
+      discountBody: "The lines are priced again with the new percent. Above your limit an approver confirms with a PIN.",
       discountApply: "Apply discount",
       discountApplied: "{pct}% discount applied to {no}",
     },
@@ -248,12 +249,12 @@ export const stlEn = {
     },
     scenarios: {
       e1: {
-        title: "E1 Discount override",
+        title: "Discount override",
         summary: "A 12% discount above the advisor's 5% needs the studio manager's PIN",
         cue1: "{quoteNo} for {nameEn}'s Toyota Allion ({regNo}): paint correction and sealant, {subtotalP} before discount.",
-        cue2: "The customer asks for {pct}% off. Under Details, type {pct} in Discount on this quotation and click Apply discount.",
+        cue2: "The customer asks for {pct}% off: click Discount, type {pct} (the new total shows {totalP}) and click Apply discount.",
         cue3: "Shuvo's limit is 5%, so the approval dialog opens: choose Arif Mahmud (limit 15%), give a reason and the PIN 1234.",
-        cue4: "Saved with Arif's approval: {pct}% off is {discountP} and the quotation total is now {totalP}.",
+        cue4: "Saved with Arif's approval (under Details): {pct}% off is {discountP} and the quotation total is now {totalP}.",
       },
     },
     task: {

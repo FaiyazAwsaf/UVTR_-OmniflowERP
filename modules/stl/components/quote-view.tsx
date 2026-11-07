@@ -4,7 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useLiveQuery } from "dexie-react-hooks"
-import { CalendarCheck, FileText, Mail, MessageSquare, Pencil, Printer } from "lucide-react"
+import { CalendarCheck, FileText, Mail, MessageSquare, Pencil, Percent, Printer } from "lucide-react"
 import { toast } from "sonner"
 
 import { AmountInWords } from "@/components/shared/amount-in-words"
@@ -24,12 +24,14 @@ import { locationById } from "@/config/brand.config"
 import { now } from "@/core/clock/clock"
 import { dhakaDate } from "@/core/clock/dates"
 import { useDb } from "@/core/db/DbProvider"
-import type { Id, QuotationLineRow, QuotationRow } from "@/core/db/schema"
+import type { Id, QuotationLineRow, QuotationRow, VehicleClass } from "@/core/db/schema"
 import { useCommand } from "@/core/engine/useCommand"
 import { useCan, useLimit } from "@/core/security/useCan"
 import { nameOf, userName } from "@/core/security/users"
 import { useLocale } from "@/lib/i18n/provider"
 import { cn } from "@/lib/utils"
+import { priceRequests } from "@/modules/pc/pricing"
+import { useCatalogue } from "@/modules/pc/queries"
 
 import { acceptQuotation, saveQuotation, sendQuotation } from "../commands"
 import { requestsFromLines } from "../quote-requests"
@@ -52,6 +54,7 @@ export function QuoteView({ id }: { id: Id }) {
   const deposit = useDepositFlow()
   const [printing, setPrinting] = React.useState(false)
   const [accepting, setAccepting] = React.useState(false)
+  const [discounting, setDiscounting] = React.useState(false)
   const [dep, setDep] = React.useState<DepositState>(NO_DEPOSIT)
 
   const data = useLiveQuery(async () => {
@@ -130,6 +133,10 @@ export function QuoteView({ id }: { id: Id }) {
             ) : null}
             {open && canQuote ? (
               <>
+                <Button variant="outline" onClick={() => setDiscounting(true)} data-testid="quote-discount-open">
+                  <Percent data-icon="inline-start" />
+                  {t("common.discount")}
+                </Button>
                 <Button variant="outline" onClick={() => doSend("sms")} disabled={send.pending} data-testid="quote-send-sms">
                   <MessageSquare data-icon="inline-start" />
                   {t("stl.quote.sendSms")}
@@ -177,7 +184,6 @@ export function QuoteView({ id }: { id: Id }) {
               ]}
             />
             {q.discountApprovalId ? <ApprovalChip approvalId={q.discountApprovalId} className="mt-3" /> : null}
-            {open && canQuote ? <DiscountEditor key={`${q.id}:${q.version}`} quotation={q} lines={lines} /> : null}
           </SectionCard>
           {order ? (
             <SectionCard title={t("stl.linked")} size="sm">
@@ -187,6 +193,17 @@ export function QuoteView({ id }: { id: Id }) {
         </div>
       </div>
 
+      {open && canQuote && discounting ? (
+        <DiscountDialog
+          key={`${q.id}:${q.version}`}
+          quotation={q}
+          lines={lines}
+          priceListId={party?.priceListId}
+          vehicleClass={vehicle?.vehicleClass}
+          open={discounting}
+          onOpenChange={setDiscounting}
+        />
+      ) : null}
       <Dialog open={accepting} onOpenChange={setAccepting}>
         <DialogContent className="sm:max-w-md" data-testid="accept-dialog">
           <DialogHeader>
@@ -252,17 +269,37 @@ export function QuoteView({ id }: { id: Id }) {
 
 /**
  * Change the discount on an open quotation (E1): the lines are re-priced
- * with the new percent; above the user's live `discount-pct` limit an
- * approver confirms on this device with a PIN (inline approval).
+ * with the new percent (previewed live); above the user's live
+ * `discount-pct` limit an approver confirms on this device with a PIN
+ * (inline approval), then the quotation saves.
  */
-function DiscountEditor({ quotation, lines }: { quotation: QuotationRow; lines: QuotationLineRow[] }) {
+function DiscountDialog({
+  quotation,
+  lines,
+  priceListId,
+  vehicleClass,
+  open,
+  onOpenChange,
+}: {
+  quotation: QuotationRow
+  lines: QuotationLineRow[]
+  priceListId?: Id
+  vehicleClass?: VehicleClass
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
   const { t, num } = useLocale()
   const limit = useLimit("discount-pct")
+  const catalogue = useCatalogue()
   const save = useCommand(saveQuotation)
   const { requestApproval, dialog } = useInlineApproval()
   const [pct, setPct] = React.useState<number>(quotation.discountPct)
   const overLimit = pct > limit
   const changed = pct !== quotation.discountPct
+  const requests = React.useMemo(() => requestsFromLines(lines), [lines])
+  const preview = catalogue
+    ? priceRequests(catalogue, { priceListId, date: dhakaDate(now()), vehicleClass, requests, discountPct: pct, promotionId: quotation.promotionId })
+    : undefined
 
   const apply = async () => {
     let inline
@@ -281,48 +318,70 @@ function DiscountEditor({ quotation, lines }: { quotation: QuotationRow; lines: 
       expectedVersion: quotation.version,
       partyId: quotation.partyId,
       vehicleId: quotation.vehicleId,
-      requests: requestsFromLines(lines),
+      requests,
       discountPct: pct,
       promotionId: quotation.promotionId,
       inspectionNotes: quotation.inspectionNotes,
       inline,
     })
-    if (out) toast.success(t("stl.quote.discountApplied", { pct: num(pct), no: quotation.quoteNo }))
+    if (out) {
+      onOpenChange(false)
+      toast.success(t("stl.quote.discountApplied", { pct: num(pct), no: quotation.quoteNo }))
+    }
   }
 
   return (
-    <div className="mt-4 border-t border-hairline pt-3" data-testid="quote-discount-editor">
-      <Field
-        label={t("stl.quote.discountEdit")}
-        hint={overLimit ? <span className="text-warning">{t("stl.quote.needsApproval", { limit: num(limit) })}</span> : t("stl.quote.yourLimit", { limit: num(limit) })}
-      >
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <Input
-              type="text"
-              inputMode="decimal"
-              aria-label={t("stl.quote.discountPct")}
-              data-testid="quote-discount-edit"
-              value={pct ? String(pct) : ""}
-              placeholder="0"
-              onChange={(e) => {
-                const n = Number(e.target.value.replace(/[^\d.]/g, ""))
-                setPct(Number.isFinite(n) ? Math.min(100, n) : 0)
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && changed && !save.pending) void apply()
-              }}
-              className={cn("w-24 pr-7 text-right font-mono", overLimit && "border-warning")}
-            />
-            <span className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-xs text-muted-foreground">%</span>
-          </div>
-          <Button variant="outline" onClick={apply} disabled={!changed || save.pending} data-testid="quote-discount-apply">
-            {t("stl.quote.discountApply")}
-          </Button>
-        </div>
-      </Field>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-sm" data-testid="quote-discount-dialog">
+          <DialogHeader>
+            <DialogTitle>{t("stl.quote.discountTitle", { no: quotation.quoteNo })}</DialogTitle>
+            <DialogDescription>{t("stl.quote.discountBody")}</DialogDescription>
+          </DialogHeader>
+          <Field
+            label={t("stl.quote.discountPct")}
+            hint={overLimit ? <span className="text-warning">{t("stl.quote.needsApproval", { limit: num(limit) })}</span> : t("stl.quote.yourLimit", { limit: num(limit) })}
+          >
+            <div className="relative w-28">
+              <Input
+                type="text"
+                inputMode="decimal"
+                autoFocus
+                data-testid="quote-discount-edit"
+                value={pct ? String(pct) : ""}
+                placeholder={num(0)}
+                onChange={(e) => {
+                  const n = Number(e.target.value.replace(/[^\d.]/g, ""))
+                  setPct(Number.isFinite(n) ? Math.min(100, n) : 0)
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && changed && !save.pending) void apply()
+                }}
+                className={cn("pr-8 text-right font-mono", overLimit && "border-warning")}
+              />
+              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-muted-foreground">%</span>
+            </div>
+          </Field>
+          <TotalsBlock
+            rows={[
+              { label: t("common.subtotal"), valueP: preview?.subtotalP ?? quotation.subtotalP },
+              { label: t("common.discount"), valueP: preview?.discountP ?? quotation.discountP, negative: true, testId: "quote-discount-preview" },
+              { label: t("common.vat"), valueP: preview?.vatP ?? quotation.vatP },
+              { label: t("common.total"), valueP: preview?.totalP ?? quotation.totalP, strong: true },
+            ]}
+          />
+          <DialogFooter>
+            <Button variant="neutral" onClick={() => onOpenChange(false)}>
+              {t("common.cancel")}
+            </Button>
+            <Button onClick={apply} disabled={!changed || save.pending} data-testid="quote-discount-apply">
+              {t("stl.quote.discountApply")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {dialog}
-    </div>
+    </>
   )
 }
 

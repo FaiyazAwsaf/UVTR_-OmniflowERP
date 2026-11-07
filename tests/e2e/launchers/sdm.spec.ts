@@ -17,20 +17,22 @@ const LAUNCHES = [
   { via: "url", n: 2 },
 ] as const
 
-/** The user this window is signed in as (its session in sessionStorage). */
+/**
+ * The user this window is signed in as: its own session in sessionStorage,
+ * keyed by window.name (a pop-up starts with a copy of its opener's keys).
+ */
 async function windowUser(page: Page): Promise<string | null> {
   return page.evaluate(() => {
-    for (let i = 0; i < sessionStorage.length; i++) {
-      const key = sessionStorage.key(i)
-      if (key?.startsWith("of:session:")) return (JSON.parse(sessionStorage.getItem(key) ?? "{}") as { userId?: string }).userId ?? null
-    }
-    return null
+    const raw = sessionStorage.getItem(`of:session:${window.name}`)
+    return raw ? ((JSON.parse(raw) as { userId?: string }).userId ?? null) : null
   })
 }
 
 async function launch(page: Page, id: string, via: "panel" | "url", from: string) {
+  const started = Date.now()
   if (via === "panel") await launchFromPanel(page, id)
   else await launchByUrl(page, id, from)
+  console.log(`${id} via ${via}: cue card after ${Date.now() - started} ms`)
 }
 
 const cueOf = (page: Page, id: string) => page.locator(`[data-testid="cue-card"][data-scenario-id="${id}"]`)
@@ -60,10 +62,16 @@ test("E1: twice, Shuvo asks 12% on a fresh quotation and Arif approves with the 
     await expect(page.getByTestId("quote-discount-pct")).toHaveText("0%")
     await closeCue(page)
 
-    await page.getByTestId("quote-discount-edit").fill("12")
-    await expect(page.getByTestId("quote-discount-editor")).toContainText("an approver confirms with a PIN")
-    await page.getByTestId("quote-discount-apply").click()
+    await page.getByTestId("quote-discount-open").click()
+    const dialog = page.getByTestId("quote-discount-dialog")
+    await dialog.getByTestId("quote-discount-edit").fill("12")
+    await expect(dialog).toContainText("an approver confirms with a PIN")
+    // ৳20,000 less 12% is ৳17,600; with 15% VAT the total is ৳20,240.
+    await expect(dialog.getByTestId("quote-discount-preview")).toContainText("2,400")
+    await expect(dialog).toContainText("20,240")
+    await dialog.getByTestId("quote-discount-apply").click()
     await approveInline(page, "arif", "Loyal customer, second car")
+    await expect(dialog).toBeHidden()
     await expect(page.getByTestId("quote-discount-pct")).toHaveText("12%")
     await expect(page.getByTestId("approval-chip").first()).toBeVisible()
     const quotes = await rows<{ quoteNo: string; discountPct: number; discountP: number; totalP: number; discountApprovalId?: string }>(page, "quotations")
@@ -149,6 +157,9 @@ test("E12: twice, Tania's partial credit note is approved inline by Shahriar and
     const dialog = page.getByTestId("credit-note-dialog")
     await dialog.getByTestId("credit-note-line").filter({ hasText: /Interior deep/ }).getByTestId("credit-note-line-check").click()
     await dialog.getByTestId("credit-note-reason").fill("Damp smell in the rear carpet after the interior clean")
+    // SUV interior deep clean on the retail list: ৳6,500 + 15% VAT, all kept as advance.
+    await expect(dialog.getByTestId("credit-note-total")).toContainText("৳7,475")
+    await expect(dialog.getByTestId("credit-note-vat")).toContainText("৳975")
     await dialog.getByTestId("credit-note-submit").click()
     await approveInline(page, "shahriar", "Complaint upheld")
     await expect(dialog).toBeHidden()
@@ -186,6 +197,17 @@ for (const lang of ["en", "bn"] as const) {
         await launchByUrl(page, id, from)
         await page.waitForTimeout(800)
         await page.screenshot({ path: `${SHOTS}/launcher-${id}-${lang}-${size.name}.png` })
+        if (id === "E1") {
+          await page.getByTestId("quote-discount-open").click()
+          await page.getByTestId("quote-discount-edit").fill("12")
+          await page.waitForTimeout(300)
+          await page.screenshot({ path: `${SHOTS}/launcher-E1-dialog-${lang}-${size.name}.png` })
+          await page.keyboard.press("Escape")
+        }
+        if (id === "E2" && size.name === "960") {
+          await page.getByTestId("credit-panel").scrollIntoViewIfNeeded()
+          await page.screenshot({ path: `${SHOTS}/launcher-E2-credit-${lang}-${size.name}.png` })
+        }
       }
     })
   }

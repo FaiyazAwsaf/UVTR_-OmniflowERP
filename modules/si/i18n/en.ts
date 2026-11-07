@@ -142,7 +142,7 @@ export const siEn = {
     },
     scenarios: {
       e2: {
-        title: "E2 Fleet over credit limit",
+        title: "Fleet over credit limit",
         summary: "A consolidated fleet invoice over the credit limit needs an accounts manager's override",
         cue1: "Swift Ride Rentals owes {outstandingP} against a {limitP} credit limit. Its {count} delivered, unbilled orders at Gulshan come to {invoiceP}.",
         cue2: "The credit check shows {afterP} after this invoice, {overP} over the limit. Click Credit override.",
@@ -151,12 +151,12 @@ export const siEn = {
         cue5: "In Mahbub's window (AR, New receipt, Swift Ride): {receiptP} by bank transfer pays the oldest invoice first and proposes VDS and AIT. Add the certificate number and save.",
       },
       e12: {
-        title: "E12 Credit note",
+        title: "Credit note",
         summary: "A partial Mushak 6.7 credit note above the cashier's limit, approved on the spot and kept as advance",
         cue1: "{invoiceNo}: {nameEn} paid {totalP} for a premium wash and interior deep cleaning on {regNo}. The complaint on {orderNo} shows above the lines.",
-        cue2: "Click Credit note, tick only Interior deep cleaning ({creditP}) and type the reason.",
+        cue2: "Click Credit note, tick only Interior deep cleaning and type the reason: the note is {creditP} with {vatP} VAT reversed, all kept as advance.",
         cue3: "Tania's credit note limit is ৳0: click Approve on the spot, choose Shahriar Kabir, give a reason and the PIN 1234.",
-        cue4: "The Mushak 6.7 credit note posts: VAT of {vatP} is reversed and, as the invoice was paid, all {creditP} is kept as the customer's advance.",
+        cue4: "The Mushak 6.7 credit note posts (R11): revenue and {vatP} VAT are reversed and, as the invoice was paid, {creditP} stays as the customer's advance.",
         cue5: "Linked documents now list the credit note; Credit notes prints it as Mushak 6.7.",
       },
     },
@@ -168,6 +168,7 @@ export const siEn = {
       restock: "Put the returned goods back on the shelf",
       toInvoice: "Against the invoice",
       toAdvance: "Kept as advance",
+      vatReversed: "VAT reversed",
       overLimit: "Above your credit note limit ({limit}): an approver confirms with a PIN, or send it for approval.",
       ask: "Credit note of {amount} against {no}",
       approveNow: "Approve on the spot",
