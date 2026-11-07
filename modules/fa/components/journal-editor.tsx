@@ -363,28 +363,29 @@ export function JournalEditor({ journal }: { journal?: JournalRow }) {
         </div>
       </section>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Button onClick={onSubmit} disabled={!canCreate || busy || !ready || debitP !== creditP} data-testid="journal-submit">
-          <Send />
-          {limit >= debitP && debitP > 0 ? t("fa.editor.submitPost") : t("fa.editor.submit")}
-        </Button>
-        <Button variant="outline" onClick={onSave} disabled={!canCreate || busy || !ready} data-testid="journal-save">
-          <Save />
-          {t("fa.editor.saveDraft")}
-        </Button>
+      {/* Primary actions on the right, clear of the scenario cue card (bottom-left). */}
+      <div className="flex flex-wrap items-center justify-end gap-2">
         {journal ? (
           <Button
             variant="destructive-outline"
             onClick={() => setConfirmDiscard(true)}
             disabled={busy}
             data-testid="journal-discard"
-            className="ml-auto"
+            className="mr-auto"
           >
             <Trash2 />
             {t("fa.editor.discard")}
           </Button>
         ) : null}
         {!canCreate ? <span className="text-xs text-muted-foreground">{t("fa.editor.noPermission")}</span> : null}
+        <Button variant="outline" onClick={onSave} disabled={!canCreate || busy || !ready} data-testid="journal-save">
+          <Save />
+          {t("fa.editor.saveDraft")}
+        </Button>
+        <Button onClick={onSubmit} disabled={!canCreate || busy || !ready || debitP !== creditP} data-testid="journal-submit">
+          <Send />
+          {limit >= debitP && debitP > 0 ? t("fa.editor.submitPost") : t("fa.editor.submit")}
+        </Button>
       </div>
 
       <Dialog open={confirmDiscard} onOpenChange={setConfirmDiscard}>

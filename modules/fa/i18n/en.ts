@@ -417,5 +417,29 @@ export const faEn = {
       percent: "%",
       readOnly: "Changing settings needs the accounts manager's permission.",
     },
+    scenarios: {
+      E10: {
+        title: "Maker-checker journal",
+        summary: "A voucher above its preparer's limit waits for another approver; nobody approves their own.",
+        cue: {
+          submit: "Mahbub's draft {accrualNo} accrues {accrualP} for electricity and water. Click Submit: it is above his {limitP} journal limit.",
+          pending: "The voucher is now pending and says \"You prepared this\": Mahbub has no approve button.",
+          farzanaApproves: "In Farzana's window, open Approvals (the bell) and approve {accrualNo}. It posts at once, live in Mahbub's window.",
+          ownVoucher: "Still as Farzana, open her own {bigNo} under Requested by me ({bigP}, above her {bigLimitP} limit): \"You prepared this\", no approve button.",
+          rashedApproves: "In Rashed's window, approve {bigNo} from Approvals: only the owner can. It posts (R24) with Farzana kept as its preparer.",
+        },
+      },
+      E11: {
+        title: "Month-end close",
+        summary: "Drafts and pending approvals block the close; a closed month refuses every posting.",
+        cue: {
+          closeBlocked: "Click Close period for {month} and confirm: refused. The checklist names Mahbub's draft {draftNo} and Sabbir's petty cash {pettyNo}.",
+          discardDraft: "Open {draftNo} ({draftP}) from the checklist, click Discard and confirm. Back in Periods its line has cleared.",
+          approvePetty: "Open Approvals (the bell) and approve {pettyNo}: {pettyP} at Uttara, above Sabbir's {pettyLimitP} limit. It posts into {month}.",
+          close: "Back in Periods the checklist is clear: click Close period and confirm. {month} shows Closed.",
+          refused: "Try a posting into it: Vouchers, New voucher dated {lastDay}, two lines, Save draft. Refused: the period is closed (PERIOD_CLOSED).",
+        },
+      },
+    },
   },
 }
