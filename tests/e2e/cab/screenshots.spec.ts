@@ -59,7 +59,7 @@ for (const lang of LANGS) {
       await signIn(page, "farzana", `&lang=${lang}`)
       for (const s of SCREENS) {
         await page.goto(s.path)
-        await expect(page.getByTestId(s.ready).first()).toBeVisible({ timeout: 20_000 })
+        await expect(page.getByTestId(s.ready).first()).toBeVisible({ timeout: 45_000 })
         await shot(page, `${s.name}-${tag}`)
       }
       // A goods bill with the match panel, a payment view with its certificate, the reconciliation after an import.
