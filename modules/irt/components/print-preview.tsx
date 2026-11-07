@@ -60,7 +60,7 @@ export function PrintPreview({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[calc(100svh-2rem)] sm:max-w-[min(64rem,calc(100vw-2rem))]" data-testid="report-print-preview">
+      <DialogContent className="max-h-[calc(100svh-2rem)] sm:max-w-[min(64rem,calc(100vw-2rem))]" data-testid="report-print-sheet">
         <DialogHeader>
           <DialogTitle className="text-[1.0625rem] font-semibold">{t("irt.run.printPreview")}</DialogTitle>
         </DialogHeader>

@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import type { RoleRow } from "@/core/db/schema"
 import { useCommand } from "@/core/engine/useCommand"
+import { PERMISSION_BY_KEY } from "@/core/security/registry"
 import { PERMISSION_COLUMNS, type PermissionColumn, type Scope } from "@/core/security/types"
 import { useLocale } from "@/lib/i18n/provider"
 import { cn } from "@/lib/utils"
@@ -81,13 +82,30 @@ export function PermissionMatrix({
       return next
     })
 
+  /**
+   * The scope a newly ticked key takes: the row's chosen or current scope;
+   * for a row with nothing granted, the key's saved scope (an unsaved revoke
+   * undone) or the catalogue's default grant for this role, else the role's
+   * usual scope.
+   */
+  const scopeForGrant = (app: string, key: string): Scope => {
+    const chosen = rowChoice.get(app)
+    if (chosen) return chosen
+    const now = rowScope(app, desired)
+    if (now === "all" || now === "own-location") return now
+    const saved = current.get(key)
+    if (saved) return saved
+    const seeded = PERMISSION_BY_KEY.get(key)?.grants.find((g) => g.role === role.code)?.scope
+    return seeded ?? defaultScope
+  }
+
   const toggleCell = (app: string, column: PermissionColumn, state: CellState) => {
     const keys = keysFor(app, column)
     if (state === "checked") apply(keys.map((k) => [k, null]))
-    else apply(keys.filter((k) => desired(k) === null).map((k) => [k, scopeForRow(app)]))
+    else apply(keys.filter((k) => desired(k) === null).map((k) => [k, scopeForGrant(app, k)]))
   }
 
-  const toggleKey = (app: string, key: string) => apply([[key, desired(key) === null ? scopeForRow(app) : null]])
+  const toggleKey = (app: string, key: string) => apply([[key, desired(key) === null ? scopeForGrant(app, key) : null]])
 
   const setRowScope = (app: string, scope: Scope) => {
     setRowChoice((prev) => new Map(prev).set(app, scope))
