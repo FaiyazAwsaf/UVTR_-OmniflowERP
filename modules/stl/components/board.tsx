@@ -22,6 +22,7 @@ import { PageHeader } from "@/components/shared/page-header"
 import { RegPlate } from "@/components/shared/reg-plate"
 import { Button } from "@/components/ui/button"
 import { atDhaka, dhakaDate, dhakaTime } from "@/core/clock/dates"
+import { now } from "@/core/clock/clock"
 import { useNow } from "@/core/clock/useNow"
 import { useDb } from "@/core/db/DbProvider"
 import type { BayRow, Id, JobTaskRow, SalesOrderLineRow, SalesOrderRow, ServiceRow, UserRow, VehicleRow } from "@/core/db/schema"
@@ -67,7 +68,7 @@ export function JobBoard() {
   const loc = studio.locationId
   const users = useUserMap()
   const nowMs = useNow(30_000)
-  const today = dhakaDate(nowMs || Date.now())
+  const today = dhakaDate(nowMs || now())
   const canSchedule = useCan("stl.order.edit", loc)
   const canBook = useCan("stl.order.create", loc)
   const [target, setTarget] = React.useState<ScheduleTarget | null>(null)

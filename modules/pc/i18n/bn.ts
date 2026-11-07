@@ -66,7 +66,7 @@ export const pcBn: typeof pcEn = {
       classOwn: "এই শ্রেণির নিজস্ব রেসিপি আছে।",
       classScaled: "সেডান রেসিপি {factor} দিয়ে গুণিত, পূর্ণ মিলি বা গ্রাম এবং ০.০৫ পিসে পূর্ণায়িত।",
       sedanQty: "সেডান",
-      classQty: "{cls}",
+      classQty: "{cls} শ্রেণি",
       stdCost: "মানক খরচ",
       jobCost: "প্রতি কাজে উপকরণ",
       margin: "খুচরা মূল্যে {pct}% মার্জিন",

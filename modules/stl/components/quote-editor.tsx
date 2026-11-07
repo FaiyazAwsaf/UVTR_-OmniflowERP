@@ -106,24 +106,17 @@ export function QuoteEditor({ mode }: { mode: "quote" | "order" }) {
   const vehicle = useLiveQuery(() => (vehicleId ? db.vehicles.get(vehicleId) : undefined), [db, vehicleId])
   const today = dhakaDate(now())
   const list = catalogue && party ? effectiveList(catalogue, party.priceListId, today) : undefined
-  const priced = React.useMemo(
-    () =>
-      catalogue
-        ? priceRequests(catalogue, {
-            priceListId: party?.priceListId,
-            date: today,
-            vehicleClass: vehicle?.vehicleClass,
-            requests,
-            discountPct,
-            promotionId,
-          })
-        : undefined,
-    [catalogue, party?.priceListId, today, vehicle?.vehicleClass, requests, discountPct, promotionId]
-  )
-  const promotions = React.useMemo(
-    () => [...(catalogue?.promotions.values() ?? [])].filter((p) => promotionApplies(p, today, priced?.subtotalP ?? 0)),
-    [catalogue, today, priced?.subtotalP]
-  )
+  const priced = catalogue
+    ? priceRequests(catalogue, {
+        priceListId: party?.priceListId,
+        date: today,
+        vehicleClass: vehicle?.vehicleClass,
+        requests,
+        discountPct,
+        promotionId,
+      })
+    : undefined
+  const promotions = [...(catalogue?.promotions.values() ?? [])].filter((p) => promotionApplies(p, today, priced?.subtotalP ?? 0))
   const needsClass = requests.some((r) => r.kind === "service" || r.kind === "package")
   const canSave = !!party && requests.length > 0 && (!needsClass || !!vehicle) && !!priced && !priced.problems.length && canCreate
   const overLimit = discountPct > discountLimit

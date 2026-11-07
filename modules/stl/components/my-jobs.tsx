@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/shared/empty-state"
 import { PageHeader } from "@/components/shared/page-header"
 import { SectionCard } from "@/components/shared/section-card"
 import { atDhaka, dhakaDate, dhakaTime } from "@/core/clock/dates"
+import { now } from "@/core/clock/clock"
 import { useNow } from "@/core/clock/useNow"
 import { useDb } from "@/core/db/DbProvider"
 import type { BayRow, JobTaskRow, SalesOrderLineRow, SalesOrderRow, VehicleRow } from "@/core/db/schema"
@@ -42,7 +43,7 @@ export function MyJobs() {
   const users = useUserMap()
   const isManager = useCan("stl.qc.check", studio.locationId)
   const nowMs = useNow(60_000)
-  const today = dhakaDate(nowMs || Date.now())
+  const today = dhakaDate(nowMs || now())
   const jobs = useLiveQuery(async () => {
     if (!userId) return []
     const dayStart = atDhaka(today, "00:00")

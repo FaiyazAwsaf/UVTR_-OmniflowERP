@@ -16,6 +16,7 @@ import { SectionCard } from "@/components/shared/section-card"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { dhakaDate } from "@/core/clock/dates"
+import { now } from "@/core/clock/clock"
 import { useNow } from "@/core/clock/useNow"
 import { useDb } from "@/core/db/DbProvider"
 import type { Id, PartyRow, SalesOrderLineRow, SalesOrderRow, VehicleRow } from "@/core/db/schema"
@@ -41,7 +42,7 @@ export function PendingDeliveries() {
   const studio = useStudio()
   const loc = studio.locationId
   const nowMs = useNow(60_000)
-  const today = dhakaDate(nowMs || Date.now())
+  const today = dhakaDate(nowMs || now())
   const canGoods = useCan("sd.delivery.goods", loc)
   const [goodsFor, setGoodsFor] = React.useState<Id | null>(params.get("goods"))
 

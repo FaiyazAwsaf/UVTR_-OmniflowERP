@@ -15,6 +15,7 @@ import { PageHeader } from "@/components/shared/page-header"
 import { Button } from "@/components/ui/button"
 import { invoiceOpen } from "@/core/ar/receipt"
 import { dhakaDate } from "@/core/clock/dates"
+import { now } from "@/core/clock/clock"
 import { useNow } from "@/core/clock/useNow"
 import { useDb } from "@/core/db/DbProvider"
 import type { PartyRow, SalesInvoiceRow } from "@/core/db/schema"
@@ -33,7 +34,7 @@ export function InvoiceList() {
   const studio = useStudio()
   const loc = studio.locationId
   const nowMs = useNow(60_000)
-  const today = dhakaDate(nowMs || Date.now())
+  const today = dhakaDate(nowMs || now())
   const canIssue = useCan("si.invoice.issue", loc)
   const canCounter = useCan("si.counter.checkout", loc)
   const [query, setQuery] = React.useState("")

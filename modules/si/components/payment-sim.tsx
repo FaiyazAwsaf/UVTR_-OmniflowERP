@@ -37,7 +37,7 @@ export function PaymentSimDialog({ request, onClose }: { request: SimRequest | n
   const [last4, setLast4] = React.useState("4242")
   const [busy, setBusy] = React.useState(false)
   const [declined, setDeclined] = React.useState(false)
-  const seed = React.useMemo(() => newId("pay"), [request])
+  const seed = React.useMemo(() => (request ? newId("pay") : ""), [request])
   const mfs = request?.method === "bkash" || request?.method === "nagad"
   const brand = request?.method === "bkash" ? "bKash" : request?.method === "nagad" ? "Nagad" : t("si.tender.card")
 
