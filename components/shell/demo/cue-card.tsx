@@ -17,6 +17,23 @@ import { localizeDigits } from "@/lib/i18n/format"
 import { useLocale } from "@/lib/i18n/provider"
 import { cn } from "@/lib/utils"
 
+const NOWRAP_OPEN = "\uE000"
+const NOWRAP_CLOSE = "\uE001"
+
+/** A cue step with its marked identifiers in no-wrap spans (the text itself is unchanged). */
+function unbroken(text: string): React.ReactNode {
+  if (!text.includes(NOWRAP_OPEN)) return text
+  return text.split(/\uE000|\uE001/).map((part, i) =>
+    i % 2 === 1 ? (
+      <span key={i} lang="en" className="whitespace-nowrap">
+        {part}
+      </span>
+    ) : (
+      part
+    )
+  )
+}
+
 /**
  * Floating scenario cue card (plan §10), bottom-left. Shown while this
  * window's `session.cue` names a registered scenario: its title and cue
@@ -61,7 +78,14 @@ export function CueCard() {
   const shown = Object.fromEntries(
     Object.entries(params).map(([key, value]) => [
       key,
-      typeof value === "number" ? (key.endsWith("P") ? money(value) : localizeDigits(String(value), locale)) : value,
+      typeof value === "number"
+        ? key.endsWith("P")
+          ? money(value)
+          : localizeDigits(String(value), locale)
+        : // Document numbers (PCV-UTT-2627-0024) are marked so the step keeps them on one line.
+          /^[A-Z0-9]+(-[A-Z0-9]+)+$/.test(value)
+          ? `${NOWRAP_OPEN}${value}${NOWRAP_CLOSE}`
+          : value,
     ])
   )
   const go = (next: number) =>
@@ -160,7 +184,7 @@ export function CueCard() {
                 {i < step ? <Check className="size-2.5" /> : num(i + 1)}
               </span>
               <span className={cn(i === step && "font-medium")}>
-                {tk(key, shown)}
+                {unbroken(tk(key, shown))}
               </span>
             </button>
           </li>
