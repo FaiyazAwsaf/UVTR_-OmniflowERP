@@ -50,7 +50,14 @@ export function PeriodsPage() {
     const periods = await db.periods.orderBy("startsOn").toArray()
     return { years, periods }
   }, [db])
-  const [selected, setSelected] = React.useState<string | null>(params.get("id"))
+  const idParam = params.get("id")
+  const [selected, setSelected] = React.useState<string | null>(idParam)
+  // A new `?id=` while the page stays mounted (a launcher's route) selects that month.
+  const [shownParam, setShownParam] = React.useState(idParam)
+  if (idParam !== shownParam) {
+    setShownParam(idParam)
+    setSelected(idParam)
+  }
   const [closing, setClosing] = React.useState<PeriodRow | null>(null)
   const [reopening, setReopening] = React.useState<PeriodRow | null>(null)
 
