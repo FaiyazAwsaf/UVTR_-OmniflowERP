@@ -73,7 +73,7 @@ export function KpiCard({
     <>
       <div className="flex min-w-0 items-center gap-3">
         {icon ? (
-          <span className="kpi-well flex size-10 shrink-0 items-center justify-center [&_svg]:size-5">
+          <span className="kpi-well flex size-10 shrink-0 items-center justify-center [&_svg]:size-5 [@media(max-height:720px)]:size-8 [@media(max-height:720px)]:[&_svg]:size-4">
             {Icon ? <Icon /> : (icon as React.ReactNode)}
           </span>
         ) : null}
@@ -82,7 +82,7 @@ export function KpiCard({
         </span>
       </div>
       <div className="flex items-end justify-between gap-3">
-        <span className="figure min-w-0 truncate text-[1.75rem] leading-none">
+        <span className="figure min-w-0 truncate text-[1.75rem] leading-none [@media(max-height:720px)]:text-[1.375rem]">
           {value}
         </span>
         {delta !== undefined || caption ? (
@@ -104,7 +104,8 @@ export function KpiCard({
   )
 
   const classes = cn(
-    "kpi @container/kpi relative flex min-h-[8.25rem] min-w-0 flex-col justify-between gap-4 p-5 transition-transform",
+    // A 960x600 demo window is short: the cards shrink so the row leaves room for the screen's content.
+    "kpi @container/kpi relative flex min-h-[8.25rem] min-w-0 flex-col justify-between gap-4 p-5 transition-transform [@media(max-height:720px)]:min-h-[5.25rem] [@media(max-height:720px)]:gap-2 [@media(max-height:720px)]:p-3.5",
     `kpi-${variant}`,
     (href || onClick) &&
       "cursor-pointer outline-none hover:-translate-y-0.5 focus-visible:ring-[3px] focus-visible:ring-ring/50",
@@ -152,7 +153,7 @@ export function KpiGrid({
     <div data-slot="kpi-grid" className="@container/kpis">
       <div
         className={cn(
-          "grid grid-cols-1 gap-4 @min-[26rem]/kpis:grid-cols-2 @min-[66rem]/kpis:grid-cols-4 @min-[66rem]/kpis:gap-5",
+          "grid grid-cols-1 gap-4 @min-[26rem]/kpis:grid-cols-2 @min-[66rem]/kpis:grid-cols-4 @min-[66rem]/kpis:gap-5 [@media(max-height:720px)]:gap-2.5",
           className
         )}
       >
