@@ -102,7 +102,7 @@ export function ExpiryWatch() {
                     <td>
                       <ItemCell item={r.item} href={`/ic/items/${r.item.id}?location=${r.location.id}`} />
                     </td>
-                    <td lang="en" className="font-mono text-xs">
+                    <td lang="en" className="font-mono text-xs whitespace-nowrap">
                       {r.batch.batchNo}
                     </td>
                     <td className={HIDE.md}>{nameOf(r.location, locale)}</td>
