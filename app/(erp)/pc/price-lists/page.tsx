@@ -1,6 +1,8 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /pc/price-lists: filled in Phase 2 (implementation_plan.md §9). */
+import { PriceListsPage } from "@/modules/pc/components/price-lists"
+
+/** /pc/price-lists: price lists with drafts and publish (plan §9). */
 export default function Page() {
-  return <StubPage app="pc" titleKey="pc.pages.priceLists" />
+  return <PriceListsPage />
 }

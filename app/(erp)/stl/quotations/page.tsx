@@ -1,6 +1,8 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /stl/quotations: filled in Phase 2 (implementation_plan.md §9). */
+import { QuotationList } from "@/modules/stl/components/lists"
+
+/** /stl/quotations: the studio's quotations (plan §9). */
 export default function Page() {
-  return <StubPage app="stl" titleKey="stl.pages.quotations" />
+  return <QuotationList />
 }

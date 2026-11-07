@@ -1,6 +1,14 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /stl/quotations/new: filled in Phase 2 (implementation_plan.md §9). */
+import * as React from "react"
+
+import { QuoteEditor } from "@/modules/stl/components/quote-editor"
+
+/** /stl/quotations/new: the quotation editor (`?id=` revises a draft). */
 export default function Page() {
-  return <StubPage app="stl" titleKey="stl.pages.quotationNew" />
+  return (
+    <React.Suspense fallback={null}>
+      <QuoteEditor mode="quote" />
+    </React.Suspense>
+  )
 }

@@ -1,6 +1,7 @@
-import { StubPage } from "@/components/shared/stub-page"
+import { ServiceDetail } from "@/modules/pc/components/service-detail"
 
-/** /pc/services/[id]: filled in Phase 2 (implementation_plan.md §9). */
-export default function Page() {
-  return <StubPage app="pc" titleKey="pc.pages.service" />
+/** /pc/services/[id]: service detail with the recipe per class (plan §9). */
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  return <ServiceDetail id={decodeURIComponent(id)} />
 }

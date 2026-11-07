@@ -1,6 +1,7 @@
-import { StubPage } from "@/components/shared/stub-page"
+import { InvoiceView } from "@/modules/si/components/invoice-view"
 
-/** /si/[id]: filled in Phase 2 (implementation_plan.md §9). */
-export default function Page() {
-  return <StubPage app="si" titleKey="si.pages.invoice" />
+/** /si/[id]: the invoice with Mushak 6.3 print and credit notes (plan §9). */
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  return <InvoiceView id={decodeURIComponent(id)} />
 }

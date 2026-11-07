@@ -1,6 +1,7 @@
-import { StubPage } from "@/components/shared/stub-page"
+import { Handover } from "@/modules/sd/components/handover"
 
-/** /sd/handover/[orderId]: filled in Phase 2 (implementation_plan.md §9). */
-export default function Page() {
-  return <StubPage app="sd" titleKey="sd.pages.handover" />
+/** /sd/handover/[orderId]: vehicle handover (plan §9). */
+export default async function Page({ params }: { params: Promise<{ orderId: string }> }) {
+  const { orderId } = await params
+  return <Handover id={decodeURIComponent(orderId)} />
 }

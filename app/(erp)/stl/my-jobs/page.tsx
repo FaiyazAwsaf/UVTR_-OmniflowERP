@@ -1,6 +1,8 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /stl/my-jobs: filled in Phase 2 (implementation_plan.md §9). */
+import { MyJobs } from "@/modules/stl/components/my-jobs"
+
+/** /stl/my-jobs: the technician's tasks today (plan §9). */
 export default function Page() {
-  return <StubPage app="stl" titleKey="stl.pages.myJobs" />
+  return <MyJobs />
 }

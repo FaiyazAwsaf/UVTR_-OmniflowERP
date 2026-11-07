@@ -1,6 +1,8 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /stl/orders: filled in Phase 2 (implementation_plan.md §9). */
+import { OrderList } from "@/modules/stl/components/lists"
+
+/** /stl/orders: the studio's orders (plan §9). */
 export default function Page() {
-  return <StubPage app="stl" titleKey="stl.pages.orders" />
+  return <OrderList />
 }
