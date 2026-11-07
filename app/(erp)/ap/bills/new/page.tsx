@@ -1,6 +1,8 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /ap/bills/new: filled in Phase 2 (implementation_plan.md §9). */
+import { BillForm } from "@/modules/ap/components/bill-form"
+
+/** /ap/bills/new: goods bill with the three-way match, or an expense bill (plan §9). */
 export default function Page() {
-  return <StubPage app="ap" titleKey="ap.pages.billNew" />
+  return <BillForm />
 }

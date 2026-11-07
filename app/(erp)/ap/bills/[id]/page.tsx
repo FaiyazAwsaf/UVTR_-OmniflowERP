@@ -1,6 +1,11 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /ap/bills/[id]: filled in Phase 2 (implementation_plan.md §9). */
+import { useParams } from "next/navigation"
+
+import { BillView } from "@/modules/ap/components/bill-view"
+
+/** /ap/bills/[id]: one bill (plan §9). */
 export default function Page() {
-  return <StubPage app="ap" titleKey="ap.pages.bill" />
+  const { id } = useParams<{ id: string }>()
+  return <BillView key={id} billId={id} />
 }
