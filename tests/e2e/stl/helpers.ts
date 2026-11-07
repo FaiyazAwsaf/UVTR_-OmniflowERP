@@ -6,22 +6,34 @@ import { expect, type BrowserContext, type Locator, type Page } from "@playwrigh
  * picker selection by search, and drawing a signature.
  */
 
-export const LANDING: Record<string, RegExp> = {
-  rashed: /\/dashboard/,
-  farzana: /\/home/,
-  shahriar: /\/stl/,
-  arif: /\/stl/,
-  nayeem: /\/stl\/board/,
-  shuvo: /\/stl\/board/,
-  tania: /\/si\/counter/,
-  sabbir: /\/si\/counter/,
-  rakib: /\/stl\/my-jobs/,
+export const LANDING: Record<string, string> = {
+  rashed: "/dashboard",
+  farzana: "/home",
+  shahriar: "/stl",
+  arif: "/stl",
+  nayeem: "/stl/board",
+  shuvo: "/stl/board",
+  tania: "/si/counter",
+  sabbir: "/si/counter",
+  rakib: "/stl/my-jobs",
 }
 
+/**
+ * Quick sign-in (the launcher's one click). The first window seeds the
+ * database ("Preparing demo data"), which takes longer while other browsers
+ * share the machine; if the launcher shows the user signed in but has not
+ * moved on after a while, open the landing route directly.
+ */
 export async function signIn(page: Page, username: string, lang?: "en" | "bn"): Promise<void> {
+  const landing = LANDING[username] ?? "/home"
   await page.goto(`/?user=${username}${lang ? `&lang=${lang}` : ""}`)
-  await expect(page).toHaveURL(LANDING[username] ?? /\/home/, { timeout: 30_000 })
-  await expect(page.locator('[data-slot="erp-shell"]')).toBeVisible()
+  const reached = () => new URL(page.url()).pathname.startsWith(landing)
+  for (let waited = 0; waited < 60_000 && !reached(); waited += 1_000) {
+    await page.waitForTimeout(1_000)
+    if (!reached() && waited >= 15_000 && (await page.locator(`a[href="${landing}"]`).count()) > 0) await page.goto(landing)
+  }
+  expect(reached(), `signed in as ${username} and on ${landing}`).toBe(true)
+  await expect(page.locator('[data-slot="erp-shell"]')).toBeVisible({ timeout: 30_000 })
 }
 
 /** A new window (page) in the same context, signed in as a user. */

@@ -61,7 +61,7 @@ export function QuotationList() {
       accessorKey: "quoteNo",
       header: t("stl.list.quote"),
       cell: ({ row }) => (
-        <Link href={`/stl/quotations/${row.original.id}`} className="font-mono text-link hover:underline" data-testid="quote-row" data-quote-no={row.original.quoteNo}>
+        <Link href={`/stl/quotations/${row.original.id}`} className="font-mono whitespace-nowrap text-link hover:underline" data-testid="quote-row" data-quote-no={row.original.quoteNo}>
           {row.original.quoteNo}
         </Link>
       ),
@@ -149,7 +149,7 @@ export function OrderList() {
       accessorKey: "orderNo",
       header: t("stl.list.order"),
       cell: ({ row }) => (
-        <Link href={`/stl/orders/${row.original.id}`} className="font-mono text-link hover:underline" data-testid="order-row" data-order-no={row.original.orderNo}>
+        <Link href={`/stl/orders/${row.original.id}`} className="font-mono whitespace-nowrap text-link hover:underline" data-testid="order-row" data-order-no={row.original.orderNo}>
           {row.original.orderNo}
         </Link>
       ),

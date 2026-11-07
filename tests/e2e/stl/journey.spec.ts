@@ -79,7 +79,7 @@ test("service to cash: quote, deposit, schedule, tasks, QC, handover, counter", 
   await sign(shahriar)
   await shahriar.getByTestId("handover-submit").click()
   await expect(shahriar.getByTestId("gate-pass")).toBeVisible()
-  await expect(shahriar.getByTestId("gate-pass")).toContainText("GP-GUL-")
+  await expect(shahriar.getByTestId("print-preview")).toContainText("GP-GUL-")
   await shahriar.keyboard.press("Escape")
 
   // J4: Tania takes the balance by card and cash; the deposit is applied.

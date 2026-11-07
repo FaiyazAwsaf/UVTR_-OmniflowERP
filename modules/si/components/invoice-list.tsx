@@ -67,7 +67,7 @@ export function InvoiceList() {
       accessorKey: "invoiceNo",
       header: t("si.list.invoice"),
       cell: ({ row }) => (
-        <Link href={`/si/${row.original.id}`} lang="en" className="font-mono text-link hover:underline" data-testid="invoice-row" data-invoice-no={row.original.invoiceNo}>
+        <Link href={`/si/${row.original.id}`} lang="en" className="font-mono whitespace-nowrap text-link hover:underline" data-testid="invoice-row" data-invoice-no={row.original.invoiceNo}>
           {row.original.invoiceNo}
         </Link>
       ),

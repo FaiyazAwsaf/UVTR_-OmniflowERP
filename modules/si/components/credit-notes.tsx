@@ -54,7 +54,7 @@ export function CreditNoteList() {
       accessorKey: "creditNoteNo",
       header: t("si.credit.number"),
       cell: ({ row }) => (
-        <button type="button" lang="en" onClick={() => setPrintId(row.original.id)} className="font-mono text-link hover:underline" data-testid="credit-note-row" data-no={row.original.creditNoteNo}>
+        <button type="button" lang="en" onClick={() => setPrintId(row.original.id)} className="font-mono whitespace-nowrap text-link hover:underline" data-testid="credit-note-row" data-no={row.original.creditNoteNo}>
           {row.original.creditNoteNo}
         </button>
       ),
