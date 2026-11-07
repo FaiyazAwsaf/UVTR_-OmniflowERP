@@ -234,8 +234,15 @@ export function writeOrder(
     if (t.state === "done" && line.serviceId) {
       const recipe = recipeFor(line.serviceId, line.cls)
       const date = dhakaDate(t.end)
+      // The stock plan (transfers, purchases) must cover what is actually used, recipe plus variance.
       for (const r of recipe)
-        q.need({ itemId: r.itemId, loc, qty: r.qty, at: t.end, date })
+        q.need({
+          itemId: r.itemId,
+          loc,
+          qty: actualQty(task.id, r.itemId, t.techId, r.qty),
+          at: t.end,
+          date,
+        })
       q.add(t.end, () =>
         consume(w, {
           orderId: order.id,

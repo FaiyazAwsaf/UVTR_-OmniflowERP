@@ -153,7 +153,7 @@ const RULES: Rule[] = [
   [
     /^Sales summary for (\d+) days to (\S+) \(history\), (.+)$/,
     (m) =>
-      `${m[2]} পর্যন্ত ${m[1]} দিনের বিক্রয় সারাংশ (ইতিহাস), ${place(m[3])}`,
+      `বিক্রয় সারাংশ (ইতিহাস), ${m[1]} দিন, ${m[2]} পর্যন্ত, ${place(m[3])}`,
   ],
   [
     /^Salaries and incentives paid, June \(opening\)$/,
