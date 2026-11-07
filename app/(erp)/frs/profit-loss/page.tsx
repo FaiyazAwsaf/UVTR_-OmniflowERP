@@ -1,6 +1,14 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /frs/profit-loss: filled in Phase 2 (implementation_plan.md §9). */
+import * as React from "react"
+
+import { ProfitLossPage } from "@/modules/frs/components/profit-loss"
+
+/** /frs/profit-loss (plan §9). `?month=&view=` are read in Suspense. */
 export default function Page() {
-  return <StubPage app="frs" titleKey="frs.pages.profitLoss" />
+  return (
+    <React.Suspense fallback={null}>
+      <ProfitLossPage />
+    </React.Suspense>
+  )
 }

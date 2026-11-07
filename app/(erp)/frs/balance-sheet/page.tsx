@@ -1,6 +1,14 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /frs/balance-sheet: filled in Phase 2 (implementation_plan.md §9). */
+import * as React from "react"
+
+import { BalanceSheetPage } from "@/modules/frs/components/balance-sheet"
+
+/** /frs/balance-sheet (plan §9). `?asOf=` is read in Suspense. */
 export default function Page() {
-  return <StubPage app="frs" titleKey="frs.pages.balanceSheet" />
+  return (
+    <React.Suspense fallback={null}>
+      <BalanceSheetPage />
+    </React.Suspense>
+  )
 }

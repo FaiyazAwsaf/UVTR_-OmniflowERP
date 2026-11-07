@@ -1,6 +1,14 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /frs/withholding: filled in Phase 2 (implementation_plan.md §9). */
+import * as React from "react"
+
+import { WithholdingPage } from "@/modules/frs/components/withholding-page"
+
+/** /frs/withholding (plan §9). `?month=` is read in Suspense. */
 export default function Page() {
-  return <StubPage app="frs" titleKey="frs.pages.withholding" />
+  return (
+    <React.Suspense fallback={null}>
+      <WithholdingPage />
+    </React.Suspense>
+  )
 }

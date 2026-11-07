@@ -214,6 +214,8 @@ export const frsEn = {
       monthDue: "The return and deposits for {month} are due on {date}.",
       printTitle: "VAT return (summary), Mushak 9.1",
       printFor: "Tax period {month}",
+      particulars: "Particulars",
+      taka: "Taka",
     },
     deposits: {
       title: "Tax deposits for {month}",

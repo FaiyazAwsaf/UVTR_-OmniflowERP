@@ -216,6 +216,8 @@ export const frsBn: typeof frsEn = {
       monthDue: "{month}-এর রিটার্ন ও জমা দেয় {date}।",
       printTitle: "মূসক দাখিলপত্র (সারসংক্ষেপ), মূসক ৯.১",
       printFor: "কর মেয়াদ {month}",
+      particulars: "বিবরণ",
+      taka: "টাকা",
     },
     deposits: {
       title: "{month}-এর কর জমা",
