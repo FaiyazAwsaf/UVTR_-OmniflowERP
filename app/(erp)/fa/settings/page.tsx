@@ -1,6 +1,8 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /fa/settings: filled in Phase 2 (implementation_plan.md §9). */
+import { SettingsPage } from "@/modules/fa/components/settings-page"
+
+/** /fa/settings: posting map, cost centres and tax rates (plan §9). */
 export default function Page() {
-  return <StubPage app="fa" titleKey="fa.pages.settings" />
+  return <SettingsPage />
 }

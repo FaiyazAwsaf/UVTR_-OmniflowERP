@@ -1,6 +1,8 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /fa/journals/new: filled in Phase 2 (implementation_plan.md §9). */
+import { JournalEditor } from "@/modules/fa/components/journal-editor"
+
+/** /fa/journals/new: journal voucher entry (plan §9). */
 export default function Page() {
-  return <StubPage app="fa" titleKey="fa.pages.journalNew" />
+  return <JournalEditor />
 }

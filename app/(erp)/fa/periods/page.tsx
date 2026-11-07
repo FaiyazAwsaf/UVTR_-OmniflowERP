@@ -1,6 +1,14 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /fa/periods: filled in Phase 2 (implementation_plan.md §9). */
+import * as React from "react"
+
+import { PeriodsPage } from "@/modules/fa/components/periods-page"
+
+/** /fa/periods: fiscal years, months and the close checklist (plan §9). */
 export default function Page() {
-  return <StubPage app="fa" titleKey="fa.pages.periods" />
+  return (
+    <React.Suspense fallback={null}>
+      <PeriodsPage />
+    </React.Suspense>
+  )
 }
