@@ -138,6 +138,27 @@ export const siEn = {
       buyer: "Buyer",
       reserved: "Held by pending payments",
       printed: "Printed",
+      complaint: "Complaint on {no}",
+    },
+    scenarios: {
+      e2: {
+        title: "E2 Fleet over credit limit",
+        summary: "A consolidated fleet invoice over the credit limit needs an accounts manager's override",
+        cue1: "Swift Ride Rentals owes {outstandingP} against a {limitP} credit limit. Its {count} delivered, unbilled orders at Gulshan come to {invoiceP}.",
+        cue2: "The credit check shows {afterP} after this invoice, {overP} over the limit. Click Credit override.",
+        cue3: "Choose Farzana Haque (accounts manager), give a reason and the PIN 1234: the override shows as approved.",
+        cue4: "Click Issue consolidated invoice: one Mushak 6.3 invoice for the {count} orders, due in 30 days.",
+        cue5: "In Mahbub's window (AR, New receipt, Swift Ride): {receiptP} by bank transfer pays the oldest invoice first and proposes VDS and AIT. Add the certificate number and save.",
+      },
+      e12: {
+        title: "E12 Credit note",
+        summary: "A partial Mushak 6.7 credit note above the cashier's limit, approved on the spot and kept as advance",
+        cue1: "{invoiceNo}: {nameEn} paid {totalP} for a premium wash and interior deep cleaning on {regNo}. The complaint on {orderNo} shows above the lines.",
+        cue2: "Click Credit note, tick only Interior deep cleaning ({creditP}) and type the reason.",
+        cue3: "Tania's credit note limit is ৳0: click Approve on the spot, choose Shahriar Kabir, give a reason and the PIN 1234.",
+        cue4: "The Mushak 6.7 credit note posts: VAT of {vatP} is reversed and, as the invoice was paid, all {creditP} is kept as the customer's advance.",
+        cue5: "Linked documents now list the credit note; Credit notes prints it as Mushak 6.7.",
+      },
     },
     credit: {
       title: "Credit note against {no}",

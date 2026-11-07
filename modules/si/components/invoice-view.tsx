@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { useLiveQuery } from "dexie-react-hooks"
-import { FileText, Printer, Receipt, Undo2 } from "lucide-react"
+import { FileText, MessageSquareWarning, Printer, Receipt, Undo2 } from "lucide-react"
 
 import { ApprovalChip } from "@/components/shared/approval-chip"
 import { DateText } from "@/components/shared/date-text"
@@ -120,6 +120,22 @@ export function InvoiceView({ id }: { id: Id }) {
           </>
         }
       />
+      {orders
+        .filter((o) => o.complaintNote)
+        .slice(0, 3)
+        .map((o) => (
+          <div
+            key={o.id}
+            className="flex items-start gap-3 rounded-lg bg-[color-mix(in_oklch,var(--warning)_12%,transparent)] px-4 py-3 text-[0.8125rem]"
+            data-testid="invoice-complaint"
+          >
+            <MessageSquareWarning className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden />
+            <div className="min-w-0">
+              <p className="font-medium">{t("si.invoice.complaint", { no: o.orderNo })}</p>
+              <p className="text-muted-foreground">{o.complaintNote}</p>
+            </div>
+          </div>
+        ))}
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <SectionCard title={t("si.invoice.lines")} size="sm">
           <div className="@container/il overflow-x-auto">

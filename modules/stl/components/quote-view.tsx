@@ -8,6 +8,7 @@ import { CalendarCheck, FileText, Mail, MessageSquare, Pencil, Printer } from "l
 import { toast } from "sonner"
 
 import { AmountInWords } from "@/components/shared/amount-in-words"
+import { useInlineApproval } from "@/components/shared/approval-dialog"
 import { ApprovalChip } from "@/components/shared/approval-chip"
 import { DocLink } from "@/components/shared/doc-link"
 import { EmptyState } from "@/components/shared/empty-state"
@@ -18,19 +19,22 @@ import { SectionCard } from "@/components/shared/section-card"
 import { SimulatedBadge } from "@/components/shared/simulated-badge"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 import { locationById } from "@/config/brand.config"
 import { now } from "@/core/clock/clock"
 import { dhakaDate } from "@/core/clock/dates"
 import { useDb } from "@/core/db/DbProvider"
 import type { Id, QuotationLineRow, QuotationRow } from "@/core/db/schema"
 import { useCommand } from "@/core/engine/useCommand"
-import { useCan } from "@/core/security/useCan"
+import { useCan, useLimit } from "@/core/security/useCan"
 import { nameOf, userName } from "@/core/security/users"
 import { useLocale } from "@/lib/i18n/provider"
+import { cn } from "@/lib/utils"
 
-import { acceptQuotation, sendQuotation } from "../commands"
+import { acceptQuotation, saveQuotation, sendQuotation } from "../commands"
+import { requestsFromLines } from "../quote-requests"
 import { DepositFields, NO_DEPOSIT, useDepositFlow, type DepositState } from "./deposit"
-import { ClassTag, DocHeader, newKey, PrintDialog, TotalsBlock, useUserMap, VehicleCell } from "./kit"
+import { ClassTag, DocHeader, Field, newKey, PrintDialog, TotalsBlock, useUserMap, VehicleCell } from "./kit"
 
 /** Display status of a quotation: draft or sent past its validity reads as expired. */
 export function quoteStatus(q: Pick<QuotationRow, "status" | "validUntil">, today: string): QuotationRow["status"] {
@@ -41,7 +45,7 @@ export function quoteStatus(q: Pick<QuotationRow, "status" | "validUntil">, toda
 export function QuoteView({ id }: { id: Id }) {
   const db = useDb()
   const router = useRouter()
-  const { t, locale, dmy } = useLocale()
+  const { t, locale, dmy, num } = useLocale()
   const users = useUserMap()
   const send = useCommand(sendQuotation)
   const accept = useCommand(acceptQuotation)
@@ -167,12 +171,13 @@ export function QuoteView({ id }: { id: Id }) {
             <KeyValueGrid
               columns={2}
               items={[
-                { label: t("stl.quote.discountPct"), value: `${q.discountPct}%` },
+                { label: t("stl.quote.discountPct"), value: <span data-testid="quote-discount-pct">{num(q.discountPct)}%</span> },
                 { label: t("common.location"), value: locationById(q.locationId)?.name[locale] },
                 { label: t("stl.quote.inspection"), value: q.inspectionNotes || "-", wide: true },
               ]}
             />
             {q.discountApprovalId ? <ApprovalChip approvalId={q.discountApprovalId} className="mt-3" /> : null}
+            {open && canQuote ? <DiscountEditor key={`${q.id}:${q.version}`} quotation={q} lines={lines} /> : null}
           </SectionCard>
           {order ? (
             <SectionCard title={t("stl.linked")} size="sm">
@@ -241,6 +246,82 @@ export function QuoteView({ id }: { id: Id }) {
           <p className="mt-2 text-[0.75rem]">{t("stl.quote.validUntil", { date: dmy(q.validUntil) })}</p>
         </PrintLayout>
       </PrintDialog>
+    </div>
+  )
+}
+
+/**
+ * Change the discount on an open quotation (E1): the lines are re-priced
+ * with the new percent; above the user's live `discount-pct` limit an
+ * approver confirms on this device with a PIN (inline approval).
+ */
+function DiscountEditor({ quotation, lines }: { quotation: QuotationRow; lines: QuotationLineRow[] }) {
+  const { t, num } = useLocale()
+  const limit = useLimit("discount-pct")
+  const save = useCommand(saveQuotation)
+  const { requestApproval, dialog } = useInlineApproval()
+  const [pct, setPct] = React.useState<number>(quotation.discountPct)
+  const overLimit = pct > limit
+  const changed = pct !== quotation.discountPct
+
+  const apply = async () => {
+    let inline
+    if (overLimit) {
+      inline = await requestApproval({
+        kind: "discount-pct",
+        docType: "quotations",
+        locationId: quotation.locationId,
+        pct,
+        description: t("stl.quote.discountAsk", { pct: num(pct), limit: num(limit) }),
+      })
+      if (!inline) return
+    }
+    const out = await save.run({
+      quotationId: quotation.id,
+      expectedVersion: quotation.version,
+      partyId: quotation.partyId,
+      vehicleId: quotation.vehicleId,
+      requests: requestsFromLines(lines),
+      discountPct: pct,
+      promotionId: quotation.promotionId,
+      inspectionNotes: quotation.inspectionNotes,
+      inline,
+    })
+    if (out) toast.success(t("stl.quote.discountApplied", { pct: num(pct), no: quotation.quoteNo }))
+  }
+
+  return (
+    <div className="mt-4 border-t border-hairline pt-3" data-testid="quote-discount-editor">
+      <Field
+        label={t("stl.quote.discountEdit")}
+        hint={overLimit ? <span className="text-warning">{t("stl.quote.needsApproval", { limit: num(limit) })}</span> : t("stl.quote.yourLimit", { limit: num(limit) })}
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative">
+            <Input
+              type="text"
+              inputMode="decimal"
+              aria-label={t("stl.quote.discountPct")}
+              data-testid="quote-discount-edit"
+              value={pct ? String(pct) : ""}
+              placeholder="0"
+              onChange={(e) => {
+                const n = Number(e.target.value.replace(/[^\d.]/g, ""))
+                setPct(Number.isFinite(n) ? Math.min(100, n) : 0)
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && changed && !save.pending) void apply()
+              }}
+              className={cn("w-24 pr-7 text-right font-mono", overLimit && "border-warning")}
+            />
+            <span className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-xs text-muted-foreground">%</span>
+          </div>
+          <Button variant="outline" onClick={apply} disabled={!changed || save.pending} data-testid="quote-discount-apply">
+            {t("stl.quote.discountApply")}
+          </Button>
+        </div>
+      </Field>
+      {dialog}
     </div>
   )
 }
