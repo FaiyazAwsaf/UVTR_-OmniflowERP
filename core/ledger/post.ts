@@ -10,7 +10,7 @@ import type {
   TemplateLine,
   VoucherType,
 } from "@/core/db/schema"
-import { nextDocNo } from "@/core/docs/numbering"
+import { formatDocNo, nextDocNo } from "@/core/docs/numbering"
 import type { Tx } from "@/core/engine/types"
 
 import { CHART } from "./chart"
@@ -87,7 +87,14 @@ export async function postJournal(tx: Tx, input: PostJournalInput): Promise<Jour
     tx.reject("PERIOD_CLOSED", { period: fiscal.period.code, date: input.date }, { audit: true })
   }
 
-  const journalNo = await nextDocNo(tx, input.voucherType, { date: input.date })
+  // A draft keeps the number it was given at creation when it posts, so the
+  // series has no gaps; a new number only if the type or fiscal year changed.
+  const existing = input.journalId ? await tx.get("journals", input.journalId) : undefined
+  const prefix = formatDocNo(input.voucherType, 0, { date: input.date }).replace(/\d+$/, "")
+  const journalNo =
+    existing?.journalNo && existing.voucherType === input.voucherType && existing.journalNo.startsWith(prefix)
+      ? existing.journalNo
+      : await nextDocNo(tx, input.voucherType, { date: input.date })
   const now = tx.now()
   const fields = {
     journalNo,

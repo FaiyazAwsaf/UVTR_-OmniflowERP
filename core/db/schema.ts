@@ -1191,7 +1191,7 @@ export type JournalStatus = "draft" | "pending-approval" | "posted" | "reversed"
 export type JournalSource = { app: string; docType: string; docId: Id; docNo: string }
 
 export type JournalRow = BaseRow & {
-  /** <TYPE>-<FY>-<6>: JV-2627-000417 (drafts get theirs at posting) */
+  /** <TYPE>-<FY>-<6>: JV-2627-000417 (a draft keeps its number when it posts) */
   journalNo: string
   voucherType: VoucherType
   date: ISODate

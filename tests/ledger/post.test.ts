@@ -8,6 +8,7 @@ import { commit } from "@/core/engine/commit"
 import { defineCommand } from "@/core/engine/defineCommand"
 import { RuleViolation } from "@/core/engine/errors"
 import { SYSTEM_ACTOR } from "@/core/engine/types"
+import { nextDocNo } from "@/core/docs/numbering"
 import { postJournal, reverseJournal } from "@/core/ledger/post"
 import { linesForBankCharge, linesForDeposit, type LineInput } from "@/core/ledger/rules"
 import { trialBalance } from "@/core/ledger/statements"
@@ -122,5 +123,33 @@ describe("postJournal (plan §3.4)", () => {
       },
     })
     await expect(commit(tamper, {}, { db, actor: SYSTEM_ACTOR })).rejects.toMatchObject({ code: "IMMUTABLE_DOCUMENT" })
+  })
+  it("keeps a draft's number when its row posts, so the series has no gaps", async () => {
+    const lines: LineInput[] = [
+      { account: "SALARIES", debitP: 2_000_00, locationId: "loc_gul" },
+      { account: "SALARY_PAYABLE", creditP: 2_000_00 },
+    ]
+    const draft = await asSystem(db, async (tx) => {
+      const journalNo = await nextDocNo(tx, "JV", { date: today() })
+      const fiscal = await tx.fiscal(today())
+      return tx.insert("journals", {
+        journalNo,
+        voucherType: "JV",
+        date: today(),
+        periodId: fiscal.period!.id,
+        narration: "draft",
+        status: "draft",
+        totalP: 0,
+        rule: "R24",
+        preparedBy: "system",
+      })
+    })
+    const posted = await asSystem(db, (tx) =>
+      postJournal(tx, { voucherType: "JV", date: today(), narration: "draft", lines, rule: "R24", journalId: draft.id })
+    )
+    expect(posted.id).toBe(draft.id)
+    expect(posted.journalNo).toBe(draft.journalNo)
+    const next = await post(lines, "R24")
+    expect(Number(next.journalNo.slice(-6))).toBe(Number(draft.journalNo.slice(-6)) + 1)
   })
 })
