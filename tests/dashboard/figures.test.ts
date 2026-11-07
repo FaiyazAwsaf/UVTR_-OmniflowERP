@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest"
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 
 import { now } from "@/core/clock/clock"
 import { atDhaka, dhakaDate } from "@/core/clock/dates"
@@ -35,6 +35,9 @@ import { actors, gl, key, refused, run, seededDb, trialBalanceTies } from "./hel
  * location, and a real counter checkout (a walk-in retail sale at Gulshan)
  * moves revenue today, collections and cash by exactly the invoice amounts.
  */
+
+// Under a full parallel run (and other agents) a loop over every period and location can take longer than 5 s.
+vi.setConfig({ testTimeout: 60_000 })
 
 let db: OmniflowDb
 let as: ReturnType<typeof actors>
@@ -93,14 +96,20 @@ describe("revenue, margin and collections", () => {
     expect(all.grossProfitP).toBeLessThan(all.revenuePeriodP)
   })
 
-  it("in the itemised window the P&L revenue equals the IRT-16 report (no summary vouchers, no credit notes in the seed)", async () => {
+  it("the P&L revenue equals the IRT-16 report plus the seed's summary vouchers (R2 history has no invoice lines; no credit notes in the seed)", async () => {
     const def = await reportDefinition(db, "IRT-16")
-    for (const period of ["today", "mtd"] as const) {
+    const accounts = await db.accounts.toArray()
+    const revenue = new Set(accounts.filter((a) => Number(a.code) >= 4110 && Number(a.code) <= 4300).map((a) => a.id))
+    const summaryLines = (await db.journalLines.toArray()).filter((l) => l.voucherType === "SM" && revenue.has(l.accountId))
+    for (const period of DASH_PERIODS) {
       const range = periodRange(period, today)
       for (const locationId of [null, LOC.GUL, LOC.UTT]) {
         const f = await loadFinance(db, { today, period, locationId })
         const irt = await runReport(db, def, { ...range, locationId: locationId ?? undefined })
-        expect(f.revenuePeriodP, `${period} ${locationId}`).toBe(irt.totals.netP)
+        const summaryP = summaryLines
+          .filter((l) => l.date >= range.from && l.date <= range.to && (!locationId || l.locationId === locationId))
+          .reduce((s, l) => s + l.creditP - l.debitP, 0)
+        expect(f.revenuePeriodP, `${period} ${locationId}`).toBe(irt.totals.netP + summaryP)
       }
     }
   })

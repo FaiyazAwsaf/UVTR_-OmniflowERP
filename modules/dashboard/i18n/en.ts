@@ -195,7 +195,7 @@ export const dashboardEn = {
           "locked-user": "Unlock {ref}",
           "failed-signin": "Failed sign-in by {ref}",
           "password-change": "{ref} must choose a new password",
-          audit: "{ref}",
+          audit: "Activity: {ref}",
           "access-review": "Review user access (IRT-32)",
           report: "Review login history (IRT-31)",
           dashboard: "Open the executive dashboard",

@@ -24,7 +24,7 @@ export const dashboardBn: typeof dashboardEn = {
     },
     exec: {
       title: "নির্বাহী ড্যাশবোর্ড",
-      subtitle: "{period}, {location}",
+      subtitle: "{period} · {location}",
       range: "{from} থেকে {to}",
       period: {
         label: "সময়কাল",
@@ -124,7 +124,7 @@ export const dashboardBn: typeof dashboardEn = {
     },
     home: {
       title: "হোম",
-      subtitle: "{role}, {location}",
+      subtitle: "{role} · {location}",
       allLocations: "সব অবস্থান",
       kpi: {
         revenueToday: "আজকের আয়",
@@ -197,7 +197,7 @@ export const dashboardBn: typeof dashboardEn = {
           "locked-user": "{ref} আনলক করুন",
           "failed-signin": "{ref} এর ব্যর্থ সাইন-ইন",
           "password-change": "{ref} কে নতুন পাসওয়ার্ড বেছে নিতে হবে",
-          audit: "{ref}",
+          audit: "কার্যক্রম: {ref}",
           "access-review": "ব্যবহারকারীর প্রবেশাধিকার পর্যালোচনা (IRT-32)",
           report: "লগইন ইতিহাস পর্যালোচনা (IRT-31)",
           dashboard: "নির্বাহী ড্যাশবোর্ড খুলুন",

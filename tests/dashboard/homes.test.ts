@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest"
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 
 import { rules } from "@/config/rules.config"
 import { decideApproval } from "@/core/approvals/decide"
@@ -21,6 +21,9 @@ import { gl, seededDb } from "./helpers"
  * tasks, the store's goods and transfers, locked users, the audit trail),
  * scoped to the user's studio where the role is studio-bound.
  */
+
+// Under a full parallel run (and other agents) a loop over every period and location can take longer than 5 s.
+vi.setConfig({ testTimeout: 60_000 })
 
 let db: OmniflowDb
 let today: string
@@ -193,10 +196,10 @@ describe("role homes", () => {
   })
 
   it("auditor: today's audit entries, the access review and login history reports", async () => {
-    // Sign-ins are left out of the recent activity; a decision by Shahriar is not.
+    // Sign-ins are left out of the recent activity; a decision by Shahriar is not (a rejection posts nothing, so it works on any date).
     const shahriar = await signedIn(db, "shahriar")
     const approval = (await db.approvals.get(PLANT.pendingPettyCashApproval))!
-    await commit(decideApproval, { approvalId: approval.id, decision: "approve", reason: "Receipts checked", expectedVersion: approval.version }, { db, actor: shahriar })
+    await commit(decideApproval, { approvalId: approval.id, decision: "reject", reason: "No receipt attached", expectedVersion: approval.version }, { db, actor: shahriar })
     const h = await home("shamima")
     expect(kpi(h, "decidedToday")).toBe(1)
     expect(h.todos.find((t) => t.kind === "audit")?.name?.en).toBe("Shahriar Kabir")
