@@ -141,7 +141,7 @@ function LimitCell({
   if (!editable) {
     return (
       <td className={cellClass} data-testid="limit-cell" data-role={role.code} data-kind={kind} data-value={value}>
-        {text}
+        <span className="block px-1.5 py-1">{text}</span>
       </td>
     )
   }
