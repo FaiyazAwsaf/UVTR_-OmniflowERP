@@ -1,6 +1,8 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /ap/bills: filled in Phase 2 (implementation_plan.md §9). */
+import { BillList } from "@/modules/ap/components/bill-list"
+
+/** /ap/bills: vendor bills (plan §9). */
 export default function Page() {
-  return <StubPage app="ap" titleKey="ap.pages.bills" />
+  return <BillList />
 }

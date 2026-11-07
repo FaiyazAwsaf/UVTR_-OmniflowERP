@@ -1,6 +1,11 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /par/[id]: filled in Phase 2 (implementation_plan.md §9). */
+import { useParams } from "next/navigation"
+
+import { Party360 } from "@/modules/par/components/party-360"
+
+/** /par/[id]: the party 360 (plan §9). */
 export default function Page() {
-  return <StubPage app="par" titleKey="par.pages.party" />
+  const { id } = useParams<{ id: string }>()
+  return <Party360 key={id} partyId={id} />
 }

@@ -1,6 +1,14 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /ar/receipts/new: filled in Phase 2 (implementation_plan.md §9). */
+import * as React from "react"
+
+import { ReceiptForm } from "@/modules/ar/components/receipt-form"
+
+/** /ar/receipts/new: a customer receipt (`?party=` prefills the customer). */
 export default function Page() {
-  return <StubPage app="ar" titleKey="ar.pages.receiptNew" />
+  return (
+    <React.Suspense fallback={null}>
+      <ReceiptForm />
+    </React.Suspense>
+  )
 }

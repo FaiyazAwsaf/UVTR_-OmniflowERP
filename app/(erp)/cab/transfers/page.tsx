@@ -1,6 +1,14 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /cab/transfers: filled in Phase 2 (implementation_plan.md §9). */
+import * as React from "react"
+
+import { Transfers } from "@/modules/cab/components/transfers"
+
+/** /cab/transfers: contra transfers (plan §9). Reads `?id=` and `?new=`, so it sits in Suspense. */
 export default function Page() {
-  return <StubPage app="cab" titleKey="cab.pages.transfers" />
+  return (
+    <React.Suspense fallback={null}>
+      <Transfers />
+    </React.Suspense>
+  )
 }

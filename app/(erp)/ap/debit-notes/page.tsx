@@ -1,6 +1,14 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /ap/debit-notes: filled in Phase 2 (implementation_plan.md §9). */
+import * as React from "react"
+
+import { DebitNotes } from "@/modules/ap/components/debit-notes"
+
+/** /ap/debit-notes: debit notes (Mushak 6.8) from purchase returns (plan §9). */
 export default function Page() {
-  return <StubPage app="ap" titleKey="ap.pages.debitNotes" />
+  return (
+    <React.Suspense fallback={null}>
+      <DebitNotes />
+    </React.Suspense>
+  )
 }

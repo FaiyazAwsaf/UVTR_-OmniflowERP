@@ -1,6 +1,14 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /cab/petty-cash: filled in Phase 2 (implementation_plan.md §9). */
+import * as React from "react"
+
+import { PettyCash } from "@/modules/cab/components/petty-cash"
+
+/** /cab/petty-cash: petty cash vouchers and imprest (plan §9). */
 export default function Page() {
-  return <StubPage app="cab" titleKey="cab.pages.pettyCash" />
+  return (
+    <React.Suspense fallback={null}>
+      <PettyCash />
+    </React.Suspense>
+  )
 }

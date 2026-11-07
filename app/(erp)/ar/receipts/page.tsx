@@ -1,6 +1,14 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /ar/receipts: filled in Phase 2 (implementation_plan.md §9). */
+import * as React from "react"
+
+import { ReceiptList } from "@/modules/ar/components/receipt-list"
+
+/** /ar/receipts: receipts; `?id=` opens one, so it reads the URL inside Suspense. */
 export default function Page() {
-  return <StubPage app="ar" titleKey="ar.pages.receipts" />
+  return (
+    <React.Suspense fallback={null}>
+      <ReceiptList />
+    </React.Suspense>
+  )
 }

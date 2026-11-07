@@ -1,6 +1,8 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /ar/aging: filled in Phase 2 (implementation_plan.md §9). */
+import { AgingView } from "@/modules/ar/components/aging"
+
+/** /ar/aging: customer aging by days past due, tied to AR_CONTROL (plan §9). */
 export default function Page() {
-  return <StubPage app="ar" titleKey="ar.pages.aging" />
+  return <AgingView side="ar" />
 }

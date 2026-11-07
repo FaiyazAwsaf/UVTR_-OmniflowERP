@@ -1,6 +1,8 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /ap/payments: filled in Phase 2 (implementation_plan.md §9). */
+import { PaymentList } from "@/modules/ap/components/payment-list"
+
+/** /ap/payments: vendor payments (plan §9). */
 export default function Page() {
-  return <StubPage app="ap" titleKey="ap.pages.payments" />
+  return <PaymentList />
 }

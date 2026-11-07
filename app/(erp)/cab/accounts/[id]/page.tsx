@@ -1,6 +1,11 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /cab/accounts/[id]: filled in Phase 2 (implementation_plan.md §9). */
+import { useParams } from "next/navigation"
+
+import { AccountBookView } from "@/modules/cab/components/account-book"
+
+/** /cab/accounts/[id]: cash or bank book (plan §9). */
 export default function Page() {
-  return <StubPage app="cab" titleKey="cab.pages.book" />
+  const { id } = useParams<{ id: string }>()
+  return <AccountBookView key={id} accountId={id} />
 }

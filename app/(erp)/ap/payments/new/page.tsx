@@ -1,6 +1,14 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /ap/payments/new: filled in Phase 2 (implementation_plan.md §9). */
+import * as React from "react"
+
+import { PaymentForm } from "@/modules/ap/components/payment-form"
+
+/** /ap/payments/new: a vendor payment (`?party=` and `?bill=` prefill it). */
 export default function Page() {
-  return <StubPage app="ap" titleKey="ap.pages.paymentNew" />
+  return (
+    <React.Suspense fallback={null}>
+      <PaymentForm />
+    </React.Suspense>
+  )
 }

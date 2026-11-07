@@ -1,6 +1,8 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /ar: filled in Phase 2 (implementation_plan.md §9). */
+import { ArHome } from "@/modules/ar/components/ar-home"
+
+/** /ar: receivables home (plan §9). */
 export default function Page() {
-  return <StubPage app="ar" titleKey="ar.pages.home" />
+  return <ArHome />
 }

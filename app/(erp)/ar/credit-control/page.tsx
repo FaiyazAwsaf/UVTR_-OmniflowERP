@@ -1,6 +1,8 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /ar/credit-control: filled in Phase 2 (implementation_plan.md §9). */
+import { CreditControl } from "@/modules/ar/components/credit-control"
+
+/** /ar/credit-control: limits, holds, overrides and reminders (plan §9). */
 export default function Page() {
-  return <StubPage app="ar" titleKey="ar.pages.creditControl" />
+  return <CreditControl />
 }
