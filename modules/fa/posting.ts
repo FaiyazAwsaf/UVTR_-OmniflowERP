@@ -77,15 +77,11 @@ export async function postManualVoucher(
     approvalId: opts.approvalId ?? journal.approvalId,
     journalId: journal.id,
   })
-  // postJournal numbers every voucher it posts; a manual voucher keeps the
-  // number it was given as a draft (the one its maker and approver saw).
-  const final =
-    posted.journalNo === journal.journalNo
-      ? posted
-      : await tx.update("journals", journal.id, { journalNo: journal.journalNo })
+  // postJournal keeps the draft's number (the one its maker and approver saw)
+  // unless the date moved it into another fiscal year.
   tx.emit("JournalPosted", {
     refs: { journalId: journal.id, ...(opts.approvalId ? { approvalId: opts.approvalId } : {}) },
-    params: { no: final.journalNo, amount: Math.round(final.totalP / 100) },
+    params: { no: posted.journalNo, amount: Math.round(posted.totalP / 100) },
   })
-  return final
+  return posted
 }
