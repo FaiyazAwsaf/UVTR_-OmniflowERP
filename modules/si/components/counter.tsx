@@ -41,6 +41,7 @@ type Tender = { key: string; method: Method; amountP: number | null; tenderedP: 
 
 const METHOD_ICON = { cash: Banknote, card: CreditCard, bkash: Smartphone, nagad: Wallet } as const
 const WALK_IN = "pty_walk_in"
+const CREDIT = new Set(["fleet", "dealer", "corporate"])
 
 /**
  * /si/counter: counter checkout (J4). Delivered orders of the studio and
@@ -74,12 +75,17 @@ export function Counter() {
 
   const data = useLiveQuery(async () => {
     if (!loc) return null
-    const delivered = (await db.salesOrders.where("[locationId+status]").equals([loc, "delivered"]).toArray()).sort((a, b) => (b.deliveredAt ?? 0) - (a.deliveredAt ?? 0))
-    const lines = await db.salesOrderLines.where("orderId").anyOf(delivered.map((o) => o.id)).toArray()
+    const allDelivered = (await db.salesOrders.where("[locationId+status]").equals([loc, "delivered"]).toArray()).sort((a, b) => (b.deliveredAt ?? 0) - (a.deliveredAt ?? 0))
     const open = (await db.salesInvoices.where("locationId").equals(loc).toArray()).filter((i) => i.kind === "counter" && invoiceAvailable(i) > 0)
     const pending = (await db.receipts.where("status").equals("pending").toArray()).filter((r) => r.locationId === loc && (r.method === "bkash" || r.method === "nagad"))
-    const partyIds = [...new Set([...delivered.map((o) => o.partyId), ...open.map((i) => i.partyId), ...pending.map((r) => r.partyId)])]
+    const partyIds = [...new Set([...allDelivered.map((o) => o.partyId), ...open.map((i) => i.partyId), ...pending.map((r) => r.partyId)])]
     const parties = new Map((await db.parties.bulkGet(partyIds)).filter(Boolean).map((p) => [p!.id, p!]))
+    // Credit accounts (fleets, dealers, corporates) are invoiced on terms from SI, not paid at the counter.
+    const delivered = allDelivered.filter((o) => {
+      const p = parties.get(o.partyId)
+      return !!p && !CREDIT.has(p.segment) && p.paymentTermsDays === 0
+    })
+    const lines = await db.salesOrderLines.where("orderId").anyOf(delivered.map((o) => o.id)).toArray()
     const vehicles = new Map((await db.vehicles.bulkGet([...new Set(delivered.map((o) => o.vehicleId).filter((v): v is string => !!v))])).filter(Boolean).map((v) => [v!.id, v!]))
     const pendingInvoices = new Map((await db.salesInvoices.bulkGet(pending.map((r) => r.allocations[0]?.invoiceId ?? ""))).filter(Boolean).map((i) => [i!.id, i!]))
     return { delivered, lines, open, pending, parties, vehicles, pendingInvoices }

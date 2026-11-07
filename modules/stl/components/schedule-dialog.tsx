@@ -37,7 +37,7 @@ const BUSY = new Set(["booked", "in-progress", "qc"])
  */
 export function ScheduleDialog({ target, onClose }: { target: ScheduleTarget | null; onClose: () => void }) {
   const db = useDb()
-  const { t, locale, num } = useLocale()
+  const { t, locale, num, time: clock } = useLocale()
   const catalogue = useCatalogue()
   const schedule = useCommand(scheduleOrder)
   const order = target?.order
@@ -164,7 +164,7 @@ export function ScheduleDialog({ target, onClose }: { target: ScheduleTarget | n
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[0.8125rem] font-medium">{locale === "bn" ? a.line.descriptionBn : a.line.descriptionEn}</div>
                 <div className="nums text-xs text-muted-foreground">
-                  {dhakaTime(a.from)} · {t("stl.quote.minutes", { min: num(a.minutes) })}
+                  {clock(a.from)} · {t("stl.quote.minutes", { min: num(a.minutes) })}
                 </div>
               </div>
               <Select value={a.technicianId} onValueChange={(v) => v && setTechs((cur) => ({ ...cur, [a.line.id]: v as Id }))}>

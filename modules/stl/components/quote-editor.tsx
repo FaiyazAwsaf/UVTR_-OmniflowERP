@@ -398,7 +398,7 @@ export function QuoteEditor({ mode }: { mode: "quote" | "order" }) {
 
 /** The priced lines (quote-line rows), with a remove action per service, package or item. */
 function LinesTable({ priced, onRemove }: { priced: ReturnType<typeof priceRequests> | undefined; onRemove?: (index: number) => void }) {
-  const { t, locale } = useLocale()
+  const { t, locale, num } = useLocale()
   const catalogue = useCatalogue()
   if (!priced?.lines.length) {
     return <p className="mt-4 rounded-md border border-dashed border-border p-4 text-center text-[0.8125rem] text-muted-foreground">{t("stl.quote.noLines")}</p>
@@ -426,7 +426,7 @@ function LinesTable({ priced, onRemove }: { priced: ReturnType<typeof priceReque
                   <div className="text-xs text-muted-foreground">
                     {pkg ? <span className="mr-2 text-link">{nameOf(pkg, locale)}</span> : null}
                     {l.qty !== 1 ? <span className="nums">{l.qty} × </span> : null}
-                    {l.durationMin ? <span>{t("stl.quote.minutes", { min: l.durationMin })}</span> : null}
+                    {l.durationMin ? <span>{t("stl.quote.minutes", { min: num(l.durationMin) })}</span> : null}
                   </div>
                 </td>
                 <td className="hidden border-b border-hairline px-3 py-2 text-right font-mono @min-[36rem]/lines:table-cell">

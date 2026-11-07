@@ -40,15 +40,15 @@ function Buyer({ party, invoice }: { party?: PartyRow; invoice: Pick<SalesInvoic
             {address.line}, {address.area}, {address.city}
           </div>
         ) : null}
-      </div>
-      <div className="text-right">
-        <BiLabel bn="ক্রেতার বিআইএন" en="Buyer BIN" />
-        <div lang="en" className="font-mono">{invoice.buyerBin ?? "-"}</div>
         {party?.phone ? (
           <div lang="en" className="font-mono">
             {party.phone}
           </div>
         ) : null}
+      </div>
+      <div className="text-right">
+        <BiLabel bn="ক্রেতার বিআইএন" en="Buyer BIN" />
+        <div lang="en" className="font-mono">{invoice.buyerBin ?? "-"}</div>
       </div>
     </div>
   )

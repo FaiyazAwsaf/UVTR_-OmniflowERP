@@ -201,10 +201,10 @@ export function ServiceDetail({ id }: { id: Id }) {
                         <div lang="en" className="font-mono text-xs text-muted-foreground">{item?.sku}</div>
                       </td>
                       <td className="hidden border-b border-hairline px-3 py-2 text-right font-mono nums @min-[30rem]/rc:table-cell">
-                        {num(r.sedanQty)} {item?.baseUom}
+                        {num(r.sedanQty, { maximumFractionDigits: 3 })} {item?.baseUom}
                       </td>
                       <td className="border-b border-hairline px-3 py-2 text-right font-mono nums font-medium">
-                        {num(r.qtyBase)} {item?.baseUom}
+                        {num(r.qtyBase, { maximumFractionDigits: 3 })} {item?.baseUom}
                       </td>
                       <td className="border-b border-hairline px-3 py-2 text-right font-mono">{item ? <MoneyText poisha={standardValue(item, r.qtyBase)} /> : "-"}</td>
                     </tr>

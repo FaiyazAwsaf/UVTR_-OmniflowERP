@@ -7,7 +7,9 @@ import { useLiveQuery } from "dexie-react-hooks"
 import {
   DndContext,
   DragOverlay,
+  MeasuringStrategy,
   PointerSensor,
+  pointerWithin,
   useDraggable,
   useDroppable,
   useSensor,
@@ -21,7 +23,7 @@ import { UserAvatar } from "@/components/shared/avatars"
 import { PageHeader } from "@/components/shared/page-header"
 import { RegPlate } from "@/components/shared/reg-plate"
 import { Button } from "@/components/ui/button"
-import { atDhaka, dhakaDate, dhakaTime } from "@/core/clock/dates"
+import { atDhaka, dhakaDate } from "@/core/clock/dates"
 import { now } from "@/core/clock/clock"
 import { useNow } from "@/core/clock/useNow"
 import { useDb } from "@/core/db/DbProvider"
@@ -39,6 +41,7 @@ import { ScheduleDialog, type ScheduleTarget } from "./schedule-dialog"
 const COLUMNS = ["booked", "in-progress", "qc", "ready", "delivered"] as const
 type Column = (typeof COLUMNS)[number]
 const DELIVERED = new Set(["delivered", "invoiced", "closed"])
+const ACTIVE = new Set(["booked", "in-progress", "qc", "ready"])
 const OPEN_DAY = "09:00"
 const LANE_HOURS = 12
 const SLOT_MIN = 30
@@ -79,7 +82,7 @@ export function JobBoard() {
     if (!loc) return null
     const all = await db.salesOrders.where("locationId").equals(loc).toArray()
     const orders = all.filter(
-      (o) => COLUMNS.includes(o.status as Column) || (DELIVERED.has(o.status) && !!o.deliveredAt && dhakaDate(o.deliveredAt) === today)
+      (o) => ACTIVE.has(o.status) || (DELIVERED.has(o.status) && !!o.deliveredAt && dhakaDate(o.deliveredAt) === today)
     )
     const ids = orders.map((o) => o.id)
     const dayStart = atDhaka(today, "00:00")
@@ -145,7 +148,14 @@ export function JobBoard() {
           </>
         }
       />
-      <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setDragging(null)}>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={pointerWithin}
+        measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
+        onDragCancel={() => setDragging(null)}
+      >
         <div className="-mx-1 overflow-x-auto px-1 pb-2">
           <div className="grid min-w-[60rem] grid-cols-5 gap-3">
             {COLUMNS.map((col) => {
@@ -156,7 +166,7 @@ export function JobBoard() {
                     <h2 className="text-[0.8125rem] font-semibold">{t(`stl.board.columns.${col}`)}</h2>
                     <span className="count-badge nums">{num(list.length)}</span>
                   </header>
-                  <div className="flex flex-col gap-2">
+                  <div className="flex max-h-[32rem] flex-col gap-2 overflow-y-auto">
                     {list.map((card) => (
                       <JobCard
                         key={card.order.id}
@@ -243,31 +253,53 @@ function JobCard({
       className={cn("group/card relative rounded-lg", isDragging && "opacity-40", flash)}
     >
       <div role="button" tabIndex={0} onClick={onOpen} onKeyDown={(e) => e.key === "Enter" && onOpen()} className="cursor-pointer outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40 rounded-lg">
-        <JobCardBody card={card} users={users} services={services} bays={bays} nowMs={nowMs} />
+        <JobCardBody
+          card={card}
+          users={users}
+          services={services}
+          bays={bays}
+          nowMs={nowMs}
+          actions={
+            draggable ? (
+              <span className="flex shrink-0 items-center" onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  onClick={onSchedule}
+                  aria-label={t("stl.board.schedule")}
+                  title={t("stl.board.schedule")}
+                  data-testid="job-schedule"
+                  className="flex size-6 items-center justify-center rounded-md text-link hover:bg-primary-soft"
+                >
+                  <CalendarClock className="size-4" />
+                </button>
+                <span {...listeners} {...attributes} className="flex size-6 cursor-grab touch-none items-center justify-center rounded-md text-muted-foreground hover:bg-surface-raised" data-testid="job-drag">
+                  <GripVertical className="size-4" />
+                </span>
+              </span>
+            ) : null
+          }
+        />
       </div>
-      {draggable ? (
-        <div className="absolute top-2 right-2 flex items-center gap-1">
-          <button
-            type="button"
-            onClick={onSchedule}
-            aria-label={t("stl.board.schedule")}
-            title={t("stl.board.schedule")}
-            data-testid="job-schedule"
-            className="flex size-7 items-center justify-center rounded-md text-link hover:bg-primary-soft"
-          >
-            <CalendarClock className="size-4" />
-          </button>
-          <span {...listeners} {...attributes} className="flex size-7 cursor-grab touch-none items-center justify-center rounded-md text-muted-foreground hover:bg-surface-raised" data-testid="job-drag">
-            <GripVertical className="size-4" />
-          </span>
-        </div>
-      ) : null}
     </div>
   )
 }
 
-function JobCardBody({ card, users, services, bays, nowMs }: { card: Card; users: Map<Id, UserRow>; services: Map<Id, ServiceRow>; bays: BayRow[]; nowMs: number }) {
-  const { t, locale } = useLocale()
+function JobCardBody({
+  card,
+  users,
+  services,
+  bays,
+  nowMs,
+  actions,
+}: {
+  card: Card
+  users: Map<Id, UserRow>
+  services: Map<Id, ServiceRow>
+  bays: BayRow[]
+  nowMs: number
+  actions?: React.ReactNode
+}) {
+  const { t, locale, time } = useLocale()
   const { order, vehicle } = card
   const late = ["booked", "in-progress", "qc"].includes(order.status) && nowMs > 0 && order.promisedAt < nowMs
   const bay = bays.find((b) => b.id === order.bayId)
@@ -275,8 +307,9 @@ function JobCardBody({ card, users, services, bays, nowMs }: { card: Card; users
   const chips = card.lines.filter((l) => l.kind !== "item" && l.status !== "cancelled")
   return (
     <div className="flex flex-col gap-2 rounded-lg bg-card p-3 shadow-(--card-shadow)">
-      <div className="flex items-start justify-between gap-2 pr-16">
-        {vehicle ? <RegPlate regNo={vehicle.regNo} /> : <span className="text-xs text-muted-foreground">{card.partyName}</span>}
+      <div className="flex min-w-0 items-start justify-between gap-1">
+        {vehicle ? <RegPlate regNo={vehicle.regNo} className="min-w-0" /> : <span className="truncate text-xs text-muted-foreground">{card.partyName}</span>}
+        {actions}
       </div>
       <div className="min-w-0">
         <div className="flex items-center gap-1.5 text-[0.8125rem] font-medium">
@@ -303,7 +336,7 @@ function JobCardBody({ card, users, services, bays, nowMs }: { card: Card; users
       </div>
       <div className="flex items-center justify-between gap-2 text-xs">
         <span className={cn("nums", late ? "font-semibold text-destructive" : "text-muted-foreground")} data-late={late || undefined}>
-          {t("stl.board.promised", { time: dhakaTime(order.promisedAt) })}
+          {t("stl.board.promised", { time: time(order.promisedAt) })}
         </span>
         <span className="flex items-center gap-1.5">
           {bay ? <span lang="en" className="rounded bg-surface-raised px-1.5 font-mono text-[0.625rem]">{bay.code}</span> : null}
@@ -358,7 +391,7 @@ function BayLane({
   users: Map<Id, UserRow>
   dragging: boolean
 }) {
-  const { locale, t } = useLocale()
+  const { locale, t, time } = useLocale()
   const dayStart = atDhaka(today, OPEN_DAY)
   const dayEnd = dayStart + LANE_HOURS * 60 * MINUTE
   const visible = tasks.filter((x) => x.plannedStart < dayEnd && x.plannedStart + x.plannedMinutes * MINUTE > dayStart)
@@ -384,7 +417,7 @@ function BayLane({
               href={`/stl/orders/${x.orderId}`}
               data-testid="lane-task"
               data-status={x.status}
-              title={`${order?.orderNo ?? ""} · ${userName(tech, locale)} · ${dhakaTime(x.plannedStart)}`}
+              title={`${order?.orderNo ?? ""} · ${userName(tech, locale)} · ${time(x.plannedStart)}`}
               className={cn(
                 "absolute inset-y-1 flex min-w-0 items-center overflow-hidden rounded px-1.5 text-[0.625rem] leading-tight font-medium",
                 x.status === "done" && "bg-[color-mix(in_oklch,var(--success)_22%,transparent)] text-success",

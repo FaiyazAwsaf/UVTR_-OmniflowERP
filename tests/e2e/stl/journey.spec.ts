@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test"
 
-import { pick, rows, sign, signIn, windowAs } from "./helpers"
+import { pick, rows, sign, signIn, typeInto, windowAs } from "./helpers"
 
 /**
  * J1 to J4 by hand across four windows of one browser (one database, live
@@ -27,7 +27,7 @@ test("service to cash: quote, deposit, schedule, tasks, QC, handover, counter", 
   await page.getByTestId("quote-accept").click()
   await page.getByTestId("deposit-toggle").click()
   await page.getByTestId("deposit-method").locator('[data-value="bkash"]').click()
-  await page.getByTestId("deposit-amount").fill("10000")
+  await typeInto(page.getByTestId("deposit-amount"), "10000")
   await page.getByTestId("accept-confirm").click()
   await page.getByTestId("mfs-approve").click()
   await expect(page.getByTestId("order-view")).toBeVisible()
@@ -87,7 +87,7 @@ test("service to cash: quote, deposit, schedule, tasks, QC, handover, counter", 
   await tania.locator(`[data-testid="counter-order"][data-order-no="${orderNo}"]`).click()
   await expect(tania.getByTestId("counter-advance")).toContainText("10,000")
   await tania.getByTestId("tender-card").click()
-  await tania.getByTestId("tender-amount").first().fill("20000")
+  await typeInto(tania.getByTestId("tender-amount").first(), "20000")
   await tania.getByTestId("tender-cash").click()
   await tania.getByTestId("checkout-submit").click()
   await tania.getByTestId("card-approve").click()

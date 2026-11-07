@@ -45,7 +45,7 @@ export function InvoiceNew() {
   const db = useDb()
   const router = useRouter()
   const params = useSearchParams()
-  const { t, locale } = useLocale()
+  const { t, locale, num } = useLocale()
   const studio = useStudio()
   const loc = studio.locationId
   const users = useUserMap()
@@ -182,7 +182,7 @@ export function InvoiceNew() {
               </div>
             ) : null}
           </SectionCard>
-          <SectionCard title={mode === "orders" ? t("si.new.deliveredOrders") : t("si.new.ordersInPeriod", { count: inPeriod.length })} size="sm">
+          <SectionCard title={mode === "orders" ? t("si.new.deliveredOrders") : t("si.new.ordersInPeriod", { count: num(inPeriod.length) })} size="sm">
             {(mode === "orders" ? ofParty : inPeriod).length ? (
               <ul className="flex flex-col gap-1.5" data-testid="invoice-orders">
                 {(mode === "orders" ? ofParty : inPeriod).map((o) => (
@@ -259,7 +259,7 @@ export function InvoiceNew() {
             </SectionCard>
           ) : null}
           <Button size="lg" disabled={!canIssue || !chosen.length || issue.pending || consolidated.pending} onClick={submit} data-testid={mode === "orders" ? "invoice-issue" : "consolidated-issue"}>
-            {mode === "orders" ? t("si.new.issue") : t("si.new.issueConsolidated", { count: chosen.length })}
+            {mode === "orders" ? t("si.new.issue") : t("si.new.issueConsolidated", { count: num(chosen.length) })}
           </Button>
           {!canIssue ? <p className="text-xs text-muted-foreground">{t("stl.noPermission")}</p> : null}
         </aside>

@@ -72,7 +72,7 @@ export function DeliveryHistory() {
       accessorKey: "deliveryNo",
       header: t("sd.history.delivery"),
       cell: ({ row }) => (
-        <button type="button" onClick={() => setPrintId(row.original.id)} lang="en" className="font-mono text-link hover:underline" data-testid="delivery-row" data-delivery-no={row.original.deliveryNo}>
+        <button type="button" onClick={() => setPrintId(row.original.id)} lang="en" className="font-mono whitespace-nowrap text-link hover:underline" data-testid="delivery-row" data-delivery-no={row.original.deliveryNo}>
           {row.original.deliveryNo}
         </button>
       ),
@@ -82,7 +82,7 @@ export function DeliveryHistory() {
     { id: "order", header: t("stl.pages.order"), cell: ({ row }) => (row.original.order ? <DocLink docType="salesOrders" docId={row.original.order.id} docNo={row.original.order.orderNo} showApp={false} /> : "-"), meta: { hideBelow: "lg" } },
     { id: "party", header: t("common.customer"), cell: ({ row }) => <span className="truncate">{nameOf(row.original.party, locale)}</span> },
     { id: "vehicle", header: t("common.vehicle"), cell: ({ row }) => (row.original.vehicle ? <RegPlate regNo={row.original.vehicle.regNo} /> : "-"), meta: { hideBelow: "sm" } },
-    { id: "gp", header: t("sd.history.gatePass"), cell: ({ row }) => <span lang="en" className="font-mono text-xs">{row.original.gatePassNo ?? "-"}</span>, meta: { hideBelow: "lg" } },
+    { id: "gp", header: t("sd.history.gatePass"), cell: ({ row }) => <span lang="en" className="font-mono text-xs whitespace-nowrap">{row.original.gatePassNo ?? "-"}</span>, meta: { hideBelow: "lg" } },
     { id: "by", header: t("sd.history.by"), cell: ({ row }) => userName(users.get(row.original.deliveredBy), locale), meta: { hideBelow: "lg" } },
     {
       id: "print",

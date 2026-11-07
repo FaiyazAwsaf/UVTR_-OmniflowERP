@@ -20,7 +20,6 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { locationById } from "@/config/brand.config"
-import { dhakaTime } from "@/core/clock/dates"
 import { useDb } from "@/core/db/DbProvider"
 import type { Id, JobTaskRow } from "@/core/db/schema"
 import { useCommand } from "@/core/engine/useCommand"
@@ -43,7 +42,7 @@ import { ScheduleDialog, type ScheduleTarget } from "./schedule-dialog"
  */
 export function OrderView({ id }: { id: Id }) {
   const db = useDb()
-  const { t, tk, locale, money } = useLocale()
+  const { t, tk, locale, money, num, time } = useLocale()
   const users = useUserMap()
   const cancel = useCommand(cancelOrder)
   const [target, setTarget] = React.useState<ScheduleTarget | null>(null)
@@ -209,7 +208,7 @@ export function OrderView({ id }: { id: Id }) {
                             <div className="min-w-0 flex-1">
                               <div className="truncate text-[0.8125rem]">{locale === "bn" ? line?.descriptionBn : line?.descriptionEn}</div>
                               <div className="nums text-xs text-muted-foreground">
-                                <span lang="en" className="font-mono">{xbay?.code}</span> · {dhakaTime(x.plannedStart)} · {t("stl.quote.minutes", { min: x.minutes ?? x.plannedMinutes })}
+                                <span lang="en" className="font-mono">{xbay?.code}</span> · {time(x.plannedStart)} · {t("stl.quote.minutes", { min: num(x.minutes ?? x.plannedMinutes) })}
                               </div>
                             </div>
                             <DocStatus status={x.status} />
@@ -360,7 +359,7 @@ export function OrderView({ id }: { id: Id }) {
                     <td className="border-b border-[#ddd] py-1">{locale === "bn" ? l.descriptionBn : l.descriptionEn}</td>
                     <td className="border-b border-[#ddd] py-1">{x ? userName(users.get(x.technicianId), locale) : ""}</td>
                     <td lang="en" className="border-b border-[#ddd] py-1 font-mono">{bays.find((b) => b.id === x?.bayId)?.code ?? ""}</td>
-                    <td className="border-b border-[#ddd] py-1 text-right font-mono">{x ? dhakaTime(x.plannedStart) : ""}</td>
+                    <td className="border-b border-[#ddd] py-1 text-right font-mono">{x ? time(x.plannedStart) : ""}</td>
                   </tr>
                 )
               })}

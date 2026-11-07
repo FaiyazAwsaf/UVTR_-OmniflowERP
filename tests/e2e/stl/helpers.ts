@@ -1,4 +1,4 @@
-import { expect, type BrowserContext, type Page } from "@playwright/test"
+import { expect, type BrowserContext, type Locator, type Page } from "@playwright/test"
 
 /**
  * WS-SDM e2e helpers: quick sign-in of a user in a page of a shared browser
@@ -81,4 +81,24 @@ export async function rows<T = Record<string, unknown>>(page: Page, table: strin
     db.close()
     return out
   }, table) as Promise<T[]>
+}
+
+/**
+ * Type into a money or quantity input: the shared inputs reformat on focus,
+ * so select what is there and type over it (fill() can lose the selection).
+ */
+export async function typeInto(input: Locator, text: string): Promise<void> {
+  await input.click()
+  await input.press("ControlOrMeta+a")
+  await input.pressSequentially(text)
+  await input.press("Tab")
+}
+
+/** A retail item with at least `min` on the shelf at a location (its SKU). */
+export async function retailSkuWithStock(page: Page, locationId: string, min: number): Promise<string> {
+  const items = await rows<{ id: string; sku: string; kind: string; status: string }>(page, "items")
+  const values = await rows<{ itemId: string; locationId: string; qtyBase: number }>(page, "stockValues")
+  const ok = items.filter((i) => i.kind === "retail" && i.status === "active").find((i) => values.some((v) => v.itemId === i.id && v.locationId === locationId && v.qtyBase >= min))
+  if (!ok) throw new Error("no retail item in stock")
+  return ok.sku
 }

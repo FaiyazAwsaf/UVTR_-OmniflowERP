@@ -30,6 +30,26 @@ test("the job board shows the studio's columns, cards and bay lanes", async ({ p
   await expect(page.getByTestId("consumption-row").first()).toBeVisible()
 })
 
+test("dragging a booked card onto a bay lane schedules it there", async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1200 })
+  await signIn(page, "nayeem")
+  const handle = page.locator('[data-testid="board-column"][data-status="booked"] [data-testid="job-drag"]').first()
+  await handle.scrollIntoViewIfNeeded()
+  const from = (await handle.boundingBox())!
+  const lane = page.locator('[data-testid="bay-lane"][data-bay="C1"]')
+  await lane.scrollIntoViewIfNeeded()
+  const to = (await lane.boundingBox())!
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(from.x + 20, from.y + 20, { steps: 4 })
+  // About 17:00 on the 09:00 to 21:00 lane (the track starts after the bay label).
+  await page.mouse.move(to.x + 72 + (to.width - 72) * 0.68, to.y + to.height / 2, { steps: 12 })
+  await page.mouse.up()
+  const dialog = page.getByTestId("schedule-dialog")
+  await expect(dialog).toBeVisible()
+  await expect(dialog.getByTestId("schedule-bay")).toContainText("C1")
+})
+
 test("orders and quotations lists filter and open documents", async ({ page }) => {
   await signIn(page, "shahriar")
   await page.goto("/stl/orders")

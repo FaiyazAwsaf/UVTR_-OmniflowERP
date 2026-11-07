@@ -121,7 +121,7 @@ export function ConsumptionDialog({
         </Field>
         <Field
           label={t("stl.consumption.qty")}
-          hint={item && onHand ? t("stl.consumption.onHand", { qty: num(Math.round(onHand.qtyBase * 100) / 100), unit: item.baseUom, item: nameOf(item, locale) }) : undefined}
+          hint={item && onHand ? t("stl.consumption.onHand", { qty: num(onHand.qtyBase, { maximumFractionDigits: 2 }), unit: item.baseUom, item: nameOf(item, locale) }) : undefined}
         >
           <QtyInput value={qty} onChange={setQty} unit={item?.baseUom} data-testid="consumption-qty" />
         </Field>
@@ -205,14 +205,14 @@ export function ConsumptionTable({ rows }: { rows: ConsumptionRow[] }) {
                   <div lang="en" className="font-mono text-xs text-muted-foreground">{r.sku}</div>
                 </td>
                 <td className="border-b border-hairline px-3 py-2 text-right font-mono nums">
-                  {num(r.standardQty)} <span className="text-xs text-muted-foreground">{r.uom}</span>
+                  {num(r.standardQty, { maximumFractionDigits: 3 })} <span className="text-xs text-muted-foreground">{r.uom}</span>
                 </td>
                 <td className="border-b border-hairline px-3 py-2 text-right font-mono nums">
-                  {num(r.actualQty)} <span className="text-xs text-muted-foreground">{r.uom}</span>
+                  {num(r.actualQty, { maximumFractionDigits: 3 })} <span className="text-xs text-muted-foreground">{r.uom}</span>
                 </td>
                 <td className={cn("hidden border-b border-hairline px-3 py-2 text-right font-mono nums @min-[28rem]/ct:table-cell", variance > 0 ? "text-warning" : variance < 0 ? "text-info" : "text-muted-foreground")}>
                   {variance > 0 ? "+" : ""}
-                  {num(variance)}
+                  {num(variance, { maximumFractionDigits: 3 })}
                 </td>
                 <td className="hidden border-b border-hairline px-3 py-2 text-right font-mono @min-[36rem]/ct:table-cell">
                   <MoneyText poisha={r.valueP} />

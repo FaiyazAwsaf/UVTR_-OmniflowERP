@@ -10,7 +10,7 @@ import { DocStatus } from "@/components/shared/doc-status"
 import { EmptyState } from "@/components/shared/empty-state"
 import { PageHeader } from "@/components/shared/page-header"
 import { SectionCard } from "@/components/shared/section-card"
-import { atDhaka, dhakaDate, dhakaTime } from "@/core/clock/dates"
+import { atDhaka, dhakaDate } from "@/core/clock/dates"
 import { now } from "@/core/clock/clock"
 import { useNow } from "@/core/clock/useNow"
 import { useDb } from "@/core/db/DbProvider"
@@ -51,13 +51,15 @@ export function MyJobs() {
     const tasks = isManager && studio.locationId
       ? await db.jobTasks.where("locationId").equals(studio.locationId).toArray()
       : await db.jobTasks.where("technicianId").equals(userId).toArray()
-    const mine = tasks.filter(
+    const open = tasks.filter((x) => x.status !== "done" || (x.finishedAt ?? 0) >= dayStart)
+    const orders = new Map((await db.salesOrders.bulkGet([...new Set(open.map((x) => x.orderId))])).filter(Boolean).map((o) => [o!.id, o!]))
+    // Today's tasks, plus the next task of a job already under way (multi-day coating and paint jobs).
+    const mine = open.filter(
       (x) =>
         x.status === "in-progress" ||
-        (x.status === "queued" && x.plannedStart < dayEnd) ||
-        (x.status === "done" && (x.finishedAt ?? 0) >= dayStart)
+        (x.status === "queued" && (x.plannedStart < dayEnd || orders.get(x.orderId)?.status === "in-progress")) ||
+        x.status === "done"
     )
-    const orders = new Map((await db.salesOrders.bulkGet([...new Set(mine.map((x) => x.orderId))])).filter(Boolean).map((o) => [o!.id, o!]))
     const live = mine.filter((x) => {
       const o = orders.get(x.orderId)
       return o && o.status !== "cancelled" && (x.status !== "queued" || o.status === "booked" || o.status === "in-progress")
@@ -106,7 +108,7 @@ export function MyJobs() {
 }
 
 function JobTile({ job, showTech, techName, tech }: { job: Job; showTech: boolean; techName: string; tech?: Parameters<typeof UserAvatar>[0]["user"] }) {
-  const { t, locale, num } = useLocale()
+  const { t, locale, num, time } = useLocale()
   const catalogue = useCatalogue()
   const flash = useSyncFlash(`${job.task.status}:${job.task.version}`)
   const { task, order, line, vehicle, bay } = job
@@ -124,7 +126,7 @@ function JobTile({ job, showTech, techName, tech }: { job: Job; showTech: boolea
             <Link href={`/stl/orders/${order.id}`} lang="en" className="font-mono text-link hover:underline">
               {order.orderNo}
             </Link>{" "}
-            · <span lang="en" className="font-mono">{bay?.code}</span> · {dhakaTime(task.plannedStart)} · {t("stl.quote.minutes", { min: num(task.plannedMinutes) })}
+            · <span lang="en" className="font-mono">{bay?.code}</span> · {time(task.plannedStart)} · {t("stl.quote.minutes", { min: num(task.plannedMinutes) })}
           </div>
           {showTech ? (
             <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -145,7 +147,7 @@ function JobTile({ job, showTech, techName, tech }: { job: Job; showTech: boolea
                 <li key={r.itemId} className="flex justify-between gap-2">
                   <span className="truncate">{nameOf(item, locale)}</span>
                   <span className="nums shrink-0 font-mono">
-                    {num(r.qtyBase)} {item?.baseUom}
+                    {num(r.qtyBase, { maximumFractionDigits: 3 })} {item?.baseUom}
                   </span>
                 </li>
               )
