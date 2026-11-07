@@ -1,6 +1,14 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /ar/refunds: filled in Phase 2 (implementation_plan.md §9). */
+import * as React from "react"
+
+import { Refunds } from "@/modules/ar/components/refunds"
+
+/** /ar/refunds: refunds of customer advances (plan §9). */
 export default function Page() {
-  return <StubPage app="ar" titleKey="ar.pages.refunds" />
+  return (
+    <React.Suspense fallback={null}>
+      <Refunds />
+    </React.Suspense>
+  )
 }
