@@ -34,6 +34,10 @@ for (const lang of LANGS) {
         await expect(page.getByTestId(launcher.ready)).toBeVisible()
         await page.waitForTimeout(800)
         await page.screenshot({ path: `${SHOTS}/${tag}.png` })
+        // The same screen in the light theme.
+        await page.locator('[data-slot="theme-toggle"]').click()
+        await page.waitForTimeout(800)
+        await page.screenshot({ path: `${SHOTS}/${tag}-light.png` })
       })
     }
   }
