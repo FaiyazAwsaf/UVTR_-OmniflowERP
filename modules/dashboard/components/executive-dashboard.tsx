@@ -3,6 +3,7 @@
 import * as React from "react"
 import { useLiveQuery } from "dexie-react-hooks"
 import {
+  AlarmClock,
   AlertTriangle,
   Banknote,
   BarChart3,
@@ -105,6 +106,7 @@ export function ExecutiveDashboard() {
   const compareDelta =
     finance && finance.revenueCompareP ? ((finance.revenuePeriodP - finance.revenueCompareP) / Math.abs(finance.revenueCompareP)) * 100 : null
   const companyWide = locationId ? t("dashboard.common.companyWide") : undefined
+  const scope = `${period}|${loc}`
 
   return (
     <div className="@container/dash flex min-w-0 flex-col gap-5" data-testid="dashboard" data-period={period} data-location={locationId ?? "all"} data-ready={finance && positions ? "true" : undefined}>
@@ -158,6 +160,7 @@ export function ExecutiveDashboard() {
           title={t("dashboard.exec.kpi.revenueToday")}
           value={<MoneyFigure poisha={finance?.revenueTodayP ?? 0} />}
           amount={finance?.revenueTodayP}
+          scope={scope}
           flashKey={finance?.revenueTodayP}
           caption={t("dashboard.exec.caption.invoicesToday", { count: num(finance?.invoicesToday ?? 0) })}
           href={irtHref("IRT-16", todayRange, locationId)}
@@ -169,6 +172,7 @@ export function ExecutiveDashboard() {
           title={t(`dashboard.exec.kpi.revenuePeriod.${period}` as "dashboard.exec.kpi.revenuePeriod.mtd")}
           value={<MoneyFigure poisha={finance?.revenuePeriodP ?? 0} />}
           amount={finance?.revenuePeriodP}
+          scope={scope}
           flashKey={finance?.revenuePeriodP}
           delta={compareDelta}
           caption={period === "today" ? t("dashboard.exec.caption.netOfVat") : period === "mtd" ? t("dashboard.exec.caption.vsSameDays") : t("dashboard.exec.caption.vsMonthBefore")}
@@ -181,6 +185,7 @@ export function ExecutiveDashboard() {
           title={t("dashboard.exec.kpi.collections")}
           value={<MoneyFigure poisha={collections?.totalP ?? 0} />}
           amount={collections?.totalP}
+          scope={scope}
           flashKey={collections?.totalP}
           caption={`${periodLabel}, ${t("dashboard.exec.caption.receipts", { count: num(collections?.count ?? 0) })}`}
           href={irtHref("IRT-07", range, locationId)}
@@ -192,6 +197,7 @@ export function ExecutiveDashboard() {
           title={t("dashboard.exec.kpi.cash")}
           value={<MoneyFigure poisha={positions?.cashTotalP ?? 0} />}
           amount={positions?.cashTotalP}
+          scope={scope}
           flashKey={positions?.cashTotalP}
           caption={t("dashboard.exec.caption.accounts", { count: num(positions?.cash.length ?? 0) })}
           href="/cab"
@@ -206,6 +212,7 @@ export function ExecutiveDashboard() {
           title={t("dashboard.exec.kpi.receivables")}
           value={<MoneyText poisha={positions?.receivablesP ?? 0} />}
           amount={positions?.receivablesP}
+          scope={scope}
           flashKey={positions?.receivablesP}
           note={t("dashboard.common.now")}
           caption={t("dashboard.exec.caption.openInvoices", { count: num(positions?.receivableCount ?? 0) })}
@@ -219,6 +226,7 @@ export function ExecutiveDashboard() {
           title={t("dashboard.exec.kpi.overdue")}
           value={<MoneyText poisha={positions?.overdueP ?? 0} />}
           amount={positions?.overdueP}
+          scope={scope}
           flashKey={positions?.overdueP}
           tone={positions?.overdueP ? "destructive" : undefined}
           note={t("dashboard.common.now")}
@@ -233,6 +241,7 @@ export function ExecutiveDashboard() {
           title={t("dashboard.exec.kpi.payablesDue")}
           value={<MoneyText poisha={positions?.payablesDueP ?? 0} />}
           amount={positions?.payablesDueP}
+          scope={scope}
           flashKey={positions?.payablesDueP}
           note={companyWide ?? t("dashboard.common.now")}
           caption={t("dashboard.exec.caption.payables", { count: num(positions?.payablesDueCount ?? 0) })}
@@ -247,6 +256,7 @@ export function ExecutiveDashboard() {
           value={finance?.marginPct === null || finance?.marginPct === undefined ? "-" : pct(finance.marginPct, 1)}
           amount={finance?.grossProfitP}
           dataValue={finance?.marginPct === null || finance?.marginPct === undefined ? undefined : Math.round(finance.marginPct * 10) / 10}
+          scope={scope}
           flashKey={finance?.grossProfitP}
           note={periodLabel}
           caption={finance?.marginPct === null ? t("dashboard.exec.caption.noRevenue") : t("dashboard.exec.caption.grossProfit", { amount: money(finance?.grossProfitP ?? 0) })}
@@ -260,6 +270,7 @@ export function ExecutiveDashboard() {
           title={t("dashboard.exec.kpi.stockValue")}
           value={<MoneyText poisha={positions?.stockTotalP ?? 0} />}
           amount={positions?.stockTotalP}
+          scope={scope}
           flashKey={positions?.stockTotalP}
           note={t("dashboard.common.now")}
           caption={t("dashboard.exec.caption.inTransit", { amount: money(positions?.inTransitP ?? 0) })}
@@ -487,7 +498,9 @@ function JobsTable({ studios }: { studios: StudioOps[] }) {
                 {t(`dashboard.exec.jobs.status.${s}` as "dashboard.exec.jobs.status.booked")}
               </th>
             ))}
-            <th className="h-7 rounded-r-md bg-surface-raised px-2 text-right font-medium text-destructive">!</th>
+            <th className="h-7 rounded-r-md bg-surface-raised px-2 text-right font-medium text-destructive" title={t("dashboard.exec.jobs.late")}>
+              <AlarmClock className="ml-auto size-3.5" aria-label={t("dashboard.exec.jobs.late")} />
+            </th>
           </tr>
         </thead>
         <tbody>

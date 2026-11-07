@@ -535,6 +535,9 @@ export function primaryRole(roleCodes: readonly string[]): RoleCode | "NONE" {
 const STUDIO_BOUND: ReadonlySet<string> = new Set(["STUDIO_MGR", "ADVISOR", "CASHIER", "TECHNICIAN"])
 
 const CREDIT_SEGMENTS = new Set(["fleet", "dealer", "corporate"])
+/** Sign-ins and housekeeping that would crowd the auditor's recent activity. */
+const QUIET_COMMANDS: ReadonlySet<string> = new Set(["sac.signIn", "sac.signOut", "sac.verifyMfa", "sac.timeoutSessions", "notifications.markRead", "irt.recordRun"])
+const QUIET_ENTITIES: ReadonlySet<string> = new Set(["sessions", "notifications", "reportRuns"])
 const bi = (row: { nameEn: string; nameBn: string } | undefined | null) => (row ? { en: row.nameEn, bn: row.nameBn || row.nameEn } : undefined)
 const locName = (id: Id | undefined | null) => {
   const l = LOCATIONS.find((x) => x.id === id)
@@ -554,7 +557,7 @@ export async function loadRoleHome(
   p: { userId: Id; today: ISODate; nowMs: number; locationId?: Id | null }
 ): Promise<RoleHomeData> {
   const user = await db.users.get(p.userId)
-  if (!user) return { role: "NONE", locationId: null, kpis: [], todos: [] }
+  if (!user) return { role: "NONE", locationId: null, scopeIds: [], kpis: [], todos: [] }
   const security = await resolveSecurity(db, user.id)
   const role = primaryRole(security.roleCodes)
   const studios = user.locationIds.filter(isStudio)
@@ -771,25 +774,30 @@ export async function loadRoleHome(
     }
     case "CASHIER": {
       if (!studio) break
-      const [delivered, invoices, pendingReceipts, receiptsToday, position] = await Promise.all([
+      const [delivered, ready, invoices, pendingReceipts, receiptsToday, position, petty] = await Promise.all([
         db.salesOrders.where("[locationId+status]").equals([studio, "delivered"]).toArray(),
+        db.salesOrders.where("[locationId+status]").equals([studio, "ready"]).toArray(),
         db.salesInvoices.where("locationId").equals(studio).toArray(),
         db.receipts.where("status").equals("pending").toArray(),
         db.receipts.where("date").equals(p.today).toArray(),
         cashPosition(db, p.today),
+        db.pettyCashVouchers.where("status").equals("pending-approval").toArray(),
       ])
-      const partyIds = [...new Set([...delivered.map((o) => o.partyId), ...invoices.map((i) => i.partyId), ...pendingReceipts.map((r) => r.partyId)])]
+      const partyIds = [...new Set([...delivered, ...ready, ...invoices, ...pendingReceipts].map((x) => x.partyId))]
       const parties = new Map((await db.parties.bulkGet(partyIds)).filter(Boolean).map((x) => [x!.id, x!]))
-      const queue = delivered.filter((o) => {
-        const party = parties.get(o.partyId)
+      const atCounter = (partyId: Id) => {
+        const party = parties.get(partyId)
         return !!party && !CREDIT_SEGMENTS.has(party.segment) && party.paymentTermsDays === 0
-      })
+      }
+      const queue = delivered.filter((o) => atCounter(o.partyId))
+      const coming = ready.filter((o) => atCounter(o.partyId))
       const open = invoices.filter((i) => i.kind === "counter" && invoiceAvailable(i) > 0)
       const mfs = pendingReceipts.filter((r) => r.locationId === studio && (r.method === "bkash" || r.method === "nagad"))
       const takings = receiptsToday.filter((r) => r.locationId === studio && r.status === "posted")
       const till = position.find((r) => r.account.kind === "cash-till" && r.account.locationId === studio)
+      const myPetty = petty.filter((v) => v.preparedBy === user.id)
       kpi("counterQueue", queue.length + open.length, "count", "/si/counter")
-      kpi("takingsToday", takings.reduce((s, r) => s + r.amountP, 0), "money", irtHref("IRT-07", { from: p.today, to: p.today }, studio))
+      kpi("takingsToday", takings.reduce((s, r) => s + r.amountP, 0), "money", "/ar/receipts")
       kpi("pendingMfs", mfs.length, "count", "/si/counter")
       kpi("tillBalance", till?.balanceP ?? 0, "money", till ? `/cab/accounts/${till.account.id}` : "/cab")
       todos.push(
@@ -799,7 +807,11 @@ export async function loadRoleHome(
         ...open.map((i): TodoItem => ({ kind: "counter-invoice", id: i.id, ref: i.invoiceNo, name: bi(parties.get(i.partyId)), amountP: invoiceAvailable(i), day: i.date, href: "/si/counter", tone: "warning" })),
         ...mfs.map(
           (r): TodoItem => ({ kind: "mfs", id: r.id, ref: r.receiptNo, name: bi(parties.get(r.partyId)), amountP: r.amountP, at: r.at, labelKey: `reports.enum.method.${r.method}`, href: "/si/counter", tone: "info" })
-        )
+        ),
+        ...coming
+          .sort((a, b) => a.promisedAt - b.promisedAt)
+          .map((o): TodoItem => ({ kind: "pickup", id: o.id, ref: o.orderNo, name: bi(parties.get(o.partyId)), amountP: o.totalP - o.advanceP, at: o.promisedAt, href: "/si/counter", tone: "info" })),
+        ...myPetty.map((v): TodoItem => ({ kind: "petty-pending", id: v.id, ref: v.voucherNo, amountP: v.amountP, day: v.date, labelKey: "dashboard.home.todo.sub.awaitingApproval", href: `/cab/petty-cash?id=${v.id}`, tone: "warning" }))
       )
       break
     }
@@ -928,7 +940,7 @@ export async function loadRoleHome(
       todos.push({ kind: "dashboard", id: "dashboard", href: "/dashboard", tone: "info" })
       const seen = new Set<string>()
       for (const a of recent) {
-        if (a.entity === "sessions" || a.entity === "notifications" || seen.has(a.commitId)) continue
+        if (seen.has(a.commitId) || (a.action !== "blocked" && QUIET_COMMANDS.has(a.command)) || QUIET_ENTITIES.has(a.entity)) continue
         seen.add(a.commitId)
         todos.push({
           kind: "audit",
@@ -950,5 +962,7 @@ export async function loadRoleHome(
       todos.push(...approvals.slice(0, 5))
     }
   }
-  return { role, locationId: studio, kpis, todos }
+  const stockLocs = user.locationIds.filter((id) => LOCATIONS.find((l) => l.id === id)?.isStockLocation)
+  const scopeIds = studio ? [studio] : role === "STORE" ? stockLocs : user.locationIds
+  return { role, locationId: studio, scopeIds, kpis, todos }
 }

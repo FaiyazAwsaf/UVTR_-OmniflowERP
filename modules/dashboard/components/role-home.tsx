@@ -114,6 +114,8 @@ const TODO_ICON: Record<TodoKind, LucideIcon> = {
   task: Wrench,
   counter: ShoppingCart,
   "counter-invoice": Receipt,
+  pickup: CarFront,
+  "petty-pending": FileClock,
   mfs: Smartphone,
   overdue: Receipt,
   "bill-hold": FileWarning,
@@ -143,6 +145,7 @@ const AT_KEY: Partial<Record<TodoKind, string>> = {
   "late-job": "promised",
   qc: "promised",
   ready: "promised",
+  pickup: "promised",
   booking: "starts",
   task: "starts",
 }
@@ -171,7 +174,13 @@ export function RoleHome() {
   )
   const role = data?.role
   const roleRow = useLiveQuery(async () => (role && role !== "NONE" ? db.roles.where("code").equals(role).first() : undefined), [db, role])
-  const scope = data?.locationId ? LOCATIONS.find((l) => l.id === data.locationId)?.name[locale] : t("dashboard.home.allLocations")
+  const scopeIds = data?.scopeIds ?? []
+  const scope =
+    !data || LOCATIONS.every((l) => scopeIds.includes(l.id))
+      ? t("dashboard.home.allLocations")
+      : LOCATIONS.filter((l) => scopeIds.includes(l.id))
+          .map((l) => l.name[locale])
+          .join(", ")
   const approvals = (data?.todos ?? []).filter((x) => x.kind === "approval")
   const todos = (data?.todos ?? []).filter((x) => x.kind !== "approval")
   const landing = role && role !== "NONE" ? ROLE_LANDING[role as RoleCode] : null
@@ -193,11 +202,11 @@ export function RoleHome() {
 
       <div className="grid grid-cols-1 gap-4 @min-[30rem]/home:grid-cols-2 @min-[68rem]/home:grid-cols-4">
         {(data?.kpis ?? []).map((k, i) => (
-          <HomeKpiCard key={k.key} kpi={k} variant={VARIANTS[i % VARIANTS.length]} />
+          <HomeKpiCard key={k.key} kpi={k} variant={VARIANTS[i % VARIANTS.length]} scope={scopeIds.join(",")} />
         ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-5 @min-[68rem]/home:grid-cols-[minmax(0,1fr)_22rem]">
+      <div className="grid grid-cols-1 items-start gap-5 @min-[68rem]/home:grid-cols-[minmax(0,1fr)_22rem]">
         <SectionCard title={t("dashboard.home.todo.title")} subtitle={data ? t("dashboard.home.todo.subtitle", { count: num(todos.length) }) : undefined} icon={ListChecks}>
           {data && !todos.length ? (
             <EmptyState icon={BadgeCheck} title={t("dashboard.home.todo.empty")} size="sm" />
@@ -215,7 +224,7 @@ export function RoleHome() {
             {approvals.length ? (
               <ul className="flex flex-col" data-testid="home-approvals" data-value={approvals.length}>
                 {approvals.slice(0, 4).map((item) => (
-                  <TodoRow key={item.id} item={item} today={today} />
+                  <TodoRow key={item.id} item={item} today={today} compact />
                 ))}
               </ul>
             ) : (
@@ -234,7 +243,7 @@ export function RoleHome() {
           ) : null}
           <SectionCard title={t("dashboard.home.links.title")} icon={LayoutGrid} size="sm">
             <ul className="flex flex-col">
-              {landing && landing !== "/home" ? <ListRow href={landing} icon={Gauge} title={tk(`${landing.split("/")[1]}.name`)} sub={landing} /> : null}
+              {landing && landing !== "/home" ? <ListRow href={landing} icon={Gauge} title={tk(`${landing.split("/")[1]}.name`)} /> : null}
               <ListRow href="/apps" icon={LayoutGrid} title={t("dashboard.home.links.apps")} />
               <ListRow href="/approvals" icon={Inbox} title={t("dashboard.home.links.approvals")} />
             </ul>
@@ -245,11 +254,12 @@ export function RoleHome() {
   )
 }
 
-function HomeKpiCard({ kpi, variant }: { kpi: HomeKpi; variant: (typeof VARIANTS)[number] }) {
-  const { tk } = useLocale()
+function HomeKpiCard({ kpi, variant, scope }: { kpi: HomeKpi; variant: (typeof VARIANTS)[number]; scope: string }) {
+  const { t, tk } = useLocale()
   return (
     <GradientKpi
       testId="home-kpi"
+      drillLabel={t("dashboard.common.open")}
       kind={kpi.key}
       variant={variant}
       icon={KPI_ICON[kpi.key] ?? Package}
@@ -258,26 +268,33 @@ function HomeKpiCard({ kpi, variant }: { kpi: HomeKpi; variant: (typeof VARIANTS
       amount={kpi.format === "money" ? kpi.value : undefined}
       dataValue={kpi.format === "money" ? undefined : kpi.value}
       flashKey={kpi.value}
+      scope={scope}
       href={kpi.href}
     />
   )
 }
 
-function TodoRow({ item, today }: { item: TodoItem; today: string }) {
+/**
+ * One to-do line, worded in the window's language. `compact` (the approvals
+ * rail) leads with the document number and its kind, so a narrow rail still
+ * shows which document waits.
+ */
+function TodoRow({ item, today, compact = false }: { item: TodoItem; today: string; compact?: boolean }) {
   const { tk, num, money, time, dmy, locale } = useLocale()
   const name = item.name ? (locale === "bn" ? item.name.bn : item.name.en) : undefined
   const detail = item.detail ? (locale === "bn" ? item.detail.bn : item.detail.en) : undefined
   const when = (ms: number) => (dhakaDate(ms) === today ? time(ms) : `${dmy(ms)} ${time(ms)}`)
   const parts: string[] = []
+  if (compact && item.labelKey) parts.push(tk(item.labelKey))
   if (name) parts.push(name)
   if (detail) parts.push(detail)
-  if (item.labelKey) parts.push(tk(item.labelKey))
-  if (item.at) parts.push(tk(`dashboard.home.todo.sub.${AT_KEY[item.kind] ?? "at"}`, { time: when(item.at) }))
+  if (!compact && item.labelKey) parts.push(tk(item.labelKey))
+  if (item.at && !compact) parts.push(tk(`dashboard.home.todo.sub.${AT_KEY[item.kind] ?? "at"}`, { time: when(item.at) }))
   if (item.day) parts.push(tk(`dashboard.home.todo.sub.${DAY_KEY[item.kind] ?? "dated"}`, { date: dmy(item.day) }))
   if (item.kind === "overdue" && item.count) parts.push(tk("dashboard.home.todo.sub.daysPastDue", { days: num(item.count) }))
   if (item.kind === "locked-user" && item.count) parts.push(tk("dashboard.home.todo.sub.attempts", { count: num(item.count) }))
   if (item.kind === "dashboard" && item.amountP !== undefined) parts.push(tk("dashboard.home.todo.sub.revenueToday", { amount: money(item.amountP) }))
-  const title = tk(`dashboard.home.todo.kinds.${item.kind}`, { ref: item.ref ?? "", count: num(item.count ?? 0) })
+  const title = compact && item.ref ? item.ref : tk(`dashboard.home.todo.kinds.${item.kind}`, { ref: item.ref ?? "", count: num(item.count ?? 0) })
   return (
     <ListRow
       testId="todo-item"
@@ -288,7 +305,9 @@ function TodoRow({ item, today }: { item: TodoItem; today: string }) {
       title={
         <span className="flex min-w-0 items-center gap-2">
           {item.tone ? <span className={cn("size-1.5 shrink-0 rounded-full", TONE_DOT[item.tone])} /> : null}
-          <span className="truncate">{title}</span>
+          <span className={cn("truncate", compact && "font-mono text-[0.8125rem]")} lang={compact ? "en" : undefined}>
+            {title}
+          </span>
         </span>
       }
       sub={parts.join(" · ")}

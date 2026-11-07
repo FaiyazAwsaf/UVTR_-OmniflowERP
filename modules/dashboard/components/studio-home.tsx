@@ -91,6 +91,8 @@ export function StudioHome() {
           flashKey={data?.orders.length}
           caption={t("dashboard.studio.caption.jobs", { count: num(data?.late.length ?? 0) })}
           href="/stl/board"
+          drillLabel={t("dashboard.common.open")}
+          scope={loc ?? ""}
         />
         <GradientKpi
           testId="studio-kpi"
@@ -100,6 +102,7 @@ export function StudioHome() {
           title={t("dashboard.studio.kpi.revenue")}
           value={<FormattedFigure value={data?.revenueTodayP ?? 0} format="money" />}
           amount={data?.revenueTodayP}
+          scope={loc ?? ""}
           flashKey={data?.revenueTodayP}
           caption={t("dashboard.studio.caption.revenue")}
           href={irtHref("IRT-16", todayRange, loc)}
@@ -112,6 +115,7 @@ export function StudioHome() {
           title={t("dashboard.studio.kpi.bayUse")}
           value={<FormattedFigure value={data?.ops.utilisationPct ?? 0} format="pct" />}
           dataValue={data ? Math.round(data.ops.utilisationPct * 10) / 10 : undefined}
+          scope={loc ?? ""}
           flashKey={data?.ops.scheduledMinutes}
           caption={t("dashboard.studio.caption.bayUse", { minutes: num(data?.ops.scheduledMinutes ?? 0), total: num(data?.ops.bayMinutes ?? 0) })}
           href={irtHref("IRT-21", todayRange, loc)}
@@ -124,6 +128,7 @@ export function StudioHome() {
           title={t("dashboard.studio.kpi.deposits")}
           value={<FormattedFigure value={data?.depositsTodayP ?? 0} format="money" />}
           amount={data?.depositsTodayP}
+          scope={loc ?? ""}
           flashKey={data?.depositsTodayP}
           caption={t("dashboard.studio.caption.deposits", { count: num(data?.depositsCount ?? 0) })}
           href={irtHref("IRT-07", todayRange, loc)}

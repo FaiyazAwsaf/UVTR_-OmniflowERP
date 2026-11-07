@@ -6,7 +6,6 @@ import { ArrowDownRight, ArrowUpRight, ChevronRight, Lock, type LucideIcon } fro
 
 import { NumberTicker } from "@/components/motion/number-ticker"
 import type { KpiVariant } from "@/components/shared/kpi-card"
-import { useSyncFlash } from "@/components/shell/use-sync-flash"
 import { dhakaDate } from "@/core/clock/dates"
 import { useNow } from "@/core/clock/useNow"
 import { routeAllowed } from "@/core/security/routes"
@@ -83,6 +82,41 @@ export function DrillLink({ href, label, className, tone = "link" }: { href: str
   )
 }
 
+/**
+ * "flash-sync" for about 1.2 s when a live figure changes (ui_guidelines.md
+ * §5), but not when the screen's own filters changed it: for two seconds
+ * after `scope` (the period and location) changes, a new value only becomes
+ * the baseline. The first loaded value never flashes.
+ */
+export function useScopedFlash(value: unknown, scope: string, durationMs = 1200): string {
+  const last = React.useRef<{ scope: string; value: unknown; scopedAt: number } | null>(null)
+  const [flashKey, setFlashKey] = React.useState(0)
+  React.useEffect(() => {
+    if (value === undefined) return
+    const at = performance.now()
+    const prev = last.current
+    if (!prev) {
+      last.current = { scope, value, scopedAt: -Infinity }
+      return
+    }
+    if (prev.scope !== scope) {
+      last.current = { scope, value, scopedAt: at }
+      return
+    }
+    if (Object.is(prev.value, value)) return
+    last.current = { ...prev, value }
+    if (at - prev.scopedAt < 2000) return
+    const start = window.setTimeout(() => setFlashKey((k) => k + 1), 0)
+    const stop = window.setTimeout(() => setFlashKey(0), durationMs)
+    return () => {
+      window.clearTimeout(start)
+      window.clearTimeout(stop)
+      setFlashKey(0)
+    }
+  }, [value, scope, durationMs])
+  return flashKey > 0 ? "flash-sync" : ""
+}
+
 /** Whole taka for a big animated figure (exact poisha stay in `data-amount`). */
 export function MoneyFigure({ poisha, className }: { poisha: number; className?: string }) {
   return <NumberTicker value={Math.round(poisha / 100)} prefix={poisha < 0 ? "-৳" : "৳"} format={{ maximumFractionDigits: 0 }} className={className} />
@@ -125,6 +159,7 @@ export function GradientKpi({
   amount,
   dataValue,
   flashKey,
+  scope = "",
   delta,
   caption,
   href,
@@ -140,13 +175,15 @@ export function GradientKpi({
   amount?: number
   dataValue?: number | string
   flashKey?: unknown
+  /** The filters the figure depends on (changes there never flash) */
+  scope?: string
   delta?: number | null
   caption?: React.ReactNode
   href: string
   drillLabel?: React.ReactNode
   className?: string
 }) {
-  const flash = useSyncFlash(flashKey)
+  const flash = useScopedFlash(flashKey, scope)
   return (
     <div
       data-testid={testId}
@@ -188,6 +225,7 @@ export function FigureTile({
   amount,
   dataValue,
   flashKey,
+  scope = "",
   caption,
   note,
   href,
@@ -201,13 +239,14 @@ export function FigureTile({
   amount?: number
   dataValue?: number | string
   flashKey?: unknown
+  scope?: string
   caption?: React.ReactNode
   note?: React.ReactNode
   href: string
   tone?: Tone
   children?: React.ReactNode
 }) {
-  const flash = useSyncFlash(flashKey)
+  const flash = useScopedFlash(flashKey, scope)
   return (
     <section
       data-testid={testId}

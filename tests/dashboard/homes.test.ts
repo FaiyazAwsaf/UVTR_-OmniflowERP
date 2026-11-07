@@ -1,10 +1,12 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { rules } from "@/config/rules.config"
+import { decideApproval } from "@/core/approvals/decide"
 import { invoiceAvailable } from "@/core/ar/receipt"
 import { now } from "@/core/clock/clock"
 import { addDaysISO, atDhaka, dhakaDate } from "@/core/clock/dates"
 import type { OmniflowDb } from "@/core/db/database"
+import { commit } from "@/core/engine/commit"
 import { LOC, PENDING_APPROVAL_IDS, PLANT, USR } from "@/core/seed/content/seed-refs"
 import { boardStatus, loadCollections, loadFinance, loadRoleHome, loadStudioOps, primaryRole } from "@/modules/dashboard/queries"
 import type { RoleHomeData, TodoItem } from "@/modules/dashboard/types"
@@ -141,7 +143,17 @@ describe("role homes", () => {
     expect(kpi(h, "counterQueue")).toBe(queue.length + invoices.length)
     expect(kpi(h, "tillBalance")).toBe(await gl(db, "CASH_TILL_GUL", { upTo: today }))
     expect(kpi(h, "takingsToday")).toBe((await loadCollections(db, { from: today, to: today, locationId: LOC.GUL })).totalP)
-    expect(h.todos.every((t) => t.href === "/si/counter")).toBe(true)
+    expect(h.todos.filter((t) => t.kind !== "petty-pending").every((t) => t.href === "/si/counter")).toBe(true)
+    // Her own petty cash voucher waits for Shahriar; ready vehicles are on their way to the counter.
+    expect(ids(h, "petty-pending")).toEqual([PLANT.pendingPettyCash])
+    const ready = await db.salesOrders.where("[locationId+status]").equals([LOC.GUL, "ready"]).toArray()
+    const readyParties = new Map((await db.parties.bulkGet(ready.map((o) => o.partyId))).filter(Boolean).map((p) => [p!.id, p!]))
+    const atCounter = ready.filter((o) => {
+      const p = readyParties.get(o.partyId)
+      return !!p && !["fleet", "dealer", "corporate"].includes(p.segment) && p.paymentTermsDays === 0
+    })
+    expect(ids(h, "pickup").sort()).toEqual(atCounter.map((o) => o.id).sort())
+    expect(h.scopeIds).toEqual([LOC.GUL])
   })
 
   it("technician: only his own tasks today", async () => {
@@ -161,6 +173,7 @@ describe("role homes", () => {
     expect(kpi(h, "lowStock")).toBeGreaterThan(0)
     expect(kpi(h, "expiringLots")).toBeGreaterThanOrEqual(2)
     expect(h.todos.find((t) => t.kind === "grn" && t.id === PLANT.bengalPartialPo)?.href).toBe(`/grn/receive/${PLANT.bengalPartialPo}`)
+    expect([...h.scopeIds].sort()).toEqual([LOC.CST, LOC.GUL, LOC.UTT].sort())
   })
 
   it("procurement: never her own PO approval (maker-checker), open and overdue POs", async () => {
@@ -180,8 +193,13 @@ describe("role homes", () => {
   })
 
   it("auditor: today's audit entries, the access review and login history reports", async () => {
-    await signedIn(db, "mahbub")
+    // Sign-ins are left out of the recent activity; a decision by Shahriar is not.
+    const shahriar = await signedIn(db, "shahriar")
+    const approval = (await db.approvals.get(PLANT.pendingPettyCashApproval))!
+    await commit(decideApproval, { approvalId: approval.id, decision: "approve", reason: "Receipts checked", expectedVersion: approval.version }, { db, actor: shahriar })
     const h = await home("shamima")
+    expect(kpi(h, "decidedToday")).toBe(1)
+    expect(h.todos.find((t) => t.kind === "audit")?.name?.en).toBe("Shahriar Kabir")
     const start = atDhaka(today, "00:00")
     expect(kpi(h, "auditToday")).toBe(await db.audit.where("at").between(start, start + 86_400_000).count())
     expect(h.todos.find((t) => t.kind === "access-review")?.href).toBe("/irt/run/IRT-32")

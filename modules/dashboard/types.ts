@@ -142,6 +142,8 @@ export type TodoKind =
   | "task"
   | "counter"
   | "counter-invoice"
+  | "pickup"
+  | "petty-pending"
   | "mfs"
   | "overdue"
   | "bill-hold"
@@ -193,6 +195,8 @@ export type RoleHomeData = {
   role: RoleCode | "NONE"
   /** Location the home is scoped to (studio-bound roles), else null */
   locationId: Id | null
+  /** The locations the home covers (one studio, the store keeper's stock locations, or the user's) */
+  scopeIds: Id[]
   kpis: HomeKpi[]
   todos: TodoItem[]
 }
