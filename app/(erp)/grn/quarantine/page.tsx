@@ -1,6 +1,6 @@
-import { StubPage } from "@/components/shared/stub-page"
+import { QuarantineScreen } from "@/modules/grn/components/quarantine"
 
-/** /grn/quarantine: filled in Phase 2 (implementation_plan.md §9). */
+/** /grn/quarantine: lots held at receipt (implementation_plan.md §9). */
 export default function Page() {
-  return <StubPage app="grn" titleKey="grn.pages.quarantine" />
+  return <QuarantineScreen />
 }

@@ -1,6 +1,7 @@
-import { StubPage } from "@/components/shared/stub-page"
+import { PoDetail } from "@/modules/ptl/components/po-detail"
 
-/** /ptl/po/[id]: filled in Phase 2 (implementation_plan.md §9). */
-export default function Page() {
-  return <StubPage app="ptl" titleKey="ptl.pages.po" />
+/** /ptl/po/[id]: a purchase order; "new" creates one (implementation_plan.md §9). */
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  return <PoDetail id={decodeURIComponent(id)} />
 }

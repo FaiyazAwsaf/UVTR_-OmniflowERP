@@ -1,6 +1,7 @@
-import { StubPage } from "@/components/shared/stub-page"
+import { RequisitionDetail } from "@/modules/ptl/components/requisition-detail"
 
-/** /ptl/requisitions/[id]: filled in Phase 2 (implementation_plan.md §9). */
-export default function Page() {
-  return <StubPage app="ptl" titleKey="ptl.pages.requisition" />
+/** /ptl/requisitions/[id]: a requisition; "new" creates one (implementation_plan.md §9). */
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  return <RequisitionDetail id={decodeURIComponent(id)} />
 }

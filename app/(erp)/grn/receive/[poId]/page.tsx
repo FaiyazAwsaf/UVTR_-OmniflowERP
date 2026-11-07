@@ -1,6 +1,7 @@
-import { StubPage } from "@/components/shared/stub-page"
+import { ReceiveForm } from "@/modules/grn/components/receive-form"
 
-/** /grn/receive/[poId]: filled in Phase 2 (implementation_plan.md §9). */
-export default function Page() {
-  return <StubPage app="grn" titleKey="grn.pages.receive" />
+/** /grn/receive/[poId]: receive goods against a PO (implementation_plan.md §9). */
+export default async function Page({ params }: { params: Promise<{ poId: string }> }) {
+  const { poId } = await params
+  return <ReceiveForm poId={decodeURIComponent(poId)} />
 }

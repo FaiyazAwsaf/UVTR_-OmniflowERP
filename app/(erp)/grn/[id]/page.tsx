@@ -1,6 +1,7 @@
-import { StubPage } from "@/components/shared/stub-page"
+import { GrnView } from "@/modules/grn/components/grn-view"
 
-/** /grn/[id]: filled in Phase 2 (implementation_plan.md §9). */
-export default function Page() {
-  return <StubPage app="grn" titleKey="grn.pages.grn" />
+/** /grn/[id]: GRN view and print (implementation_plan.md §9). */
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  return <GrnView id={decodeURIComponent(id)} />
 }
