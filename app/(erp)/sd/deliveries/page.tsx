@@ -1,6 +1,14 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /sd/deliveries: filled in Phase 2 (implementation_plan.md §9). */
+import * as React from "react"
+
+import { DeliveryHistory } from "@/modules/sd/components/deliveries"
+
+/** /sd/deliveries: delivery history with returns (plan §9). */
 export default function Page() {
-  return <StubPage app="sd" titleKey="sd.pages.deliveries" />
+  return (
+    <React.Suspense fallback={null}>
+      <DeliveryHistory />
+    </React.Suspense>
+  )
 }
