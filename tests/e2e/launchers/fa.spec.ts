@@ -28,6 +28,12 @@ async function approveFromInbox(page: Page, docNo: string): Promise<void> {
 
 const cue = (page: Page, id: string) => page.locator(`[data-testid="cue-card"][data-scenario-id="${id}"]`)
 
+/** Close the cue card once checked: in a 960x600 window it can cover page buttons. */
+async function closeCue(page: Page, id: string): Promise<void> {
+  await cue(page, id).getByRole("button", { name: "Close the cue card" }).click()
+  await expect(cue(page, id)).toHaveCount(0)
+}
+
 test("E10 twice: Mahbub's accrual waits for Farzana; her own voucher waits for Rashed", async ({ page, context }) => {
   test.setTimeout(120_000)
   await signIn(page, "mahbub")
@@ -50,6 +56,7 @@ test("E10 twice: Mahbub's accrual waits for Farzana; her own voucher waits for R
     await expect(cue(page, "E10")).toHaveAttribute("data-step", "0")
     await expect(cue(page, "E10")).toContainText(draft.journalNo)
     await expect(page.getByTestId("journal-editor")).toContainText(draft.journalNo)
+    await closeCue(page, "E10")
 
     // Submit: above his limit it waits, and he has no approve action.
     await page.getByTestId("journal-submit").click()
@@ -95,6 +102,7 @@ test("E11 twice: the close is blocked, the blockers are cleared, the month close
     await expect(cue(page, "E11")).toHaveAttribute("data-step", "0")
     await expect(cue(page, "E11")).toContainText(draft.journalNo)
     await expect(cue(page, "E11")).toContainText(petty.voucherNo)
+    await closeCue(page, "E11")
 
     // Last month is open (the second run reopened it) and blocked by exactly the two items.
     const monthRow = page.locator(`[data-testid="period-row"][data-month="${period.month}"]`)

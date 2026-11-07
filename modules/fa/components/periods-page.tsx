@@ -61,6 +61,16 @@ export function PeriodsPage() {
   const [closing, setClosing] = React.useState<PeriodRow | null>(null)
   const [reopening, setReopening] = React.useState<PeriodRow | null>(null)
 
+  // Below 1200px the checklist sits above the months (a 960x600 window lands
+  // on it); choosing a month there scrolls back up to its checklist.
+  const checklistRef = React.useRef<HTMLDivElement>(null)
+  const choose = (id: string) => {
+    setSelected(id)
+    if (window.matchMedia("(max-width: 1199px)").matches) {
+      checklistRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+    }
+  }
+
   // Default: the earliest open month that has ended (the one to close next), else the current month.
   const periods = data?.periods ?? []
   const fallback =
@@ -122,7 +132,7 @@ export function PeriodsPage() {
                             <Button
                               variant={isCurrent ? "secondary" : "ghost"}
                               size="xs"
-                              onClick={() => setSelected(p.id)}
+                              onClick={() => choose(p.id)}
                               data-testid="period-checklist"
                             >
                               <ListChecks />
@@ -147,13 +157,15 @@ export function PeriodsPage() {
         </div>
 
         {current ? (
-          <Checklist
-            period={current}
-            ended={current.endsOn < today}
-            canClose={canClose}
-            onClose={() => setClosing(current)}
-            label={monthLabel(current.month)}
-          />
+          <div ref={checklistRef} className="order-first scroll-mt-4 self-start min-[1200px]:sticky min-[1200px]:top-4 min-[1200px]:order-none">
+            <Checklist
+              period={current}
+              ended={current.endsOn < today}
+              canClose={canClose}
+              onClose={() => setClosing(current)}
+              label={monthLabel(current.month)}
+            />
+          </div>
         ) : null}
       </div>
 
@@ -193,7 +205,6 @@ function Checklist({
       title={t("fa.periods.checklistFor", { month: label })}
       subtitle={t("fa.periods.checklistHint")}
       icon={ListChecks}
-      className="self-start min-[1200px]:sticky min-[1200px]:top-4"
     >
       <ol className="flex flex-col gap-2.5" data-testid="close-checklist" data-period={period.code} data-allowed={allowed ? "true" : "false"}>
         {(checklist ?? []).map((c) => (
