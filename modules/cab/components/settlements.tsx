@@ -25,6 +25,7 @@ import { useLocale } from "@/lib/i18n/provider"
 import { CsvButton, Field, ListTable, NativeSelect, Pills, Stat, TextInput, useActionKey, useToday, type Column } from "@/modules/par/components/kit"
 
 import { recordSettlement } from "../commands"
+import { canSeeAccount } from "../lib"
 import { useBalances } from "./transfers"
 
 const TAG = { card: "CARD_CLEARING", bkash: "MFS_BKASH", nagad: "MFS_NAGAD" } as const
@@ -39,10 +40,13 @@ export function Settlements() {
   const balances = useBalances()
   const [open, setOpen] = React.useState(false)
   const data = useLiveQuery(async () => {
-    const [rows, accounts] = await Promise.all([db.settlements.toArray(), db.cashBankAccounts.toArray()])
-    return { rows: rows.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.settlementNo.localeCompare(a.settlementNo))), accounts: new Map(accounts.map((a) => [a.id, a])) }
-  }, [db])
-  const clearing = (balances?.accounts ?? []).filter((a) => a.kind === "mfs" || a.kind === "card-clearing")
+    const [all, list] = await Promise.all([db.settlements.toArray(), db.cashBankAccounts.toArray()])
+    const accounts = new Map(list.map((a) => [a.id, a]))
+    // Settlements move Head Office money (clearing to bank): only roles that see those accounts list them.
+    const rows = all.filter((r) => canSeeAccount(can, accounts.get(r.bankAccountId)) || canSeeAccount(can, accounts.get(r.clearingAccountId)))
+    return { rows: rows.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.settlementNo.localeCompare(a.settlementNo))), accounts }
+  }, [db, can])
+  const clearing = (balances?.accounts ?? []).filter((a) => (a.kind === "mfs" || a.kind === "card-clearing") && canSeeAccount(can, a))
 
   const columns: Column<SettlementRow>[] = [
     { key: "date", header: t("cab.settle.colDate"), cell: (r) => <span className="nums">{dmy(r.date)}</span> },

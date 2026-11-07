@@ -4,7 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { useLiveQuery } from "dexie-react-hooks"
-import { CalendarDays } from "lucide-react"
+import { CalendarDays, MessageSquare } from "lucide-react"
 import { toast } from "sonner"
 
 import { DocLink } from "@/components/shared/doc-link"
@@ -12,21 +12,24 @@ import { DocStatus } from "@/components/shared/doc-status"
 import { MoneyText } from "@/components/shared/money-text"
 import { PageHeader } from "@/components/shared/page-header"
 import { SectionCard } from "@/components/shared/section-card"
+import { SimulatedBadge } from "@/components/shared/simulated-badge"
 import { StatusPill } from "@/components/shared/status"
 import { Button } from "@/components/ui/button"
 import { addDaysISO } from "@/core/clock/dates"
 import { useDb } from "@/core/db/DbProvider"
-import type { ChequeRow, PartyRow, ReceiptRow, VendorPaymentRow } from "@/core/db/schema"
+import type { ChequeRow, PartyRow, ReceiptRow, SalesInvoiceRow, SmsRow, VendorPaymentRow } from "@/core/db/schema"
 import { useCommand } from "@/core/engine/useCommand"
 import { usePermissions } from "@/core/security/useCan"
 import { nameOf } from "@/core/security/users"
 import { useLocale } from "@/lib/i18n/provider"
 import { cn } from "@/lib/utils"
 
-import { CsvButton, ListTable, NativeSelect, Pills, SearchBox, useToday, type Column } from "@/modules/par/components/kit"
+import { invoiceAvailableP, invoiceOpenP } from "@/modules/ar/lib"
+import { CsvButton, ListTable, NativeSelect, Pills, SearchBox, Stat, useToday, type Column } from "@/modules/par/components/kit"
 import { ReasonDialog } from "@/modules/par/components/reason-dialog"
 
 import { updateCheque } from "../commands"
+import { canSeeAccount } from "../lib"
 
 type Row = { cheque: ChequeRow; party: PartyRow | undefined; receipt: ReceiptRow | undefined; payment: VendorPaymentRow | undefined }
 
@@ -45,7 +48,9 @@ export function Cheques() {
   const [bouncing, setBouncing] = React.useState<ChequeRow | null>(null)
 
   const data = useLiveQuery(async () => {
-    const cheques = await db.cheques.toArray()
+    // Cheques sit on Head Office's bank accounts: own-location roles do not list them.
+    const accounts = new Map((await db.cashBankAccounts.toArray()).map((a) => [a.id, a]))
+    const cheques = (await db.cheques.toArray()).filter((c) => canSeeAccount(can, accounts.get(c.cashBankAccountId)))
     const [parties, receipts, payments] = await Promise.all([
       db.parties.bulkGet([...new Set(cheques.map((c) => c.partyId))]),
       db.receipts.bulkGet(cheques.flatMap((c) => (c.receiptId ? [c.receiptId] : []))),
@@ -57,19 +62,20 @@ export function Cheques() {
     return cheques
       .sort((a, b) => (a.chequeDate < b.chequeDate ? 1 : a.chequeDate > b.chequeDate ? -1 : b.chequeNo.localeCompare(a.chequeNo)))
       .map((cheque) => ({ cheque, party: pm.get(cheque.partyId), receipt: cheque.receiptId ? rm.get(cheque.receiptId) : undefined, payment: cheque.paymentId ? vm.get(cheque.paymentId) : undefined }))
-  }, [db])
+  }, [db, can])
 
   const focused = data?.find((r) => r.cheque.id === focus)
   const dir = focused && focused.cheque.direction !== direction && !query && !status ? focused.cheque.direction : direction
-  const rows = React.useMemo(() => {
+  const rows = (() => {
     const q = query.trim().toLowerCase()
     const list = (data ?? []).filter(
       (r) => r.cheque.direction === dir && (!status || r.cheque.status === status) && (!q || r.cheque.chequeNo.includes(q) || (r.party?.nameEn.toLowerCase().includes(q) ?? false))
     )
-    // Open cheques first (in hand, deposited, issued, presented), then the rest.
+    // The cheque the address names first (a notice, a launcher), then open cheques (in hand, deposited, issued, presented), then the rest.
     const open = (s: string) => (s === "in-hand" || s === "deposited" || s === "issued" || s === "presented" ? 0 : 1)
-    return list.sort((a, b) => open(a.cheque.status) - open(b.cheque.status))
-  }, [data, dir, status, query])
+    const rank = (r: Row) => (r.cheque.id === focus ? -1 : open(r.cheque.status))
+    return list.sort((a, b) => rank(a) - rank(b))
+  })()
 
   const act = async (c: ChequeRow, action: "deposit" | "clear" | "bounce" | "present", reason = "") => {
     const r = await update.run({ chequeId: c.id, action, expectedStatus: c.status, reason })
@@ -79,7 +85,7 @@ export function Cheques() {
     }
   }
 
-  const calendar = React.useMemo(() => {
+  const calendar = (() => {
     if (!today) return []
     const inHand = (data ?? []).filter((r) => r.cheque.direction === "received" && r.cheque.status === "in-hand")
     return Array.from({ length: 14 }, (_, i) => {
@@ -87,9 +93,45 @@ export function Cheques() {
       const list = inHand.filter((r) => (i === 0 ? r.cheque.chequeDate <= day : r.cheque.chequeDate === day))
       return { day, count: list.length, amountP: list.reduce((s, r) => s + r.cheque.amountP, 0) }
     })
-  }, [data, today])
+  })()
 
   const canUpdate = can("cab.cheque.update")
+  /** The steps a cheque can take next (deposit, clear, bounce, present); `prefix` keeps the detail panel's test ids apart. */
+  const actionsFor = (c: ChequeRow, prefix = "cheque") => {
+    if (!canUpdate) return null
+    const due = !today || c.chequeDate <= today
+    const btn = (label: string, testId: string, onClick: () => void, opts: { disabled?: boolean; destructive?: boolean } = {}) => (
+      <Button
+        key={testId}
+        size="xs"
+        variant={opts.destructive ? "destructive-outline" : "outline"}
+        data-testid={testId}
+        disabled={opts.disabled || update.pending}
+        onClick={(e) => {
+          e.stopPropagation()
+          onClick()
+        }}
+      >
+        {label}
+      </Button>
+    )
+    const out: React.ReactNode[] = []
+    if (c.direction === "received") {
+      if (c.status === "in-hand") {
+        out.push(due ? btn(t("cab.cheques.deposit"), `${prefix}-deposit`, () => act(c, "deposit")) : <span key="due" className="text-xs text-muted-foreground">{t("cab.cheques.notDue", { date: dmy(c.chequeDate) })}</span>)
+        out.push(btn(t("cab.cheques.bounce"), `${prefix}-bounce`, () => setBouncing(c), { destructive: true }))
+      } else if (c.status === "deposited") {
+        out.push(btn(t("cab.cheques.clear"), `${prefix}-clear`, () => act(c, "clear")))
+        out.push(btn(t("cab.cheques.bounce"), `${prefix}-bounce`, () => setBouncing(c), { destructive: true }))
+      }
+    } else if (c.status === "issued") {
+      out.push(btn(t("cab.cheques.present"), `${prefix}-present`, () => act(c, "present")))
+    } else if (c.status === "presented") {
+      out.push(btn(t("cab.cheques.clear"), `${prefix}-clear`, () => act(c, "clear")))
+    }
+    return out.length ? <div className="flex flex-wrap justify-end gap-1">{out}</div> : null
+  }
+
   const columns: Column<Row>[] = [
     {
       key: "no",
@@ -135,40 +177,7 @@ export function Cheques() {
     {
       key: "actions",
       header: "",
-      cell: ({ cheque: c }) => {
-        if (!canUpdate) return null
-        const due = !today || c.chequeDate <= today
-        const btn = (label: string, testId: string, onClick: () => void, opts: { disabled?: boolean; destructive?: boolean } = {}) => (
-          <Button
-            key={testId}
-            size="xs"
-            variant={opts.destructive ? "destructive-outline" : "outline"}
-            data-testid={testId}
-            disabled={opts.disabled || update.pending}
-            onClick={(e) => {
-              e.stopPropagation()
-              onClick()
-            }}
-          >
-            {label}
-          </Button>
-        )
-        const out: React.ReactNode[] = []
-        if (c.direction === "received") {
-          if (c.status === "in-hand") {
-            out.push(due ? btn(t("cab.cheques.deposit"), "cheque-deposit", () => act(c, "deposit")) : <span key="due" className="text-xs text-muted-foreground">{t("cab.cheques.notDue", { date: dmy(c.chequeDate) })}</span>)
-            out.push(btn(t("cab.cheques.bounce"), "cheque-bounce", () => setBouncing(c), { destructive: true }))
-          } else if (c.status === "deposited") {
-            out.push(btn(t("cab.cheques.clear"), "cheque-clear", () => act(c, "clear")))
-            out.push(btn(t("cab.cheques.bounce"), "cheque-bounce", () => setBouncing(c), { destructive: true }))
-          }
-        } else if (c.status === "issued") {
-          out.push(btn(t("cab.cheques.present"), "cheque-present", () => act(c, "present")))
-        } else if (c.status === "presented") {
-          out.push(btn(t("cab.cheques.clear"), "cheque-clear", () => act(c, "clear")))
-        }
-        return <div className="flex flex-wrap justify-end gap-1">{out}</div>
-      },
+      cell: ({ cheque: c }) => actionsFor(c),
     },
   ]
 
@@ -193,6 +202,7 @@ export function Cheques() {
           />
         }
       />
+      {focused ? <ChequeDetail row={focused} actions={actionsFor(focused.cheque, "cheque-detail")} /> : null}
       <SectionCard title={t("cab.cheques.calendar")} subtitle={t("cab.cheques.calendarHint")} size="sm" icon={CalendarDays}>
         <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-7" data-testid="pdc-calendar">
           {calendar.map((d) => (
@@ -257,6 +267,98 @@ export function Cheques() {
           setBouncing(null)
         }}
       />
+    </div>
+  )
+}
+
+/**
+ * The cheque the address names (`?id=`): who gave it, what its receipt
+ * reserves on which invoices (outstanding again after a bounce), and the
+ * customer's notice once it bounced (numbers, dates and amounts only).
+ */
+function ChequeDetail({ row, actions }: { row: Row; actions: React.ReactNode }) {
+  const db = useDb()
+  const { t, locale, dmy } = useLocale()
+  const { cheque, receipt, party } = row
+  const detail = useLiveQuery(async () => {
+    const invoiceIds = receipt?.allocations.map((a) => a.invoiceId) ?? []
+    const invoices = (await db.salesInvoices.bulkGet(invoiceIds)).filter(Boolean) as SalesInvoiceRow[]
+    let notice: SmsRow | undefined
+    if (cheque.status === "bounced") {
+      const sms = await db.sms.where("partyId").equals(cheque.partyId).toArray()
+      notice = sms.filter((m) => m.templateId === "cheque-bounced" && m.text.includes(cheque.chequeNo)).sort((a, b) => b.queuedAt - a.queuedAt)[0]
+    }
+    return { invoices: new Map(invoices.map((i) => [i.id, i])), notice }
+  }, [db, cheque.id, cheque.status, cheque.version, receipt?.id, receipt?.version])
+
+  // The test id sits on a wrapper so the header's actions (deposit, bounce) are inside it.
+  return (
+    <div data-testid="cheque-detail" data-cheque-no={cheque.chequeNo} data-status={cheque.status}>
+      <SectionCard
+        title={t("cab.cheques.detailTitle", { no: cheque.chequeNo })}
+        subtitle={`${nameOf(party, locale)} · ${cheque.bankName}`}
+        size="sm"
+        action={
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <DocStatus status={cheque.status} />
+            {actions}
+          </div>
+        }
+      >
+        <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <Stat label={t("cab.cheques.colAmount")} value={<MoneyText poisha={cheque.amountP} />} />
+            <Stat label={t("cab.cheques.colDate")} value={dmy(cheque.chequeDate)} />
+            <Stat label={t("cab.cheques.receivedOn")} value={cheque.receivedOn ? dmy(cheque.receivedOn) : "-"} />
+            <Stat label={t("cab.cheques.colDoc")} value={receipt ? <DocLink docType="receipts" docId={receipt.id} docNo={receipt.receiptNo} showApp={false} /> : "-"} />
+          </div>
+          {receipt?.allocations.length ? (
+            <div className="min-w-0 overflow-x-auto">
+              <table className="w-full border-separate border-spacing-0 text-[0.8125rem]">
+                <thead>
+                  <tr className="[&>th]:h-8 [&>th]:bg-surface-raised [&>th]:px-2 [&>th]:font-medium [&>th]:whitespace-nowrap">
+                    <th className="rounded-l-md text-left">{t("cab.cheques.colInvoice")}</th>
+                    <th className="text-right">{t("cab.cheques.colAllocated")}</th>
+                    <th className="text-right">{t("cab.cheques.colOutstanding")}</th>
+                    <th className="hidden text-right sm:table-cell">{t("cab.cheques.colReserved")}</th>
+                    <th className="rounded-r-md text-right">{t("cab.cheques.colAvailable")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {receipt.allocations.map((a) => {
+                    const inv = detail?.invoices.get(a.invoiceId)
+                    return (
+                      <tr key={a.invoiceId} data-testid="cheque-invoice" data-invoice-no={inv?.invoiceNo} data-available={inv ? invoiceAvailableP(inv) : undefined} className="[&>td]:border-b [&>td]:border-hairline [&>td]:px-2 [&>td]:py-1.5">
+                        <td>{inv ? <DocLink docType="salesInvoices" docId={inv.id} docNo={inv.invoiceNo} /> : null}</td>
+                        <td className="text-right">
+                          <MoneyText poisha={a.amountP} className="font-mono" />
+                        </td>
+                        <td className="text-right">{inv ? <MoneyText poisha={invoiceOpenP(inv)} className="font-mono font-semibold" /> : null}</td>
+                        <td className="hidden text-right sm:table-cell">{inv ? <MoneyText poisha={inv.reservedP} className="font-mono text-muted-foreground" /> : null}</td>
+                        <td className="text-right">{inv ? <MoneyText poisha={invoiceAvailableP(inv)} className="font-mono" /> : null}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+          {cheque.status === "bounced" ? (
+            <div className="flex flex-col gap-1.5 rounded-lg bg-surface-raised/60 p-3" data-testid="cheque-notice">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <MessageSquare className="size-3.5" />
+                <span>{detail?.notice ? t("cab.cheques.noticeSent", { to: detail.notice.to }) : t("cab.cheques.noticeNone")}</span>
+                <SimulatedBadge className="ml-auto" />
+              </div>
+              {detail?.notice ? (
+                <p lang={detail.notice.lang} className="text-sm">
+                  {detail.notice.text}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      </SectionCard>
     </div>
   )
 }

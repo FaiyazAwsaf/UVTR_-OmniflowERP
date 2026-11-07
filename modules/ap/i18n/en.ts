@@ -271,6 +271,26 @@ export const apEn = {
       reference: "Original invoice",
       reasonLabel: "Reason",
     },
+    scenarios: {
+      E5: {
+        title: "Three-way mismatch",
+        summary: "A vendor bill priced above the PO goes on hold; the accounts manager releases it",
+        cue1: "The new bill is open on Gloss & Guard's {grnNo} (for {poNo}) with their invoice {vendorRef}.",
+        cue2: "On the coating kits line, type the vendor's price {invoicePriceP}. The PO says {poPriceP}, so the match shows +{pct}%.",
+        cue3: "Leave the polish at {polishPriceP} and save: the bill of {totalP} goes on hold.",
+        cue4: "In Farzana's window, open Approvals and release the bill.",
+        cue5: "The bill posts (R13): {ppvP} goes to purchase price variance.",
+      },
+      E6: {
+        title: "Pay with withholding",
+        summary: "A security bill paid by cheque with AIT and VDS withheld, approved by the accounts manager",
+        cue1: "Prime Guard's bill {billNo} is ticked: {netP} + VAT {vatP} = {grossP}.",
+        cue2: "Choose Cheque and type cheque number {chequeNo}.",
+        cue3: "AIT {aitP} and VDS {vdsP} are withheld: {payP} is paid.",
+        cue4: "Save: the payment is above Mahbub's limit, so it waits. In Farzana's window, approve it in Approvals.",
+        cue5: "Back here the payment is posted: print the Mushak 6.6 certificate for {vdsP}.",
+      },
+    },
     rules: {
       NOT_A_VENDOR: "{party} is not a vendor.",
       GRN_VENDOR_MISMATCH: "GRN {grn} belongs to another vendor.",
