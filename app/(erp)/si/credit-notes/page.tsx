@@ -1,6 +1,14 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /si/credit-notes: filled in Phase 2 (implementation_plan.md §9). */
+import * as React from "react"
+
+import { CreditNoteList } from "@/modules/si/components/credit-notes"
+
+/** /si/credit-notes: credit notes, Mushak 6.7 (plan §9). */
 export default function Page() {
-  return <StubPage app="si" titleKey="si.pages.creditNotes" />
+  return (
+    <React.Suspense fallback={null}>
+      <CreditNoteList />
+    </React.Suspense>
+  )
 }

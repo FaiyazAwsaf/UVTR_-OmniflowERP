@@ -1,6 +1,8 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /pc/promotions: filled in Phase 2 (implementation_plan.md §9). */
+import { PromotionsPage } from "@/modules/pc/components/promotions"
+
+/** /pc/promotions: promotions (plan §9). */
 export default function Page() {
-  return <StubPage app="pc" titleKey="pc.pages.promotions" />
+  return <PromotionsPage />
 }

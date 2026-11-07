@@ -1,6 +1,14 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /si/counter: filled in Phase 2 (implementation_plan.md §9). */
+import * as React from "react"
+
+import { Counter } from "@/modules/si/components/counter"
+
+/** /si/counter: counter checkout (plan §9). */
 export default function Page() {
-  return <StubPage app="si" titleKey="si.pages.counter" />
+  return (
+    <React.Suspense fallback={null}>
+      <Counter />
+    </React.Suspense>
+  )
 }

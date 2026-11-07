@@ -1,6 +1,8 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /pc/packages: filled in Phase 2 (implementation_plan.md §9). */
+import { PackagesPage } from "@/modules/pc/components/packages"
+
+/** /pc/packages: packages and add-ons (plan §9). */
 export default function Page() {
-  return <StubPage app="pc" titleKey="pc.pages.packages" />
+  return <PackagesPage />
 }

@@ -1,6 +1,14 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /si: filled in Phase 2 (implementation_plan.md §9). */
+import * as React from "react"
+
+import { InvoiceList } from "@/modules/si/components/invoice-list"
+
+/** /si: invoices (plan §9). */
 export default function Page() {
-  return <StubPage app="si" titleKey="si.pages.home" />
+  return (
+    <React.Suspense fallback={null}>
+      <InvoiceList />
+    </React.Suspense>
+  )
 }
