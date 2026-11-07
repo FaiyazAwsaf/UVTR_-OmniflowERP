@@ -130,5 +130,16 @@ export const grnEn = {
       EXPIRY_PAST: "{item} expired on {date}; it can't be accepted into stock.",
       QUARANTINE_NOT_HELD: "This lot is no longer held in quarantine.",
     },
+    scenarios: {
+      e4: {
+        title: "Partial GRN with QC reject",
+        summary: "Part of a Gloss & Guard order arrives: 2 kits rejected for short expiry into quarantine, 18 accepted, 6 pending",
+        cue1: "PO {poNo} to Gloss & Guard ({poTotalP}, approved by Farzana): 24 ceramic coating 2-year kits and 12 finishing polish. 20 kits and the 12 polish arrived.",
+        cue2: "Kits ({kitSku}): Accepted 18, Rejected 2, QC reason Short expiry, Hold in quarantine ticked; batch {kitBatch}, expiry {kitExpiry}. The line reads 18 accepted · 6 pending.",
+        cue3: "Polish ({polishSku}): keep Accepted 12; batch {polishBatch}, expiry {polishExpiry}.",
+        cue4: "Click Post GRN: {grnValueP} comes into stock at the PO cost against goods received not invoiced (R12); the PO is now partly received.",
+        cue5: "Open GRN, Quarantine: the 2 rejected kits wait there with no value until Nusrat accepts or returns them.",
+      },
+    },
   },
 }

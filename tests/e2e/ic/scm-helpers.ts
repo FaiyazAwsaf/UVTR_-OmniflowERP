@@ -59,3 +59,37 @@ export async function docNo(page: Page): Promise<string> {
   await expect(no).toBeVisible()
   return (await no.textContent())?.trim() ?? ""
 }
+
+/** Reads rows straight from the shared IndexedDB (assertions only). */
+export async function rows<T = Record<string, unknown>>(page: Page, table: string): Promise<T[]> {
+  return page.evaluate(async (name) => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("omniflow-central")
+      request.onsuccess = () => resolve(request.result)
+      request.onerror = () => reject(request.error)
+    })
+    const out = await new Promise<unknown[]>((resolve, reject) => {
+      const req = db.transaction(name, "readonly").objectStore(name).getAll()
+      req.onsuccess = () => resolve(req.result)
+      req.onerror = () => reject(req.error)
+    })
+    db.close()
+    return out
+  }, table) as Promise<T[]>
+}
+
+export type WindowSession = {
+  userId?: string
+  cue?: { scenarioId: string; step: number; params?: Record<string, string | number> } | null
+}
+
+/** This window's session: who it is signed in as, its cue card and the cue's values. */
+export async function windowSession(page: Page): Promise<WindowSession> {
+  return page.evaluate(() => {
+    for (let i = 0; i < window.sessionStorage.length; i++) {
+      const key = window.sessionStorage.key(i)
+      if (key?.startsWith("of:session:")) return JSON.parse(window.sessionStorage.getItem(key) ?? "{}") as WindowSession
+    }
+    return {} as WindowSession
+  })
+}
