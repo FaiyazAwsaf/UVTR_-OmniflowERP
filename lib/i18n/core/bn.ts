@@ -307,6 +307,8 @@ export const coreBn: typeof coreEn = {
       approvedBy: "{name} অনুমোদন করেছেন",
       rejectedBy: "{name} প্রত্যাখ্যান করেছেন",
       openInbox: "অনুমোদন ইনবক্স খুলুন",
+      notices: "নোটিশ",
+      markRead: "সব পড়া হয়েছে",
     },
     search: {
       screens: "অ্যাপ ও স্ক্রিন",

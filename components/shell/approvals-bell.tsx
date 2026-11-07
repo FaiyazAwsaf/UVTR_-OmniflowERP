@@ -3,16 +3,18 @@
 import * as React from "react"
 import Link from "next/link"
 import { useLiveQuery } from "dexie-react-hooks"
-import { Bell, CheckCheck, ChevronRight, Inbox } from "lucide-react"
+import { Bell, BellRing, CheckCheck, ChevronRight, Inbox } from "lucide-react"
 
 import { AppChip } from "@/components/shared/app-frame"
 import { EmptyState } from "@/components/shared/empty-state"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useApprovalInbox } from "@/core/approvals/useInbox"
+import { markNotificationsRead } from "@/core/comms/notifications"
 import { DAY } from "@/core/clock/dates"
 import { useNow } from "@/core/clock/useNow"
 import { useDb } from "@/core/db/DbProvider"
-import type { ApprovalRow } from "@/core/db/schema"
+import type { ApprovalRow, NotificationRow } from "@/core/db/schema"
+import { useCommand } from "@/core/engine/useCommand"
 import { usePermissions } from "@/core/security/useCan"
 import { useUserMap } from "@/core/security/users"
 import { useSyncFlash } from "@/components/shell/use-sync-flash"
@@ -41,6 +43,23 @@ function useRecentDecisions(): ApprovalRow[] {
 }
 
 /**
+ * Unread notices for this user other than approval requests (those are the
+ * inbox above): a post-dated cheque falling due, and whatever modules notify
+ * with `notifyUser`. Newest first.
+ */
+function useNotices(): NotificationRow[] {
+  const db = useDb()
+  const { user } = usePermissions()
+  return (
+    useLiveQuery(async () => {
+      if (!user) return []
+      const mine = await db.notifications.where("userId").equals(user.id).toArray()
+      return mine.filter((n) => !n.read && n.kind !== "approval-requested").sort((a, b) => b.at - a.at)
+    }, [db, user]) ?? []
+  )
+}
+
+/**
  * The approvals bell in the top bar (ui_guidelines.md §3): a yellow count of
  * approvals waiting for this user (live: a request in any window, or an RBAC
  * or limit change, updates it at once), and a popover with the latest ones
@@ -50,6 +69,8 @@ export function ApprovalsBell({ className }: { className?: string }) {
   const { t, tk, num, money, pct, relative, locale } = useLocale()
   const inbox = useApprovalInbox()
   const decisions = useRecentDecisions()
+  const notices = useNotices()
+  const markRead = useCommand(markNotificationsRead)
   const users = useUserMap()
   const [open, setOpen] = React.useState(false)
   const waiting = inbox?.forMe ?? []
@@ -80,6 +101,9 @@ export function ApprovalsBell({ className }: { className?: string }) {
         }
       >
         <Bell className="size-[1.125rem]" />
+        {notices.length > 0 && count === 0 ? (
+          <span data-testid="notices-dot" className="absolute top-1.5 right-1.5 size-2 rounded-full bg-info ring-2 ring-card" />
+        ) : null}
         {count > 0 ? (
           <span
             key={count}
@@ -147,6 +171,46 @@ export function ApprovalsBell({ className }: { className?: string }) {
             ) : null}
           </ul>
         )}
+        {notices.length ? (
+          <div className="border-t border-hairline px-1.5 py-2" data-testid="bell-notices">
+            <div className="flex items-center gap-2 px-2.5 pb-1">
+              <p className="flex-1 text-xs font-medium text-muted-foreground">{t("shell.bell.notices")}</p>
+              <button
+                type="button"
+                onClick={() => void markRead.run({ ids: notices.map((n) => n.id) })}
+                className="rounded-sm text-xs font-medium text-link outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/40"
+                data-testid="notices-read"
+              >
+                {t("shell.bell.markRead")}
+              </button>
+            </div>
+            <ul className="flex max-h-[min(14rem,35svh)] flex-col overflow-y-auto">
+              {notices.slice(0, SHOWN).map((n) => (
+                <li key={n.id}>
+                  <Link
+                    href={n.href ?? "/home"}
+                    onClick={() => {
+                      setOpen(false)
+                      void markRead.run({ ids: [n.id] })
+                    }}
+                    data-testid="notice-item"
+                    data-kind={n.kind}
+                    className="flex items-center gap-3 rounded-md px-2.5 py-2 transition-colors outline-none hover:bg-primary-soft focus-visible:ring-[3px] focus-visible:ring-ring/40"
+                  >
+                    <span className="icon-well flex size-8 shrink-0 items-center justify-center text-info">
+                      <BellRing className="size-4" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="line-clamp-2 text-[0.8125rem]">{tk(n.titleKey, n.params)}</span>
+                      <span className="block text-xs text-muted-foreground">{relative(n.at)}</span>
+                    </span>
+                    <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
         {decisions.length ? (
           <div className="border-t border-hairline px-4 py-3">
             <p className="mb-1.5 text-xs font-medium text-muted-foreground">{t("shell.bell.yourRequests")}</p>

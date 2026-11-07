@@ -48,12 +48,15 @@ export function ReportView({
   title,
   chart,
   canExport = true,
+  onPrint,
   className,
 }: {
   result: ReportResult
   title: string
   chart?: { x: string; y: string } | null
   canExport?: boolean
+  /** Opens the caller's print preview on white paper (no button without it: the screen is never printed as is) */
+  onPrint?: () => void
   className?: string
 }) {
   const { t, tk } = useLocale()
@@ -115,10 +118,12 @@ export function ReportView({
               {t("shared.report.exportCsv")}
             </Button>
           ) : null}
-          <Button variant="neutral" size="sm" onClick={() => window.print()}>
-            <Printer />
-            {t("shared.report.print")}
-          </Button>
+          {onPrint ? (
+            <Button variant="neutral" size="sm" onClick={onPrint} data-testid="report-print">
+              <Printer />
+              {t("shared.report.print")}
+            </Button>
+          ) : null}
         </div>
       </div>
       {chartData && chartData.length ? (
