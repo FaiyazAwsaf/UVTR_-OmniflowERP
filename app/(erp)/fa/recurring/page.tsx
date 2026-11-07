@@ -1,6 +1,14 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /fa/recurring: filled in Phase 2 (implementation_plan.md §9). */
+import * as React from "react"
+
+import { RecurringPage } from "@/modules/fa/components/recurring-page"
+
+/** /fa/recurring: recurring templates and "post for period" (plan §9). */
 export default function Page() {
-  return <StubPage app="fa" titleKey="fa.pages.recurring" />
+  return (
+    <React.Suspense fallback={null}>
+      <RecurringPage />
+    </React.Suspense>
+  )
 }

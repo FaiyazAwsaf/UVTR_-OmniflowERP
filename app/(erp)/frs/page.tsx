@@ -1,6 +1,8 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /frs: filled in Phase 2 (implementation_plan.md §9). */
+import { FrsHome } from "@/modules/frs/components/frs-home"
+
+/** /frs: reporting home with the statement tiles and the tax calendar (plan §9). */
 export default function Page() {
-  return <StubPage app="frs" titleKey="frs.pages.home" />
+  return <FrsHome />
 }

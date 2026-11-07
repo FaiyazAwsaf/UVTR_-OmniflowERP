@@ -1,6 +1,8 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /fa/accounts: filled in Phase 2 (implementation_plan.md §9). */
+import { AccountsPage } from "@/modules/fa/components/accounts-page"
+
+/** /fa/accounts: the chart of accounts (plan §9). */
 export default function Page() {
-  return <StubPage app="fa" titleKey="fa.pages.accounts" />
+  return <AccountsPage />
 }

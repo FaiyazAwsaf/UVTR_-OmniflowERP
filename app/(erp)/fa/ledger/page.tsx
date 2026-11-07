@@ -1,6 +1,14 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /fa/ledger: filled in Phase 2 (implementation_plan.md §9). */
+import * as React from "react"
+
+import { LedgerPage } from "@/modules/fa/components/ledger-page"
+
+/** /fa/ledger: general and account ledger (plan §9). `?account=&from=&to=` are read in Suspense. */
 export default function Page() {
-  return <StubPage app="fa" titleKey="fa.pages.ledger" />
+  return (
+    <React.Suspense fallback={null}>
+      <LedgerPage />
+    </React.Suspense>
+  )
 }
