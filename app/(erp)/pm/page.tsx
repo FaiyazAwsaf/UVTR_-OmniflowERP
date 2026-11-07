@@ -1,6 +1,6 @@
-import { StubPage } from "@/components/shared/stub-page"
+import { ItemsList } from "@/modules/pm/components/items-list"
 
-/** /pm: filled in Phase 2 (implementation_plan.md §9). */
+/** /pm: the item master (implementation_plan.md §9). */
 export default function Page() {
-  return <StubPage app="pm" titleKey="pm.pages.home" />
+  return <ItemsList />
 }

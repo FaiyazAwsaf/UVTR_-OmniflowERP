@@ -1,6 +1,6 @@
-import { StubPage } from "@/components/shared/stub-page"
+import { AwaitingGoods } from "@/modules/grn/components/awaiting"
 
-/** /grn: filled in Phase 2 (implementation_plan.md §9). */
+/** /grn: POs awaiting goods (implementation_plan.md §9). */
 export default function Page() {
-  return <StubPage app="grn" titleKey="grn.pages.home" />
+  return <AwaitingGoods />
 }

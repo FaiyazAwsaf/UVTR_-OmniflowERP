@@ -1,6 +1,7 @@
-import { StubPage } from "@/components/shared/stub-page"
+import { TransferDetail } from "@/modules/st/components/transfer-detail"
 
-/** /st/transfers/[id]: filled in Phase 2 (implementation_plan.md §9). */
-export default function Page() {
-  return <StubPage app="st" titleKey="st.pages.transfer" />
+/** /st/transfers/[id]: a transfer with its Mushak 6.5 challan (implementation_plan.md §9). */
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  return <TransferDetail id={decodeURIComponent(id)} />
 }

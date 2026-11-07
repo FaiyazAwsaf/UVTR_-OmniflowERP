@@ -1,6 +1,6 @@
-import { StubPage } from "@/components/shared/stub-page"
+import { PtlHome } from "@/modules/ptl/components/ptl-home"
 
-/** /ptl: filled in Phase 2 (implementation_plan.md §9). */
+/** /ptl: purchasing home (implementation_plan.md §9). */
 export default function Page() {
-  return <StubPage app="ptl" titleKey="ptl.pages.home" />
+  return <PtlHome />
 }

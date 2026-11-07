@@ -1,6 +1,6 @@
-import { StubPage } from "@/components/shared/stub-page"
+import { RequisitionsList } from "@/modules/ptl/components/requisitions"
 
-/** /ptl/requisitions: filled in Phase 2 (implementation_plan.md §9). */
+/** /ptl/requisitions: purchase requisitions (implementation_plan.md §9). */
 export default function Page() {
-  return <StubPage app="ptl" titleKey="ptl.pages.requisitions" />
+  return <RequisitionsList />
 }

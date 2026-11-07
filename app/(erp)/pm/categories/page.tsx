@@ -1,6 +1,6 @@
-import { StubPage } from "@/components/shared/stub-page"
+import { CategoriesScreen } from "@/modules/pm/components/categories"
 
-/** /pm/categories: filled in Phase 2 (implementation_plan.md §9). */
+/** /pm/categories: item categories with their accounts (implementation_plan.md §9). */
 export default function Page() {
-  return <StubPage app="pm" titleKey="pm.pages.categories" />
+  return <CategoriesScreen />
 }

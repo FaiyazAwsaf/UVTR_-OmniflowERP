@@ -1,6 +1,14 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /ptl/returns: filled in Phase 2 (implementation_plan.md §9). */
+import * as React from "react"
+
+import { ReturnsScreen } from "@/modules/ptl/components/returns"
+
+/** /ptl/returns: purchase returns and debit notes (implementation_plan.md §9); reads `?grn=` and `?id=`, so it sits in Suspense. */
 export default function Page() {
-  return <StubPage app="ptl" titleKey="ptl.pages.returns" />
+  return (
+    <React.Suspense fallback={null}>
+      <ReturnsScreen />
+    </React.Suspense>
+  )
 }
