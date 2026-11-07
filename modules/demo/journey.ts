@@ -5,8 +5,11 @@ import { setStockLevel } from "@/core/scenarios/helpers"
 import type { ScenarioKit } from "@/core/scenarios/types"
 import { BAY, ITM, PTY, SVC, USR, VEH } from "@/core/seed/content/seed-refs"
 import { recordRefund } from "@/modules/ar/commands"
+import { readCatalogue } from "@/modules/pc/catalogue"
 import { handover, HANDOVER_KEYS } from "@/modules/sd/commands"
 import { checkout } from "@/modules/si/commands"
+import { ensureStock } from "@/modules/stl/scenario-support"
+import { recipeNeeds } from "@/modules/stl/stock-check"
 import { acceptQuotation, cancelOrder, finishTask, qcCheck, QC_KEYS, saveQuotation, scheduleOrder, startTask } from "@/modules/stl/commands"
 
 /**
@@ -87,6 +90,19 @@ export async function advanceOf(kit: ScenarioKit, partyId: Id = JOURNEY.partyId)
   return lines.filter((l) => l.accountId === account).reduce((s, l) => s + l.creditP - l.debitP, 0)
 }
 
+/**
+ * Gulshan's shelf holds the journey: the ceramic kit at its 100 ml minimum and
+ * every other consumable of the SUV recipes for both services (twice over
+ * when short), so the technician's finish never runs out however many
+ * journeys ran today.
+ */
+async function stockForJourney(kit: ScenarioKit): Promise<void> {
+  await setStockLevel(kit, { itemId: JOURNEY.itemId, locationId: JOURNEY.locationId, qtyBase: JOURNEY.minStock, mode: "at-least" })
+  const catalogue = await readCatalogue(kit.db)
+  const lines = JOURNEY.services.map((refId) => ({ kind: "service" as const, refId, vehicleClass: "SUV" as const, qty: 1 }))
+  await ensureStock(kit, JOURNEY.locationId, recipeNeeds(catalogue, lines))
+}
+
 /** Orders that hold bay C1 and Rakib (the scheduler's busy states). */
 const BUSY = new Set(["booked", "in-progress", "qc"])
 
@@ -127,7 +143,7 @@ async function clearOrder(kit: ScenarioKit, statuses: Set<string>): Promise<void
 export async function clearJourney(kit: ScenarioKit): Promise<void> {
   await clearOrder(kit, new Set([...BUSY, "ready"]))
   await refund(kit, Number.MAX_SAFE_INTEGER, "refund-left")
-  await setStockLevel(kit, { itemId: JOURNEY.itemId, locationId: JOURNEY.locationId, qtyBase: JOURNEY.minStock, mode: "at-least" })
+  await stockForJourney(kit)
 }
 
 /** First 15-minute slot from `firstSlot` (or now) where bay C1 and Rakib are both free. */
@@ -167,7 +183,7 @@ async function schedule(kit: ScenarioKit, order: SalesOrderRow): Promise<Ms> {
  * missing step as the person who does it.
  */
 export async function bringJourneyTo(kit: ScenarioKit, target: Stage): Promise<SalesOrderRow> {
-  await setStockLevel(kit, { itemId: JOURNEY.itemId, locationId: JOURNEY.locationId, qtyBase: JOURNEY.minStock, mode: "at-least" })
+  await stockForJourney(kit)
   let order = await journeyOrder(kit)
   let stage = await stageOf(kit, order)
   if (!order || stage > target) {
