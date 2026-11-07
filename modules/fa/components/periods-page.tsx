@@ -46,7 +46,7 @@ export function PeriodsPage() {
   const canClose = useCan("fa.period.close")
   const canReopen = useCan("fa.period.reopen")
   const data = useLiveQuery(async () => {
-    const years = await db.fiscalYears.orderBy("startsOn").reverse().toArray()
+    const years = (await db.fiscalYears.toArray()).sort((a, b) => b.startsOn.localeCompare(a.startsOn))
     const periods = await db.periods.orderBy("startsOn").toArray()
     return { years, periods }
   }, [db])

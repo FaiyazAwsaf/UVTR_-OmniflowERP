@@ -93,7 +93,7 @@ export function TrialBalancePage() {
                 exportKey="frs.export"
                 fileName={`trial-balance-${range.from}-${range.to}`}
                 columns={[
-                  { key: "code", label: t("frs.common.account") },
+                  { key: "code", label: t("fa.accounts.code") },
                   { key: "name", label: t("frs.common.account") },
                   { key: "openingP", label: t("frs.common.opening") },
                   { key: "debitP", label: t("frs.common.debit") },
