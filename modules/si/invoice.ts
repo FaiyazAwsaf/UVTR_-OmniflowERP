@@ -1,5 +1,12 @@
-import { requireApproval, type InlineApproval } from "@/core/approvals/approvals"
-import { invoiceOpen, invoiceStatus } from "@/core/ar/receipt"
+import {
+  requireApproval,
+  type InlineApproval,
+} from "@/core/approvals/approvals"
+import {
+  closeOrdersIfPaid,
+  invoiceOpen,
+  invoiceStatus,
+} from "@/core/ar/receipt"
 import { addDaysISO } from "@/core/clock/dates"
 import type {
   CreditNoteLine,
@@ -16,8 +23,19 @@ import type {
 import { nextDocNo } from "@/core/docs/numbering"
 import type { Tx } from "@/core/engine/types"
 import { acct, postJournal } from "@/core/ledger/post"
-import { linesForCreditNote, linesForRetailGoodsOut, linesForSalesInvoice, RULE_VOUCHER, type ValuedItemLine } from "@/core/ledger/rules"
-import { inventoryTagOf, issueStock, onHand, receiveStock } from "@/core/stock/moves"
+import {
+  linesForCreditNote,
+  linesForRetailGoodsOut,
+  linesForSalesInvoice,
+  RULE_VOUCHER,
+  type ValuedItemLine,
+} from "@/core/ledger/rules"
+import {
+  inventoryTagOf,
+  issueStock,
+  onHand,
+  receiveStock,
+} from "@/core/stock/moves"
 import { roundQty, standardValue } from "@/core/stock/value"
 import { percentOf } from "@/core/tax/vat"
 import { loadCatalogue } from "@/modules/pc/catalogue"
@@ -52,7 +70,9 @@ export type InvoiceLineDraft = {
 export async function partyAdvance(tx: Tx, partyId: Id): Promise<Poisha> {
   const account = await acct(tx, "CUSTOMER_ADVANCE")
   const lines = await tx.list("journalLines", "partyId", partyId)
-  return lines.filter((l) => l.accountId === account).reduce((s, l) => s + l.creditP - l.debitP, 0)
+  return lines
+    .filter((l) => l.accountId === account)
+    .reduce((s, l) => s + l.creditP - l.debitP, 0)
 }
 
 /** What a party owes on its open invoices (total − advance applied − paid − credited). */
@@ -70,7 +90,10 @@ export function creditCheck(party: PartyRow, exposureP: Poisha, addP: Poisha) {
 }
 
 /** Invoice lines of order lines (full quantities not yet invoiced). */
-export function linesOfOrder(order: SalesOrderRow, lines: SalesOrderLineRow[]): InvoiceLineDraft[] {
+export function linesOfOrder(
+  order: SalesOrderRow,
+  lines: SalesOrderLineRow[]
+): InvoiceLineDraft[] {
   return lines
     .filter((l) => l.status !== "cancelled" && l.qtyInvoiced < l.qty)
     .sort((a, b) => a.lineNo - b.lineNo)
@@ -95,17 +118,26 @@ export function linesOfOrder(order: SalesOrderRow, lines: SalesOrderLineRow[]): 
 }
 
 /** Retail items sold at the counter without an order, priced on the party's list. */
-export async function counterItemLines(tx: Tx, party: PartyRow, items: { itemId: Id; qty: number }[]): Promise<InvoiceLineDraft[]> {
+export async function counterItemLines(
+  tx: Tx,
+  party: PartyRow,
+  items: { itemId: Id; qty: number }[]
+): Promise<InvoiceLineDraft[]> {
   if (!items.length) return []
   const catalogue = await loadCatalogue(tx)
   for (const i of items) {
     const item = catalogue.items.get(i.itemId)
-    if (!item || item.kind !== "retail" || item.status !== "active") tx.reject("SI_NOT_RETAIL_ITEM", { item: item?.sku ?? i.itemId })
+    if (!item || item.kind !== "retail" || item.status !== "active")
+      tx.reject("SI_NOT_RETAIL_ITEM", { item: item?.sku ?? i.itemId })
   }
   const priced = priceRequests(catalogue, {
     priceListId: party.priceListId,
     date: tx.today(),
-    requests: items.map((i) => ({ kind: "item" as const, itemId: i.itemId, qty: i.qty })),
+    requests: items.map((i) => ({
+      kind: "item" as const,
+      itemId: i.itemId,
+      qty: i.qty,
+    })),
     discountPct: 0,
   })
   return priced.lines.map((l) => ({
@@ -138,17 +170,26 @@ export type IssueInput = {
  * credit check with its inline override (INV-10), the customer advance
  * applied (R6 in the same voucher), counter goods out (R5), orders invoiced.
  */
-export async function issueInvoiceTx(tx: Tx, input: IssueInput): Promise<SalesInvoiceRow> {
+export async function issueInvoiceTx(
+  tx: Tx,
+  input: IssueInput
+): Promise<SalesInvoiceRow> {
   const { party } = input
   if (!input.lines.length) tx.reject("SI_NOTHING_TO_INVOICE")
   const date = tx.today()
-  const subtotalP = input.lines.reduce((s, l) => s + Math.round(l.qty * l.unitPriceP), 0)
+  const subtotalP = input.lines.reduce(
+    (s, l) => s + Math.round(l.qty * l.unitPriceP),
+    0
+  )
   const discountP = input.lines.reduce((s, l) => s + l.discountP, 0)
   const vatP = input.lines.reduce((s, l) => s + l.vatP, 0)
   const totalP = subtotalP - discountP + vatP
   const advance = Math.max(0, await partyAdvance(tx, party.id))
   const advanceAppliedP = Math.min(totalP, advance)
-  const invoiceNo = await nextDocNo(tx, "INV", { location: input.locationId, date })
+  const invoiceNo = await nextDocNo(tx, "INV", {
+    location: input.locationId,
+    date,
+  })
   const credit = input.kind === "credit" || input.kind === "consolidated"
   const dueDate = credit ? addDaysISO(date, party.paymentTermsDays) : date
 
@@ -180,7 +221,12 @@ export async function issueInvoiceTx(tx: Tx, input: IssueInput): Promise<SalesIn
   if (credit) {
     const check = creditCheck(party, await partyExposure(tx, party.id), 0)
     if (check.needsOverride) {
-      if (!input.inline) tx.reject("CREDIT_OVERRIDE_REQUIRED", { party: party.nameEn }, { audit: true })
+      if (!input.inline)
+        tx.reject(
+          "CREDIT_OVERRIDE_REQUIRED",
+          { party: party.nameEn },
+          { audit: true }
+        )
       const outcome = await requireApproval(tx, {
         kind: "credit-override",
         docType: "salesInvoices",
@@ -191,9 +237,19 @@ export async function issueInvoiceTx(tx: Tx, input: IssueInput): Promise<SalesIn
         reason: input.inline.reason,
         inline: input.inline,
       })
-      if (outcome.status !== "approved") tx.reject("CREDIT_OVERRIDE_REQUIRED", { party: party.nameEn })
-      invoice = await tx.update("salesInvoices", invoice.id, { creditOverrideApprovalId: outcome.approvalId })
-      tx.emit("CreditOverrideApproved", { refs: { partyId: party.id, invoiceId: invoice.id, approvalId: outcome.approvalId }, params: { party: party.nameEn } })
+      if (outcome.status !== "approved")
+        tx.reject("CREDIT_OVERRIDE_REQUIRED", { party: party.nameEn })
+      invoice = await tx.update("salesInvoices", invoice.id, {
+        creditOverrideApprovalId: outcome.approvalId,
+      })
+      tx.emit("CreditOverrideApproved", {
+        refs: {
+          partyId: party.id,
+          invoiceId: invoice.id,
+          approvalId: outcome.approvalId,
+        },
+        params: { party: party.nameEn },
+      })
     }
   }
 
@@ -211,26 +267,49 @@ export async function issueInvoiceTx(tx: Tx, input: IssueInput): Promise<SalesIn
   const journal = await postJournal(tx, {
     voucherType: RULE_VOUCHER.R6,
     date,
-    source: { app: "si", docType: "salesInvoices", docId: invoice.id, docNo: invoiceNo },
+    source: {
+      app: "si",
+      docType: "salesInvoices",
+      docId: invoice.id,
+      docNo: invoiceNo,
+    },
     narration: `Sales invoice ${invoiceNo}`,
     lines: linesForSalesInvoice({
       partyId: party.id,
       locationId: input.locationId,
-      lines: input.lines.map((l) => ({ revenueTag: l.revenueTag, grossP: Math.round(l.qty * l.unitPriceP), discountP: l.discountP, vatP: l.vatP })),
+      lines: input.lines.map((l) => ({
+        revenueTag: l.revenueTag,
+        grossP: Math.round(l.qty * l.unitPriceP),
+        discountP: l.discountP,
+        vatP: l.vatP,
+      })),
       advanceAppliedP,
     }),
     rule: "R6",
   })
-  invoice = await tx.update("salesInvoices", invoice.id, { journalId: journal.id, status: invoiceStatus(invoice) })
+  invoice = await tx.update("salesInvoices", invoice.id, {
+    journalId: journal.id,
+    status: invoiceStatus(invoice),
+  })
 
   // Counter goods without an order leave the studio shelf FEFO (R5).
   if (input.counterItems?.length) {
-    const ref = { docType: "salesInvoices", docId: invoice.id, docNo: invoiceNo }
+    const ref = {
+      docType: "salesInvoices",
+      docId: invoice.id,
+      docNo: invoiceNo,
+    }
     const valued: { itemId: Id; valueP: number }[] = []
     const moveIds: Id[] = []
     for (const c of input.counterItems) {
       const item = await tx.get("items", c.itemId)
-      const out = await issueStock(tx, { itemId: item.id, locationId: input.locationId, qtyBase: roundQty(c.qty * (item.salesFactor ?? 1)), type: "sale-delivery", ref })
+      const out = await issueStock(tx, {
+        itemId: item.id,
+        locationId: input.locationId,
+        qtyBase: roundQty(c.qty * (item.salesFactor ?? 1)),
+        type: "sale-delivery",
+        ref,
+      })
       valued.push({ itemId: item.id, valueP: out.valueP })
       moveIds.push(...out.moves.map((m) => m.moveId))
     }
@@ -240,10 +319,14 @@ export async function issueInvoiceTx(tx: Tx, input: IssueInput): Promise<SalesIn
         date,
         source: { app: "si", ...ref },
         narration: `Counter goods sold, ${invoiceNo}`,
-        lines: linesForRetailGoodsOut({ locationId: input.locationId, lines: valued.filter((v) => v.valueP > 0) }),
+        lines: linesForRetailGoodsOut({
+          locationId: input.locationId,
+          lines: valued.filter((v) => v.valueP > 0),
+        }),
         rule: "R5",
       })
-      for (const id of moveIds) await tx.update("stockMoves", id, { journalId: goods.id })
+      for (const id of moveIds)
+        await tx.update("stockMoves", id, { journalId: goods.id })
     }
   }
 
@@ -251,31 +334,36 @@ export async function issueInvoiceTx(tx: Tx, input: IssueInput): Promise<SalesIn
   const now = tx.now()
   for (const order of input.orders) {
     for (const line of await tx.list("salesOrderLines", "orderId", order.id)) {
-      if (line.status !== "cancelled") await tx.update("salesOrderLines", line.id, { qtyInvoiced: line.qty })
+      if (line.status !== "cancelled")
+        await tx.update("salesOrderLines", line.id, { qtyInvoiced: line.qty })
     }
-    await tx.update("salesOrders", order.id, { status: "invoiced", invoicedAt: now })
+    await tx.update("salesOrders", order.id, {
+      status: "invoiced",
+      invoicedAt: now,
+    })
   }
 
-  const kindEvent = input.kind === "consolidated" ? "ConsolidatedInvoiceIssued" : "InvoiceIssued"
+  const kindEvent =
+    input.kind === "consolidated"
+      ? "ConsolidatedInvoiceIssued"
+      : "InvoiceIssued"
   tx.emit(kindEvent, {
-    refs: { invoiceId: invoice.id, partyId: party.id, orderId: input.orders[0]?.id },
+    refs: {
+      invoiceId: invoice.id,
+      partyId: party.id,
+      orderId: input.orders[0]?.id,
+    },
     params: { no: invoiceNo, amount: totalP / 100 },
     locationId: input.locationId,
   })
   if (advanceAppliedP > 0) {
-    tx.emit("AdvanceApplied", { refs: { invoiceId: invoice.id, partyId: party.id }, params: { no: invoiceNo, amount: advanceAppliedP / 100 }, locationId: input.locationId })
+    tx.emit("AdvanceApplied", {
+      refs: { invoiceId: invoice.id, partyId: party.id },
+      params: { no: invoiceNo, amount: advanceAppliedP / 100 },
+      locationId: input.locationId,
+    })
   }
   return invoice
-}
-
-/** Close the invoice's orders once it is paid (no pending tender left). */
-export async function closeOrdersIfPaid(tx: Tx, invoiceId: Id) {
-  const invoice = await tx.get("salesInvoices", invoiceId)
-  if (invoice.status !== "paid" || invoice.reservedP > 0) return
-  for (const orderId of invoice.orderIds) {
-    const order = await tx.find("salesOrders", orderId)
-    if (order && order.status === "invoiced") await tx.update("salesOrders", order.id, { status: "closed", closedAt: tx.now() })
-  }
 }
 
 /* ================================================================== *
@@ -285,17 +373,25 @@ export async function closeOrdersIfPaid(tx: Tx, invoiceId: Id) {
 export type CreditRequest = { invoiceLineId: Id; qty?: number }
 
 /** Quantities already credited per invoice line (posted and pending credit notes). */
-export async function creditedQty(tx: Tx, invoiceId: Id): Promise<Map<Id, number>> {
+export async function creditedQty(
+  tx: Tx,
+  invoiceId: Id
+): Promise<Map<Id, number>> {
   const out = new Map<Id, number>()
   for (const cn of await tx.list("creditNotes", "invoiceId", invoiceId)) {
     if (cn.status === "rejected") continue
-    for (const l of cn.lines) out.set(l.invoiceLineId, (out.get(l.invoiceLineId) ?? 0) + (l.qty ?? 0))
+    for (const l of cn.lines)
+      out.set(l.invoiceLineId, (out.get(l.invoiceLineId) ?? 0) + (l.qty ?? 0))
   }
   return out
 }
 
 /** Credit note lines from the request: full lines exactly, partial quantities pro rata. */
-export async function creditLines(tx: Tx, invoice: SalesInvoiceRow, requests: CreditRequest[]): Promise<CreditNoteLine[]> {
+export async function creditLines(
+  tx: Tx,
+  invoice: SalesInvoiceRow,
+  requests: CreditRequest[]
+): Promise<CreditNoteLine[]> {
   const lines = await tx.list("salesInvoiceLines", "invoiceId", invoice.id)
   const done = await creditedQty(tx, invoice.id)
   const out: CreditNoteLine[] = []
@@ -304,15 +400,30 @@ export async function creditLines(tx: Tx, invoice: SalesInvoiceRow, requests: Cr
     if (!line) tx.reject("SI_CREDIT_LINE")
     const remaining = roundQty(line.qty - (done.get(line.id) ?? 0))
     const qty = req.qty ?? remaining
-    if (qty <= 0 || qty > remaining + 1e-9) tx.reject("SI_CREDIT_EXCEEDS", { line: line.descriptionEn, remaining })
+    if (qty <= 0 || qty > remaining + 1e-9)
+      tx.reject("SI_CREDIT_EXCEEDS", { line: line.descriptionEn, remaining })
     if (qty === line.qty) {
-      out.push({ invoiceLineId: line.id, qty, grossP: Math.round(line.qty * line.unitPriceP), discountP: line.discountP, netP: line.netP, vatP: line.vatP })
+      out.push({
+        invoiceLineId: line.id,
+        qty,
+        grossP: Math.round(line.qty * line.unitPriceP),
+        discountP: line.discountP,
+        netP: line.netP,
+        vatP: line.vatP,
+      })
       continue
     }
     const grossP = Math.round(qty * line.unitPriceP)
     const discountP = Math.round((line.discountP * qty) / line.qty)
     const netP = grossP - discountP
-    out.push({ invoiceLineId: line.id, qty, grossP, discountP, netP, vatP: percentOf(netP, line.vatRatePct) })
+    out.push({
+      invoiceLineId: line.id,
+      qty,
+      grossP,
+      discountP,
+      netP,
+      vatP: percentOf(netP, line.vatRatePct),
+    })
   }
   return out
 }
@@ -322,7 +433,11 @@ export async function creditLines(tx: Tx, invoice: SalesInvoiceRow, requests: Cr
  * AR up to the invoice's open amount (net of reservations), the rest to
  * customer advance; returned goods restocked at the studio's average cost.
  */
-export async function postCreditNote(tx: Tx, creditNoteId: Id, opts: { approvalId?: Id; preparedBy?: Id } = {}): Promise<CreditNoteRow> {
+export async function postCreditNote(
+  tx: Tx,
+  creditNoteId: Id,
+  opts: { approvalId?: Id; preparedBy?: Id } = {}
+): Promise<CreditNoteRow> {
   const cn = await tx.get("creditNotes", creditNoteId)
   const invoice = await tx.get("salesInvoices", cn.invoiceId)
   const invLines = await tx.list("salesInvoiceLines", "invoiceId", invoice.id)
@@ -339,9 +454,23 @@ export async function postCreditNote(tx: Tx, creditNoteId: Id, opts: { approvalI
       const item = await tx.get("items", line.itemId)
       const qtyBase = roundQty((l.qty ?? line.qty) * (item.salesFactor ?? 1))
       const held = await onHand(tx, item.id, cn.locationId)
-      const valueP = held.qtyBase > 0 ? Math.round((qtyBase * held.valueP) / held.qtyBase) : standardValue(item, qtyBase)
-      await receiveStock(tx, { itemId: item.id, locationId: cn.locationId, qtyBase, valueP, type: "return-customer", ref })
-      restock.push({ itemId: item.id, tag: await inventoryTagOf(tx, item), valueP })
+      const valueP =
+        held.qtyBase > 0
+          ? Math.round((qtyBase * held.valueP) / held.qtyBase)
+          : standardValue(item, qtyBase)
+      await receiveStock(tx, {
+        itemId: item.id,
+        locationId: cn.locationId,
+        qtyBase,
+        valueP,
+        type: "return-customer",
+        ref,
+      })
+      restock.push({
+        itemId: item.id,
+        tag: await inventoryTagOf(tx, item),
+        valueP,
+      })
     }
   }
 
@@ -355,7 +484,12 @@ export async function postCreditNote(tx: Tx, creditNoteId: Id, opts: { approvalI
       locationId: cn.locationId,
       lines: cn.lines.map((l) => {
         const line = invLines.find((x) => x.id === l.invoiceLineId)!
-        return { revenueTag: line.revenueTag, grossP: l.grossP, discountP: l.discountP, vatP: l.vatP }
+        return {
+          revenueTag: line.revenueTag,
+          grossP: l.grossP,
+          discountP: l.discountP,
+          vatP: l.vatP,
+        }
       }),
       toInvoiceP,
       toAdvanceP,
@@ -366,7 +500,11 @@ export async function postCreditNote(tx: Tx, creditNoteId: Id, opts: { approvalI
     approvalId: opts.approvalId,
   })
   const next = { ...invoice, creditedP: invoice.creditedP + toInvoiceP }
-  await tx.update("salesInvoices", invoice.id, { creditedP: next.creditedP, status: invoiceStatus(next) })
+  await tx.update("salesInvoices", invoice.id, {
+    creditedP: next.creditedP,
+    status: invoiceStatus(next),
+  })
+  await closeOrdersIfPaid(tx, invoice.id)
   const posted = await tx.update("creditNotes", cn.id, {
     status: "posted",
     journalId: journal.id,

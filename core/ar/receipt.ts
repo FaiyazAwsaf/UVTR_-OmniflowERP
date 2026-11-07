@@ -31,7 +31,12 @@ import {
  */
 
 /** An invoice's open amount: total − advance applied − paid − credited (plan §5.5). */
-export function invoiceOpen(inv: Pick<SalesInvoiceRow, "totalP" | "advanceAppliedP" | "paidP" | "creditedP">): Poisha {
+export function invoiceOpen(
+  inv: Pick<
+    SalesInvoiceRow,
+    "totalP" | "advanceAppliedP" | "paidP" | "creditedP"
+  >
+): Poisha {
   return inv.totalP - inv.advanceAppliedP - inv.paidP - inv.creditedP
 }
 
@@ -41,15 +46,32 @@ export function invoiceAvailable(inv: SalesInvoiceRow): Poisha {
 }
 
 /** Invoice status from its amounts. */
-export function invoiceStatus(inv: Pick<SalesInvoiceRow, "totalP" | "advanceAppliedP" | "paidP" | "creditedP">): SalesInvoiceRow["status"] {
+export function invoiceStatus(
+  inv: Pick<
+    SalesInvoiceRow,
+    "totalP" | "advanceAppliedP" | "paidP" | "creditedP"
+  >
+): SalesInvoiceRow["status"] {
   const open = invoiceOpen(inv)
-  if (open > 0) return inv.paidP + inv.advanceAppliedP + inv.creditedP > 0 ? "partially-paid" : "posted"
-  if (inv.creditedP > 0 && inv.paidP === 0 && inv.creditedP >= inv.totalP - inv.advanceAppliedP) return "credited"
+  if (open > 0)
+    return inv.paidP + inv.advanceAppliedP + inv.creditedP > 0
+      ? "partially-paid"
+      : "posted"
+  if (
+    inv.creditedP > 0 &&
+    inv.paidP === 0 &&
+    inv.creditedP >= inv.totalP - inv.advanceAppliedP
+  )
+    return "credited"
   return "paid"
 }
 
 /** The default cash/bank account for a method at a location. */
-export async function cashAccountFor(tx: Tx, method: ReceiptMethod, locationId: Id): Promise<CashBankAccountRow> {
+export async function cashAccountFor(
+  tx: Tx,
+  method: ReceiptMethod,
+  locationId: Id
+): Promise<CashBankAccountRow> {
   const location = await tx.get("locations", locationId)
   let tag: AccountTag
   switch (method) {
@@ -104,7 +126,11 @@ export type ReceiptInput = {
   rule?: Extract<RuleCode, "R3" | "R7" | "R8">
 }
 
-async function applyToInvoices(tx: Tx, allocations: Allocation[], mode: "paid" | "reserve" | "release" | "post-reserved") {
+async function applyToInvoices(
+  tx: Tx,
+  allocations: Allocation[],
+  mode: "paid" | "reserve" | "release" | "post-reserved"
+) {
   for (const a of allocations) {
     const inv = await tx.get("salesInvoices", a.invoiceId)
     let { paidP, reservedP } = inv
@@ -116,7 +142,30 @@ async function applyToInvoices(tx: Tx, allocations: Allocation[], mode: "paid" |
       paidP += a.amountP
     }
     const next = { ...inv, paidP, reservedP }
-    await tx.update("salesInvoices", inv.id, { paidP, reservedP, status: invoiceStatus(next) })
+    await tx.update("salesInvoices", inv.id, {
+      paidP,
+      reservedP,
+      status: invoiceStatus(next),
+    })
+    await closeOrdersIfPaid(tx, inv.id)
+  }
+}
+
+/**
+ * Close the invoice's orders once it is paid with no pending tender left
+ * (plan §6.1 invoiced → paid → closed), whichever path paid it: the counter,
+ * an AR receipt, a confirmed MFS push or a cleared cheque.
+ */
+export async function closeOrdersIfPaid(tx: Tx, invoiceId: Id) {
+  const invoice = await tx.get("salesInvoices", invoiceId)
+  if (invoice.status !== "paid" || invoice.reservedP > 0) return
+  for (const orderId of invoice.orderIds) {
+    const order = await tx.find("salesOrders", orderId)
+    if (order && order.status === "invoiced")
+      await tx.update("salesOrders", order.id, {
+        status: "closed",
+        closedAt: tx.now(),
+      })
   }
 }
 
@@ -124,7 +173,12 @@ function postRule(rule: RuleCode, receipt: ReceiptRow, cashTag: AccountTag) {
   const allocatedP = receipt.allocations.reduce((s, a) => s + a.amountP, 0)
   switch (rule) {
     case "R3":
-      return linesForDeposit({ cashTag, amountP: receipt.amountP, partyId: receipt.partyId, locationId: receipt.locationId })
+      return linesForDeposit({
+        cashTag,
+        amountP: receipt.amountP,
+        partyId: receipt.partyId,
+        locationId: receipt.locationId,
+      })
     case "R7":
       return linesForCounterTenders({
         partyId: receipt.partyId,
@@ -169,7 +223,10 @@ function postRule(rule: RuleCode, receipt: ReceiptRow, cashTag: AccountTag) {
  * Create a receipt in the current commit. Validates allocations against what
  * is available (INV-09), numbers it MR-<LOC>-<FY>-<6>, and posts or reserves.
  */
-export async function createReceipt(tx: Tx, input: ReceiptInput): Promise<ReceiptRow> {
+export async function createReceipt(
+  tx: Tx,
+  input: ReceiptInput
+): Promise<ReceiptRow> {
   const date = input.date ?? tx.today()
   const vds = input.vdsDeductedP ?? 0
   const ait = input.aitDeductedP ?? 0
@@ -179,8 +236,10 @@ export async function createReceipt(tx: Tx, input: ReceiptInput): Promise<Receip
   if (advanceP < 0) tx.reject("OVER_ALLOCATION", { doc: "receipt" })
   for (const a of input.allocations) {
     const inv = await tx.get("salesInvoices", a.invoiceId)
-    if (inv.partyId !== input.partyId) tx.reject("OVER_ALLOCATION", { doc: inv.invoiceNo })
-    if (a.amountP > invoiceAvailable(inv)) tx.reject("OVER_ALLOCATION", { doc: inv.invoiceNo })
+    if (inv.partyId !== input.partyId)
+      tx.reject("OVER_ALLOCATION", { doc: inv.invoiceNo })
+    if (a.amountP > invoiceAvailable(inv))
+      tx.reject("OVER_ALLOCATION", { doc: inv.invoiceNo })
   }
 
   const account = input.cashBankAccountId
@@ -190,9 +249,13 @@ export async function createReceipt(tx: Tx, input: ReceiptInput): Promise<Receip
     input.method === "cash" ||
     input.method === "card" ||
     input.method === "bank-transfer" ||
-    ((input.method === "bkash" || input.method === "nagad") && input.confirmed === true)
+    ((input.method === "bkash" || input.method === "nagad") &&
+      input.confirmed === true)
 
-  const receiptNo = await nextDocNo(tx, "MR", { location: input.locationId, date })
+  const receiptNo = await nextDocNo(tx, "MR", {
+    location: input.locationId,
+    date,
+  })
   let receipt = tx.insert("receipts", {
     receiptNo,
     locationId: input.locationId,
@@ -218,7 +281,10 @@ export async function createReceipt(tx: Tx, input: ReceiptInput): Promise<Receip
 
   if (input.method === "cheque") {
     if (!input.cheque) tx.reject("CHEQUE_DETAILS_REQUIRED")
-    const dup = await tx.list("cheques", "[cashBankAccountId+chequeNo]", [account.id, input.cheque.chequeNo])
+    const dup = await tx.list("cheques", "[cashBankAccountId+chequeNo]", [
+      account.id,
+      input.cheque.chequeNo,
+    ])
     if (dup.length) tx.reject("DUPLICATE_CHEQUE", { no: input.cheque.chequeNo })
     const cheque = tx.insert("cheques", {
       direction: "received",
@@ -238,11 +304,17 @@ export async function createReceipt(tx: Tx, input: ReceiptInput): Promise<Receip
   }
 
   if (final) {
-    const rule = input.rule ?? (input.orderId && !input.allocations.length ? "R3" : "R8")
+    const rule =
+      input.rule ?? (input.orderId && !input.allocations.length ? "R3" : "R8")
     const journal = await postJournal(tx, {
       voucherType: RULE_VOUCHER[rule],
       date,
-      source: { app: "ar", docType: "receipts", docId: receipt.id, docNo: receiptNo },
+      source: {
+        app: "ar",
+        docType: "receipts",
+        docId: receipt.id,
+        docNo: receiptNo,
+      },
       narration: `Receipt ${receiptNo}`,
       lines: postRule(rule, receipt, account.accountTag),
       rule,
@@ -265,19 +337,28 @@ export async function postPendingReceipt(
   opts: { rule: "R9" | "R10"; date?: ISODate }
 ): Promise<ReceiptRow> {
   const receipt = await tx.get("receipts", receiptId)
-  if (receipt.status !== "pending") tx.reject("RECEIPT_NOT_PENDING", { no: receipt.receiptNo })
+  if (receipt.status !== "pending")
+    tx.reject("RECEIPT_NOT_PENDING", { no: receipt.receiptNo })
   const account = await tx.get("cashBankAccounts", receipt.cashBankAccountId)
   const date = opts.date ?? tx.today()
   const journal = await postJournal(tx, {
     voucherType: RULE_VOUCHER[opts.rule],
     date,
-    source: { app: "ar", docType: "receipts", docId: receipt.id, docNo: receipt.receiptNo },
+    source: {
+      app: "ar",
+      docType: "receipts",
+      docId: receipt.id,
+      docNo: receipt.receiptNo,
+    },
     narration: `Receipt ${receipt.receiptNo}`,
     lines: postRule(opts.rule, receipt, account.accountTag),
     rule: opts.rule,
   })
   await applyToInvoices(tx, receipt.allocations, "post-reserved")
-  return tx.update("receipts", receipt.id, { status: "posted", journalId: journal.id })
+  return tx.update("receipts", receipt.id, {
+    status: "posted",
+    journalId: journal.id,
+  })
 }
 
 /** Release a pending receipt (MFS timeout, cheque bounce): nothing posts; reservations freed. */
@@ -287,7 +368,8 @@ export async function releasePendingReceipt(
   status: "timed-out" | "bounced" | "returned"
 ): Promise<ReceiptRow> {
   const receipt = await tx.get("receipts", receiptId)
-  if (receipt.status !== "pending") tx.reject("RECEIPT_NOT_PENDING", { no: receipt.receiptNo })
+  if (receipt.status !== "pending")
+    tx.reject("RECEIPT_NOT_PENDING", { no: receipt.receiptNo })
   await applyToInvoices(tx, receipt.allocations, "release")
   return tx.update("receipts", receipt.id, { status })
 }
