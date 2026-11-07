@@ -22,7 +22,7 @@ import { useFlashOnChange } from "@/hooks/use-flash-on-change"
 import { useLocale } from "@/lib/i18n/provider"
 import { cn } from "@/lib/utils"
 
-import { useMonthLabel, useToday } from "../queries"
+import { useLiveFlash, useMonthLabel, useToday } from "../queries"
 import { BalanceCheck } from "./common"
 
 /**
@@ -65,7 +65,7 @@ export function FaHome() {
     }
   }, [db, today, month])
 
-  const flash = useFlashOnChange(data?.tb.totalDebitP)
+  const flash = useLiveFlash(data?.tb.totalDebitP)
   const postedToday = data?.postedThisMonth.filter((j) => j.date === today).length ?? 0
   const tbBalanced = data ? data.tb.balanced : true
 

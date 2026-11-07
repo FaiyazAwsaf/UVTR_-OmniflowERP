@@ -24,7 +24,7 @@ import { ApprovalChip } from "@/components/shared/approval-chip"
 import { DateField } from "@/components/shared/date-field"
 import { DateText } from "@/components/shared/date-text"
 import { DocLink } from "@/components/shared/doc-link"
-import { DocStatus } from "@/components/shared/doc-status"
+import { DocStatus, useStatusLabel } from "@/components/shared/doc-status"
 import { EmptyState } from "@/components/shared/empty-state"
 import { KeyValueGrid } from "@/components/shared/key-value"
 import { MoneyText } from "@/components/shared/money-text"
@@ -67,6 +67,7 @@ function reversible(journal: JournalRow): boolean {
 export function VoucherPage({ id }: { id: string }) {
   const db = useDb()
   const { t, tk, money, dmy, locale } = useLocale()
+  const statusLabel = useStatusLabel()
   const { user, security, can } = usePermissions()
   const users = useUserMap()
   const data = useLiveQuery(async () => {
@@ -308,7 +309,7 @@ export function VoucherPage({ id }: { id: string }) {
                       <span className="font-medium">{tk(`fa.voucher.auditAction.${row.action}`)}</span>{" "}
                       <span className="text-muted-foreground">
                         {userName(users.get(row.actor.userId), locale) || row.actor.name}
-                        {row.after && "status" in row.after ? ` · ${String(row.after.status)}` : ""}
+                        {row.after && "status" in row.after ? ` · ${statusLabel(String(row.after.status))}` : ""}
                         {row.reason ? ` · ${row.reason}` : ""}
                       </span>
                     </span>

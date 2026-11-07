@@ -80,3 +80,26 @@ export function useMonthLabel(date: (value: string, options?: Intl.DateTimeForma
     [date]
   )
 }
+
+/**
+ * "flash-sync" for about 1.2 s when a live figure changes after it first
+ * loaded (ui_guidelines.md §5): a commit in another window tints it, the
+ * first load does not.
+ */
+export function useLiveFlash(value: unknown): string {
+  const [flash, setFlash] = React.useState(false)
+  const previous = React.useRef<unknown>(undefined)
+  React.useEffect(() => {
+    if (value === undefined) return
+    const before = previous.current
+    previous.current = value
+    if (before === undefined || Object.is(before, value)) return
+    const on = window.setTimeout(() => setFlash(true), 0)
+    const off = window.setTimeout(() => setFlash(false), 1200)
+    return () => {
+      window.clearTimeout(on)
+      window.clearTimeout(off)
+    }
+  }, [value])
+  return flash ? "flash-sync" : ""
+}

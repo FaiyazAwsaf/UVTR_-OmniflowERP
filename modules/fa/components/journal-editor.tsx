@@ -254,9 +254,9 @@ export function JournalEditor({ journal }: { journal?: JournalRow }) {
             <li
               key={line.key}
               data-testid="journal-line"
-              className="grid grid-cols-2 gap-2 rounded-md border border-hairline p-2 @[56rem]:grid-cols-[minmax(13rem,2fr)_minmax(10rem,1.4fr)_9.5rem_9rem_9rem_2.25rem] @[56rem]:border-0 @[56rem]:p-0"
+              className="relative grid grid-cols-2 gap-2 rounded-md border border-hairline p-2 @[56rem]:grid-cols-[minmax(13rem,2fr)_minmax(10rem,1.4fr)_9.5rem_9rem_9rem_2.25rem] @[56rem]:border-0 @[56rem]:p-0"
             >
-              <div className="col-span-2 @[56rem]:col-span-1">
+              <div className="col-span-2 pr-10 @[56rem]:col-span-1 @[56rem]:pr-0">
                 <AccountPicker
                   value={line.account}
                   onChange={(id) => update(line.key, { account: id })}
@@ -315,7 +315,7 @@ export function JournalEditor({ journal }: { journal?: JournalRow }) {
               <Button
                 variant="ghost"
                 size="icon-sm"
-                className="self-center justify-self-end text-muted-foreground hover:text-destructive"
+                className="absolute top-3 right-2 text-muted-foreground hover:text-destructive @[56rem]:static @[56rem]:self-center @[56rem]:justify-self-end"
                 aria-label={t("fa.editor.removeLine")}
                 disabled={lines.length <= 2}
                 onClick={() => {

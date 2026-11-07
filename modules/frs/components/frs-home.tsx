@@ -27,11 +27,10 @@ import { addDaysISO } from "@/core/clock/dates"
 import { useDb } from "@/core/db/DbProvider"
 import type { AccountTag } from "@/core/db/schema"
 import { balanceSheet, cashFlow, profitAndLoss, trialBalance } from "@/core/ledger/statements"
-import { useFlashOnChange } from "@/hooks/use-flash-on-change"
 import { useLocale } from "@/lib/i18n/provider"
 import { cn } from "@/lib/utils"
 import { BalanceCheck } from "@/modules/fa/components/common"
-import { useMonthLabel, useToday } from "@/modules/fa/queries"
+import { useLiveFlash, useMonthLabel, useToday } from "@/modules/fa/queries"
 
 import { loadBooks, loadVatMonth } from "../queries"
 import { depositDue, dueDateOf, type TaxKind } from "../vat"
@@ -87,7 +86,7 @@ export function FrsHome() {
     return { pl, tb, bs, cf, cash, vatPayable, figures, vatReturn, deposits }
   }, [db, today, month, lastMonth, ready])
 
-  const flash = useFlashOnChange(data?.tb.totalDebitP)
+  const flash = useLiveFlash(data?.tb.totalDebitP)
   const margin = data && data.pl.netRevenueP ? (data.pl.profitBeforeTaxP / data.pl.netRevenueP) * 100 : 0
   const due = lastMonth ? dueDateOf(lastMonth) : ""
   const overdue = !!due && today > due
@@ -189,10 +188,12 @@ export function FrsHome() {
 
         <SectionCard
           title={t("frs.home.taxCalendar")}
-          subtitle={lastMonth ? t("frs.home.taxCalendarHint", { month: monthLabel(lastMonth), date: dmy(due) }) : undefined}
           icon={CalendarClock}
           size="sm"
         >
+          {lastMonth ? (
+            <p className="text-xs text-muted-foreground">{t("frs.home.taxCalendarHint", { month: monthLabel(lastMonth), date: dmy(due) })}</p>
+          ) : null}
           <ul className="flex flex-col" data-testid="tax-calendar">
             <li className="flex items-start justify-between gap-3 border-b border-hairline py-2.5" data-testid="tax-calendar-vat">
               <span className="flex min-w-0 flex-col">
