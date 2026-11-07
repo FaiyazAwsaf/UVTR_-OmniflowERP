@@ -246,6 +246,8 @@ export const stlEn = {
       ok: "Enough",
       requestTransfer: "Request transfer",
       requestHint: "{qty} from Central Store",
+      show: "Show the {count} items",
+      hide: "Hide the items",
     },
     scenarios: {
       e1: {

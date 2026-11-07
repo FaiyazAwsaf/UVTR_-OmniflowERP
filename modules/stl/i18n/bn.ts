@@ -248,6 +248,8 @@ export const stlBn: typeof stlEn = {
       ok: "যথেষ্ট",
       requestTransfer: "স্থানান্তরের অনুরোধ",
       requestHint: "সেন্ট্রাল স্টোর থেকে {qty}",
+      show: "{count}টি পণ্য দেখুন",
+      hide: "পণ্যগুলো লুকান",
     },
     scenarios: {
       e1: {
