@@ -22,10 +22,30 @@ export function parseTaka(text: string): number | null {
  * value in and out as integer poisha. Typing accepts Latin or Bangla digits;
  * on blur the amount is shown grouped (lakh/crore) in the window's numerals.
  */
+/**
+ * When focus swaps the shown text (formatted to raw), the browser drops the
+ * selection; select the whole value again right after that render so typing
+ * (or an automated fill) replaces it instead of appending to it.
+ */
+function useSelectOnFocusSwap(outer: React.Ref<HTMLInputElement> | undefined) {
+  const node = React.useRef<HTMLInputElement | null>(null)
+  const pending = React.useRef(false)
+  React.useLayoutEffect(() => {
+    if (!pending.current) return
+    pending.current = false
+    if (node.current && document.activeElement === node.current) node.current.select()
+  })
+  React.useImperativeHandle(outer, () => node.current as HTMLInputElement, [])
+  return { ref: node, markSwap: () => (pending.current = true) }
+}
+
 export function MoneyInput({
   valueP,
   onChange,
   className,
+  ref: outerRef,
+  onFocus,
+  onBlur,
   ...props
 }: {
   valueP: number | null
@@ -38,16 +58,25 @@ export function MoneyInput({
   )
   // While focused the raw typed text is kept; otherwise the formatted value shows.
   const [editing, setEditing] = React.useState<string | null>(null)
+  const { ref, markSwap } = useSelectOnFocusSwap(outerRef)
   const text = editing ?? format(valueP)
   return (
     <div className={cn("relative", className)}>
       <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm text-muted-foreground">৳</span>
       <Input
+        ref={ref}
         inputMode="decimal"
         value={text}
         placeholder={t("shared.money.placeholder")}
-        onFocus={() => setEditing(valueP === null ? "" : String(valueP / 100))}
-        onBlur={() => setEditing(null)}
+        onFocus={(e) => {
+          markSwap()
+          setEditing(valueP === null ? "" : String(valueP / 100))
+          onFocus?.(e)
+        }}
+        onBlur={(e) => {
+          setEditing(null)
+          onBlur?.(e)
+        }}
         onChange={(e) => {
           setEditing(e.target.value)
           onChange(parseTaka(e.target.value))
@@ -66,6 +95,7 @@ export function QtyInput({
   unit,
   step = 1,
   className,
+  onBlur,
   ...props
 }: {
   value: number | null
@@ -81,7 +111,10 @@ export function QtyInput({
         inputMode="decimal"
         value={text}
         data-step={step}
-        onBlur={() => setEditing(null)}
+        onBlur={(e) => {
+          setEditing(null)
+          onBlur?.(e)
+        }}
         onChange={(e) => {
           setEditing(e.target.value)
           const clean = latinDigits(e.target.value).replace(/[,\s]/g, "")

@@ -11,6 +11,10 @@ export const SMS_TEMPLATES = {
     en: "{tenant}: Booking {orderNo} confirmed for {date} at {time}. Deposit {amount} received. Help: {helpline}",
     bn: "{tenant}: বুকিং {orderNo} নিশ্চিত, {date} তারিখ {time}। অগ্রিম {amount} গ্রহণ করা হয়েছে। সহায়তা: {helpline}",
   },
+  "booking-booked": {
+    en: "{tenant}: Booking {orderNo} confirmed for {date} at {time}. Help: {helpline}",
+    bn: "{tenant}: বুকিং {orderNo} নিশ্চিত, {date} তারিখ {time}। সহায়তা: {helpline}",
+  },
   "vehicle-ready": {
     en: "{tenant}: Your vehicle for order {orderNo} is ready for collection. Help: {helpline}",
     bn: "{tenant}: অর্ডার {orderNo}-এর আপনার গাড়ি সংগ্রহের জন্য প্রস্তুত। সহায়তা: {helpline}",

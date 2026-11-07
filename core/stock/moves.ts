@@ -314,9 +314,10 @@ export async function watchReorder(tx: Tx, item: ItemRow, locationId: Id, before
   const [rule] = await tx.list("reorderRules", "[itemId+locationId]", [item.id, locationId])
   if (!rule) return
   if (before > rule.minQty && after <= rule.minQty) {
+    const location = await tx.find("locations", locationId)
     tx.emit("StockBelowReorder", {
       refs: { itemId: item.id, locationId },
-      params: { sku: item.sku, location: locationId, qty: roundQty(after), min: rule.minQty },
+      params: { sku: item.sku, location: location?.code ?? locationId, qty: roundQty(after), min: rule.minQty },
       locationId,
     })
   }
