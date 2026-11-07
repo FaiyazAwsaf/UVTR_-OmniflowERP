@@ -245,7 +245,8 @@ export const updateCheque = defineCommand({
   permission: "cab.cheque.update",
   input: z.object({
     chequeId: z.string(),
-    action: z.enum(["deposit", "clear", "bounce", "present"]),
+    /** return: a received cheque still in hand given back to the customer (a reason is required; nothing posts) */
+    action: z.enum(["deposit", "clear", "bounce", "present", "return"]),
     expectedVersion: z.number().int().optional(),
     /** The status the user acted on; a background touch (the PDC notice) is not a conflict */
     expectedStatus: z.enum(["in-hand", "deposited", "cleared", "bounced", "issued", "presented", "cancelled"]).optional(),
@@ -263,7 +264,11 @@ export const updateCheque = defineCommand({
     let status: ChequeRow["status"] = cheque.status
     if (cheque.direction === "received") {
       if (input.action === "present") tx.reject("CHEQUE_STATUS", { no: cheque.chequeNo, status: cheque.status })
-      if (input.action === "deposit") {
+      if (input.action === "return") {
+        status = move(["in-hand"], "cancelled")
+        if (input.reason.length < 3) tx.reject("CHEQUE_RETURN_REASON", { no: cheque.chequeNo })
+        if (cheque.receiptId) await releasePendingReceipt(tx, cheque.receiptId, "returned")
+      } else if (input.action === "deposit") {
         status = move(["in-hand"], "deposited")
         if (cheque.chequeDate > today) tx.reject("PDC_NOT_DUE", { no: cheque.chequeNo, date: cheque.chequeDate })
       } else if (input.action === "clear") {
@@ -286,6 +291,7 @@ export const updateCheque = defineCommand({
         }
       }
     } else {
+      if (input.action === "return") tx.reject("CHEQUE_STATUS", { no: cheque.chequeNo, status: cheque.status })
       if (input.action === "present") status = move(["issued"], "presented")
       else if (input.action === "clear") status = move(["presented"], "cleared")
       else tx.reject("CHEQUE_STATUS", { no: cheque.chequeNo, status: cheque.status })
@@ -295,7 +301,14 @@ export const updateCheque = defineCommand({
       history: [...cheque.history, { status, at: tx.now(), by: tx.actor.userId }],
     })
     if (input.reason) tx.auditContext({ reason: input.reason })
-    const event = status === "deposited" || status === "presented" ? "ChequeDeposited" : status === "cleared" ? "ChequeCleared" : "ChequeBounced"
+    const event =
+      status === "deposited" || status === "presented"
+        ? "ChequeDeposited"
+        : status === "cleared"
+          ? "ChequeCleared"
+          : status === "cancelled"
+            ? "ChequeReturned"
+            : "ChequeBounced"
     tx.emit(event, {
       refs: { chequeId: cheque.id, partyId: party.id, ...(cheque.receiptId ? { receiptId: cheque.receiptId } : {}), ...(cheque.paymentId ? { paymentId: cheque.paymentId } : {}) },
       params: { no: cheque.chequeNo, amount: taka(cheque.amountP), party: party.nameEn },

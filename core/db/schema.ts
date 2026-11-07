@@ -934,7 +934,8 @@ export type ReceiptRow = BaseRow & {
   amountP: Poisha
   ref?: string
   chequeId?: Id
-  status: "pending" | "posted" | "timed-out" | "bounced"
+  /** returned: a cheque still in hand given back to the customer before it was deposited */
+  status: "pending" | "posted" | "timed-out" | "bounced" | "returned"
   allocations: Allocation[]
   /** Unallocated, held as customer advance */
   advanceP: Poisha

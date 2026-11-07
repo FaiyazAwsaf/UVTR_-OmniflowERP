@@ -26,6 +26,12 @@ export const cabEvents: EventCatalog = {
     consumers: ["consumers.gl", "consumers.ar", "consumers.ap"],
     severity: "success",
   },
+  ChequeReturned: {
+    module: "cab",
+    labelKey: "cab.events.ChequeReturned",
+    consumers: ["consumers.ar"],
+    severity: "info",
+  },
   ChequeBounced: {
     module: "cab",
     labelKey: "cab.events.ChequeBounced",

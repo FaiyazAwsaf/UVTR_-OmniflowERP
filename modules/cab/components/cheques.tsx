@@ -46,6 +46,7 @@ export function Cheques() {
   const [status, setStatus] = React.useState("")
   const [query, setQuery] = React.useState("")
   const [bouncing, setBouncing] = React.useState<ChequeRow | null>(null)
+  const [returning, setReturning] = React.useState<ChequeRow | null>(null)
 
   const data = useLiveQuery(async () => {
     // Cheques sit on Head Office's bank accounts: own-location roles do not list them.
@@ -77,10 +78,11 @@ export function Cheques() {
     return list.sort((a, b) => rank(a) - rank(b))
   })()
 
-  const act = async (c: ChequeRow, action: "deposit" | "clear" | "bounce" | "present", reason = "") => {
+  const act = async (c: ChequeRow, action: "deposit" | "clear" | "bounce" | "present" | "return", reason = "") => {
     const r = await update.run({ chequeId: c.id, action, expectedStatus: c.status, reason })
     if (r) {
-      const key = action === "deposit" ? "deposited" : action === "clear" ? "cleared" : action === "bounce" ? "bounced" : "presented"
+      const key =
+        action === "deposit" ? "deposited" : action === "clear" ? "cleared" : action === "bounce" ? "bounced" : action === "return" ? "returned" : "presented"
       toast.success(tk(`cab.cheques.${key}`, { no: c.chequeNo }))
     }
   }
@@ -120,6 +122,7 @@ export function Cheques() {
       if (c.status === "in-hand") {
         out.push(due ? btn(t("cab.cheques.deposit"), `${prefix}-deposit`, () => act(c, "deposit")) : <span key="due" className="text-xs text-muted-foreground">{t("cab.cheques.notDue", { date: dmy(c.chequeDate) })}</span>)
         out.push(btn(t("cab.cheques.bounce"), `${prefix}-bounce`, () => setBouncing(c), { destructive: true }))
+        out.push(btn(t("cab.cheques.return"), `${prefix}-return`, () => setReturning(c)))
       } else if (c.status === "deposited") {
         out.push(btn(t("cab.cheques.clear"), `${prefix}-clear`, () => act(c, "clear")))
         out.push(btn(t("cab.cheques.bounce"), `${prefix}-bounce`, () => setBouncing(c), { destructive: true }))
@@ -238,7 +241,7 @@ export function Cheques() {
             placeholder={t("cab.cheques.statusAll")}
             className="w-40"
             ariaLabel={t("cab.cheques.colStatus")}
-            options={(dir === "received" ? ["in-hand", "deposited", "cleared", "bounced"] : ["issued", "presented", "cleared"]).map((s) => ({ value: s, label: tk(`shared.status.${s}`) }))}
+            options={(dir === "received" ? ["in-hand", "deposited", "cleared", "bounced", "cancelled"] : ["issued", "presented", "cleared"]).map((s) => ({ value: s, label: tk(`shared.status.${s}`) }))}
           />
           <span className="ml-auto text-xs text-muted-foreground">{t("cab.cheques.count", { count: num(rows.length) })}</span>
         </div>
@@ -265,6 +268,20 @@ export function Cheques() {
           if (!bouncing) return
           await act(bouncing, "bounce", reason)
           setBouncing(null)
+        }}
+      />
+      <ReasonDialog
+        open={!!returning}
+        onOpenChange={(o) => !o && setReturning(null)}
+        title={t("cab.cheques.returnTitle", { no: returning?.chequeNo ?? "" })}
+        body={t("cab.cheques.returnBody")}
+        confirmLabel={t("cab.cheques.return")}
+        pending={update.pending}
+        testId="return-dialog"
+        onConfirm={async (reason) => {
+          if (!returning) return
+          await act(returning, "return", reason)
+          setReturning(null)
         }}
       />
     </div>

@@ -284,7 +284,7 @@ export async function postPendingReceipt(
 export async function releasePendingReceipt(
   tx: Tx,
   receiptId: Id,
-  status: "timed-out" | "bounced"
+  status: "timed-out" | "bounced" | "returned"
 ): Promise<ReceiptRow> {
   const receipt = await tx.get("receipts", receiptId)
   if (receipt.status !== "pending") tx.reject("RECEIPT_NOT_PENDING", { no: receipt.receiptNo })

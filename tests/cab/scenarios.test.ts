@@ -8,7 +8,7 @@ import { trialBalance } from "@/core/ledger/statements"
 import { lastMonth } from "@/core/scenarios/helpers"
 import { runScenario } from "@/core/scenarios/runner"
 import { seedDatabase } from "@/core/seed"
-import { CBA, PTY } from "@/core/seed/content/seed-refs"
+import { CBA, PLANT, PTY } from "@/core/seed/content/seed-refs"
 import { dhakaAt, isoWeekday } from "@/core/seed/time"
 import { invoiceAvailableP } from "@/modules/ar/lib"
 import { loadAging } from "@/modules/ar/queries"
@@ -163,11 +163,38 @@ describe("E8 post-dated cheque bounce launcher", () => {
     }
   }, 60_000)
 
-  it("still sets up when earlier cheques are left in hand, and each new cheque still bounces", async () => {
+  it("returns earlier cheques left in hand (and the planted one), so each new cheque reserves an invoice and bounces", async () => {
     const first = await runScenario(E8, db)
+    expect((await db.cheques.get(PLANT.e8Cheque))?.status).not.toBe("in-hand")
     const second = await runScenario(E8, db)
     expect(second.outcome.params!.chequeNo).not.toBe(first.outcome.params!.chequeNo)
-    await depositAndBounce(second.outcome.refs!.chequeId!, second.outcome.params!, second.outcome.refs!.invoiceId)
+    // The first run's untouched cheque went back to Metro: its reservation is released, nothing posted.
+    const earlier = (await db.cheques.get(first.outcome.refs!.chequeId!))!
+    expect(earlier.status).toBe("cancelled")
+    expect((await db.receipts.get(earlier.receiptId!))?.status).toBe("returned")
+    for (let i = 0; i < 3; i++) {
+      const again = await runScenario(E8, db)
+      expect(again.outcome.refs!.invoiceId).toBeTruthy()
+      expect(again.outcome.params!.invoiceNo).not.toBe("-")
+    }
+    const last = await runScenario(E8, db)
+    await depositAndBounce(last.outcome.refs!.chequeId!, last.outcome.params!, last.outcome.refs!.invoiceId)
+    await ties()
+  }, 90_000)
+
+  it("a cheque still in hand goes back to the customer with a reason; nothing posts and its invoice is open again", async () => {
+    const launch = await runScenario(E8, db)
+    const chequeId = launch.outcome.refs!.chequeId!
+    const invoiceId = launch.outcome.refs!.invoiceId!
+    const before = (await db.salesInvoices.get(invoiceId))!
+    await expect(run(db, updateCheque, { chequeId, action: "return", expectedStatus: "in-hand" }, mahbub)).rejects.toMatchObject({ code: "CHEQUE_RETURN_REASON" })
+    const journals = await db.journals.count()
+    await run(db, updateCheque, { chequeId, action: "return", expectedStatus: "in-hand", reason: "Customer replaces it with a bank transfer" }, mahbub)
+    expect(await db.journals.count()).toBe(journals)
+    expect((await db.cheques.get(chequeId))?.status).toBe("cancelled")
+    const after = (await db.salesInvoices.get(invoiceId))!
+    expect(invoiceAvailableP(after)).toBe(invoiceAvailableP(before) + Number(launch.outcome.params!.reservedP))
+    expect((await db.events.where("type").equals("ChequeReturned").count())).toBeGreaterThan(0)
     await ties()
   }, 60_000)
 })

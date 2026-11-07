@@ -2,9 +2,9 @@ import { addDaysISO } from "@/core/clock/dates"
 import type { OmniflowDb } from "@/core/db/database"
 import type { Id, ISODate, SalesInvoiceRow } from "@/core/db/schema"
 import { readSetting } from "@/core/db/settings"
-import { lastMonth } from "@/core/scenarios/helpers"
+import { lastMonth, previousRuns } from "@/core/scenarios/helpers"
 import type { ScenarioDef } from "@/core/scenarios/types"
-import { CBA, PTY } from "@/core/seed/content/seed-refs"
+import { CBA, PLANT, PTY } from "@/core/seed/content/seed-refs"
 import { isoWeekday } from "@/core/seed/time"
 
 import { recordReceipt } from "@/modules/ar/commands"
@@ -12,7 +12,7 @@ import { accountIdOfTag } from "@/modules/ar/queries"
 import { allocateOldestFirst, cashFor, deductionsFor, grossUp, invoiceAvailableP, invoiceOpenP, oldestFirst } from "@/modules/ar/lib"
 import { reopenPeriod } from "@/modules/fa/commands"
 
-import { importStatement } from "./commands"
+import { importStatement, updateCheque } from "./commands"
 
 /**
  * CAB scenario launchers (implementation_plan.md §10): E7 bank
@@ -142,6 +142,14 @@ const e8: ScenarioDef = {
     const today = kit.today()
     const party = await db.parties.get(PTY.metroFleet)
     if (!party) throw new Error("E8: Metro Corporate Fleet is missing")
+    // Re-run rule: earlier E8 cheques (and the seed's planted one) still in hand
+    // go back to the customer, so this run's cheque reserves the invoice afresh.
+    const earlier = new Set([PLANT.e8Cheque, ...(await previousRuns(db, "E8")).map((r) => r.refs.chequeId).filter((id): id is string => !!id)])
+    for (const id of earlier) {
+      const cheque = await db.cheques.get(id)
+      if (cheque?.status !== "in-hand" || cheque.direction !== "received") continue
+      await kit.run(updateCheque, { chequeId: id, action: "return", expectedStatus: "in-hand", reason: "Demo re-run: the customer takes the earlier cheque back" }, "mahbub")
+    }
     const tax = await readSetting(db, "tax")
     const invoices = (await db.salesInvoices.where("partyId").equals(party.id).toArray()).filter((i) => i.status === "posted" || i.status === "partially-paid")
     const allocations = allocationFor(party, invoices, E8_CHEQUE_P, tax)
