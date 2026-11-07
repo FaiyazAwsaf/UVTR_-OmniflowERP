@@ -1,6 +1,8 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** "/dashboard": the executive dashboard, filled in Phase 3 (WS-Dash). */
+import { ExecutiveDashboard } from "@/modules/dashboard/components/executive-dashboard"
+
+/** /dashboard: the owner's executive dashboard (plan §9). */
 export default function DashboardPage() {
-  return <StubPage titleKey="dashboard.pages.home" />
+  return <ExecutiveDashboard />
 }
