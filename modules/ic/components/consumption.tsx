@@ -142,7 +142,7 @@ export function ConsumptionVariance() {
                 { label: t("ic.consumption.standard"), align: "right", hide: "sm" },
                 { label: t("ic.consumption.actual"), align: "right" },
                 { label: t("ic.consumption.variance"), align: "right" },
-                { label: t("ic.consumption.variancePct"), align: "right", hide: "md" },
+                { label: t("ic.consumption.variancePct"), align: "right", hide: "lg" },
                 { label: t("ic.consumption.varianceValue"), align: "right", hide: "sm" },
               ]}
             >
@@ -165,7 +165,7 @@ export function ConsumptionVariance() {
                     <td className={cn("text-right", variance > 0 ? "text-destructive" : variance < 0 ? "text-success" : "text-muted-foreground")}>
                       {variance ? <QtyText value={variance} signed /> : "0"}
                     </td>
-                    <td className={cn("text-right nums", HIDE.md)}>{g.standard ? pct((variance / g.standard) * 100) : "-"}</td>
+                    <td className={cn("text-right nums", HIDE.lg)}>{g.standard ? pct((variance / g.standard) * 100) : "-"}</td>
                     <td className={cn("text-right", HIDE.sm)}>{varianceP ? <MoneyText poisha={varianceP} signed colorize /> : "-"}</td>
                   </tr>
                 )

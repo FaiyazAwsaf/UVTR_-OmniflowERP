@@ -66,7 +66,7 @@ export function StockCard({ itemId, locationId }: { itemId: string; locationId?:
         header: t("ic.card.date"),
         accessorFn: (r) => r.move.at,
         cell: ({ row }) => (
-          <span data-testid="stock-card-row" data-type={row.original.move.type} className="flex flex-col">
+          <span data-testid="stock-card-row" data-type={row.original.move.type} className="flex flex-col whitespace-nowrap">
             <span className="nums">{dmy(row.original.move.date)}</span>
             <span className="nums text-[0.6875rem] text-muted-foreground">{time(row.original.move.at)}</span>
           </span>
@@ -91,7 +91,7 @@ export function StockCard({ itemId, locationId }: { itemId: string; locationId?:
         header: t("ic.card.batch"),
         accessorFn: (r) => r.batchNo ?? "",
         cell: ({ row }) => (
-          <span lang="en" className="font-mono text-xs">
+          <span lang="en" className="font-mono text-xs whitespace-nowrap">
             {row.original.batchNo ?? "-"}
           </span>
         ),

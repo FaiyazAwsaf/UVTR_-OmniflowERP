@@ -27,7 +27,7 @@ import { roundQty } from "@/core/stock/value"
 import { isoToDmy } from "@/lib/i18n/dmy"
 import { formatMoney, formatNumber } from "@/lib/i18n/format"
 import { useLocale } from "@/lib/i18n/provider"
-import { Field, ItemCell, ListToolbar, OptionSelect, PrintPreview, freshKey, useScmLookups } from "@/modules/ic/components/scm-ui"
+import { Field, ItemCell, OptionSelect, PrintPreview, freshKey, useScmLookups } from "@/modules/ic/components/scm-ui"
 
 import { returnToVendor } from "../commands"
 import { ptlBn } from "../i18n/bn"
@@ -137,7 +137,7 @@ export function ReturnsScreen() {
           ) : null
         }
       />
-      <DataTable data={data ?? []} columns={columns} rowId={(r) => r.id} emptyTitle={t("ptl.returns.empty")} toolbar={<ListToolbar />} />
+      <DataTable data={data ?? []} columns={columns} rowId={(r) => r.id} emptyTitle={t("ptl.returns.empty")} />
       <Dialog open={creating} onOpenChange={setCreating}>
         <DialogContent className="sm:max-w-2xl" data-testid="return-dialog">
           {creating ? (

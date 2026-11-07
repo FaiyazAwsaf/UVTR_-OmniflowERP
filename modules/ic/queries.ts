@@ -139,12 +139,18 @@ export async function loadReorderSuggestions(db: OmniflowDb, locationId?: Id): P
       onOrder.set(key, roundQty((onOrder.get(key) ?? 0) + open * item.purchaseFactor))
     }
   }
+  // The item's most recent PO vendor and price; else the latest vendor for its category.
   const lastVendor = new Map<Id, { vendorId: Id; date: string; unitCostP: number }>()
+  const categoryVendor = new Map<Id, { vendorId: Id; date: string }>()
+  const itemCategory = new Map((await db.items.toArray()).map((i) => [i.id, i.categoryId]))
   for (const po of await db.purchaseOrders.toArray()) {
     if (po.status === "cancelled") continue
     for (const line of await db.poLines.where("poId").equals(po.id).toArray()) {
       const prev = lastVendor.get(line.itemId)
       if (!prev || po.orderDate > prev.date) lastVendor.set(line.itemId, { vendorId: po.vendorId, date: po.orderDate, unitCostP: line.unitCostP })
+      const category = itemCategory.get(line.itemId)
+      const prevCat = category ? categoryVendor.get(category) : undefined
+      if (category && (!prevCat || po.orderDate > prevCat.date)) categoryVendor.set(category, { vendorId: po.vendorId, date: po.orderDate })
     }
   }
   const out: ReorderSuggestion[] = []
@@ -167,7 +173,7 @@ export async function loadReorderSuggestions(db: OmniflowDb, locationId?: Id): P
       needBase,
       suggestQty: Math.max(1, Math.ceil(needBase / r.item.purchaseFactor - 1e-9)),
       estUnitCostP: last?.unitCostP ?? r.item.standardCostP,
-      vendorId: last?.vendorId,
+      vendorId: last?.vendorId ?? categoryVendor.get(r.item.categoryId)?.vendorId,
     })
   }
   return out

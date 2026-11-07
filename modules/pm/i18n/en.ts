@@ -84,7 +84,7 @@ export const pmEn = {
       days: "{count} days",
       costs: "Costs and price",
       standardCost: "Standard cost (per {unit})",
-      movingAverage: "Moving average at {location} (per {unit})",
+      movingAverage: "Average at {location} (per {unit})",
       noStock: "No stock",
       retailPrice: "Retail price (per {unit}, VAT exclusive)",
       vatCategory: "VAT category",

@@ -108,7 +108,7 @@ export function StHome() {
           href="/st/transfers"
         />
         <KpiCard variant="pink" icon={Clock} title={t("st.home.kpiPending")} value={num(data?.pending.length ?? 0)} href="/st/adjustments" />
-        <KpiCard variant="purple" icon={ClipboardMinus} title={t("st.home.kpiIssued")} value={num(data?.moves ?? 0)} caption={t("st.home.kpiIssuedCaption", { count: num(data?.moves ?? 0) })} href="/ic" />
+        <KpiCard variant="purple" icon={ClipboardMinus} title={t("st.home.kpiIssued")} value={num(data?.moves ?? 0)} href="/ic" />
       </KpiGrid>
       <div className="@container/home">
         <div className="grid gap-5 @min-[60rem]/home:grid-cols-3">

@@ -359,7 +359,7 @@ function PoView({ id }: { id: string }) {
                 ))}
               </ul>
             ) : (
-              <p className="text-[0.8125rem] text-muted-foreground">{t("ptl.po.notSent")}</p>
+              <p className="text-[0.8125rem] text-muted-foreground">{po.sentAt ? t("ptl.po.sentOn", { time: `${dmy(po.sentAt)} ${time(po.sentAt)}` }) : t("ptl.po.notSent")}</p>
             )}
           </SectionCard>
         </div>
@@ -428,7 +428,7 @@ function PoPrint({ po, lines }: { po: PurchaseOrderRow; lines: PoLineRow[] }) {
       }
       footer={t("ptl.po.printTerms")}
     >
-      <div className="mb-4 grid grid-cols-2 gap-4 text-[0.75rem]" data-testid="po-print-sheet">
+      <div className="mb-4 grid grid-cols-2 gap-4 text-[0.75rem]">
         <div>
           <div className="text-[0.6875rem] text-[#555] uppercase">{t("ptl.po.printVendor")}</div>
           <div className="font-semibold">{vendor?.nameEn}</div>
@@ -445,7 +445,7 @@ function PoPrint({ po, lines }: { po: PurchaseOrderRow; lines: PoLineRow[] }) {
           <div lang="en">{deliver?.phone}</div>
         </div>
       </div>
-      <table className="w-full border-collapse text-[0.75rem]">
+      <table className="w-full border-collapse text-[0.75rem]" data-testid="po-print-sheet">
         <thead>
           <tr className="border-y border-[#111] text-left">
             <th className="py-1 pr-2">#</th>

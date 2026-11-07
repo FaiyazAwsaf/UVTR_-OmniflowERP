@@ -86,7 +86,7 @@ export const pmBn: typeof pmEn = {
       days: "{count} দিন",
       costs: "খরচ ও মূল্য",
       standardCost: "আদর্শ খরচ (প্রতি {unit})",
-      movingAverage: "{location}-এ চলমান গড় (প্রতি {unit})",
+      movingAverage: "{location}-এ গড় (প্রতি {unit})",
       noStock: "মজুদ নেই",
       retailPrice: "খুচরা মূল্য (প্রতি {unit}, ভ্যাট ছাড়া)",
       vatCategory: "ভ্যাট শ্রেণি",

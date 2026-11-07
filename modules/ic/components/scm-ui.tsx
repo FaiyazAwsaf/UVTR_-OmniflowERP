@@ -316,7 +316,7 @@ export function PrintPreview({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        <div className="-mx-2 overflow-x-auto rounded-md bg-[#d9d9d9] p-3">{children}</div>
+        <div className="-mx-2 max-h-[calc(100svh-11rem)] overflow-auto rounded-md bg-[#d9d9d9] p-3">{children}</div>
         <DialogFooter className="items-center">
           <SimulatedBadge className="mr-auto" />
           <Button
