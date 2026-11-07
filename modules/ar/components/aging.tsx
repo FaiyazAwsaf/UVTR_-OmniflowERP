@@ -8,64 +8,14 @@ import { CheckCircle2, XCircle } from "lucide-react"
 import { MoneyText } from "@/components/shared/money-text"
 import { PageHeader } from "@/components/shared/page-header"
 import { useDb } from "@/core/db/DbProvider"
-import type { AccountTag, Id, PartyRow } from "@/core/db/schema"
-import type { OmniflowDb } from "@/core/db/database"
 import { nameOf } from "@/core/security/users"
 import { useLocale } from "@/lib/i18n/provider"
 import { cn } from "@/lib/utils"
 
 import { CsvButton, ListTable, Pills, SearchBox, useToday, type Column } from "@/modules/par/components/kit"
 
-import { addToBuckets, BUCKETS, emptyBuckets, type Bucket, type BucketTotals } from "../lib"
-import { apOpenItems, arOpenItems, customerAdvances, glBalanceP } from "../queries"
-
-export type AgingRow = { partyId: Id; party: PartyRow | undefined; buckets: BucketTotals; advanceP: number }
-
-/** Aging by party for AR (customers, with advances) or AP (vendors), with the control-account tie. */
-export async function loadAging(db: OmniflowDb, today: string, side: "ar" | "ap") {
-  const rows = new Map<Id, AgingRow>()
-  const totals = emptyBuckets()
-  const get = (partyId: Id, party: PartyRow | undefined) => {
-    let r = rows.get(partyId)
-    if (!r) {
-      r = { partyId, party, buckets: emptyBuckets(), advanceP: 0 }
-      rows.set(partyId, r)
-    }
-    return r
-  }
-  if (side === "ar") {
-    for (const i of await arOpenItems(db, today)) {
-      addToBuckets(get(i.invoice.partyId, i.party).buckets, i.bucket, i.openP)
-      addToBuckets(totals, i.bucket, i.openP)
-    }
-  } else {
-    for (const i of await apOpenItems(db, today)) {
-      addToBuckets(get(i.bill.partyId, i.vendor).buckets, i.bucket, i.openP)
-      addToBuckets(totals, i.bucket, i.openP)
-    }
-  }
-  let advancesP = 0
-  if (side === "ar") {
-    const adv = await customerAdvances(db)
-    const missing = [...adv.keys()].filter((id) => !rows.has(id))
-    const extra = new Map((await db.parties.bulkGet(missing)).filter(Boolean).map((p) => [p!.id, p!]))
-    for (const [partyId, v] of adv) {
-      get(partyId, extra.get(partyId) ?? rows.get(partyId)?.party).advanceP = v
-      advancesP += v
-    }
-  }
-  const controlTag: AccountTag = side === "ar" ? "AR_CONTROL" : "AP_CONTROL"
-  const control = await glBalanceP(db, controlTag)
-  const advanceGl = side === "ar" ? -(await glBalanceP(db, "CUSTOMER_ADVANCE")) : 0
-  return {
-    rows: [...rows.values()].sort((a, b) => b.buckets.total - a.buckets.total || b.advanceP - a.advanceP),
-    totals,
-    advancesP,
-    // AR is a debit balance, AP a credit balance: compare the open amounts with the signed GL.
-    controlP: side === "ar" ? control : -control,
-    advanceGlP: advanceGl,
-  }
-}
+import { BUCKETS, type Bucket } from "../lib"
+import { loadAging, type AgingRow } from "../queries"
 
 /**
  * AR or AP aging (accounting_rules.md §6): open amounts by party in buckets
