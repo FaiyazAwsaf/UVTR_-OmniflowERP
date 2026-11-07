@@ -37,3 +37,28 @@ test("E3 hook: an advisor sees the check without the request button", async ({ p
   await expect(page.getByTestId("order-stock-check")).toBeVisible()
   await expect(page.getByTestId("order-request-transfer")).toHaveCount(0)
 })
+
+/* Review screenshots (SHOTS_DIR only): the stock check in EN and BN at both sizes, and in light mode. */
+const SHOTS = process.env.SHOTS_DIR
+for (const lang of ["en", "bn"] as const) {
+  for (const size of [
+    { name: "960", width: 960, height: 600 },
+    { name: "1920", width: 1920, height: 1200 },
+  ] as const) {
+    test(`order stock check screens ${lang}-${size.name}`, async ({ page }) => {
+      test.skip(!SHOTS, "SHOTS_DIR not set")
+      await page.setViewportSize({ width: size.width, height: size.height })
+      await signIn(page, "arif", lang)
+      await page.goto("/stl/orders/so_e3_uttara")
+      await expect(page.getByTestId("order-stock-check")).toBeVisible()
+      await page.getByTestId("order-stock-check").scrollIntoViewIfNeeded()
+      await page.waitForTimeout(500)
+      await page.screenshot({ path: `${SHOTS}/order-stock-${lang}-${size.name}.png` })
+      if (lang === "en") {
+        await page.locator('[data-slot="theme-toggle"]').click()
+        await page.waitForTimeout(500)
+        await page.screenshot({ path: `${SHOTS}/order-stock-light-${size.name}.png` })
+      }
+    })
+  }
+}
