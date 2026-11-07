@@ -24,6 +24,7 @@ import { useLocale } from "@/lib/i18n/provider"
 import { CsvButton, Field, ListTable, NativeSelect, TextInput, useActionKey, useToday, type Column } from "@/modules/par/components/kit"
 
 import { topUpPettyCash, transferFunds } from "../commands"
+import { canSeeTransfer } from "../lib"
 import { cashPosition } from "../queries"
 
 /** Accounts with their GL balances, live (for the transfer dialogs). */
@@ -46,9 +47,12 @@ export function Transfers() {
   const { can } = usePermissions()
   const [open, setOpen] = React.useState<"transfer" | "topup" | null>(params.get("new") ? "transfer" : null)
   const data = useLiveQuery(async () => {
-    const [transfers, accounts] = await Promise.all([db.fundTransfers.toArray(), db.cashBankAccounts.toArray()])
-    return { transfers: transfers.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.transferNo.localeCompare(a.transferNo))), accounts: new Map(accounts.map((a) => [a.id, a])) }
-  }, [db])
+    const [all, list] = await Promise.all([db.fundTransfers.toArray(), db.cashBankAccounts.toArray()])
+    const accounts = new Map(list.map((a) => [a.id, a]))
+    // A studio's roles see the transfers that touch their till or petty cash (a till deposit, a top-up).
+    const transfers = all.filter((x) => canSeeTransfer(can, accounts, x))
+    return { transfers: transfers.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.transferNo.localeCompare(a.transferNo))), accounts }
+  }, [db, can])
 
   const columns: Column<FundTransferRow>[] = [
     { key: "date", header: t("cab.transfers.colDate"), cell: (r) => <span className="nums">{dmy(r.date)}</span> },

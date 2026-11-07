@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useLiveQuery } from "dexie-react-hooks"
 import { CheckCircle2, PauseCircle, Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
@@ -43,17 +43,23 @@ const DEFAULT_TAG: Record<VendorTaxCategory, ExpenseTag> = {
   exempt: "OFFICE",
 }
 
-/** /ap/bills/new: a goods bill from GRNs with the three-way match panel, or an expense bill (plan §9). */
+/**
+ * /ap/bills/new: a goods bill from GRNs with the three-way match panel, or an
+ * expense bill (plan §9). `?vendor=`, `?grn=` and `?ref=` prefill the vendor,
+ * the delivery the invoice covers and the vendor's invoice number (E5).
+ */
 export function BillForm() {
   const db = useDb()
   const router = useRouter()
+  const params = useSearchParams()
   const today = useToday()
   const { t, tk, locale, num, money } = useLocale()
   const record = useCommand(recordBill)
   const action = useActionKey("bl")
   const [kind, setKind] = React.useState<"goods" | "expense">("goods")
-  const [vendorId, setVendorId] = React.useState<Id | null>(null)
-  const [vendorRef, setVendorRef] = React.useState("")
+  const [vendorId, setVendorId] = React.useState<Id | null>(params.get("vendor"))
+  const [preGrn, setPreGrn] = React.useState<Id | null>(params.get("grn"))
+  const [vendorRef, setVendorRef] = React.useState(params.get("ref") ?? "")
   const [date, setDate] = React.useState("")
   const [dueDate, setDueDate] = React.useState("")
   const [mushak, setMushak] = React.useState(true)
@@ -70,8 +76,8 @@ export function BillForm() {
   const vendor = data?.vendor
   const lines = React.useMemo(() => data?.lines ?? [], [data])
 
-  // A vendor invoice usually covers one delivery: the oldest GRN is included by default.
-  const firstGrnId = lines.find((l) => l.availableQty > 0)?.grn.id
+  // A vendor invoice usually covers one delivery: the one the address names, else the oldest GRN, is included by default.
+  const firstGrnId = (preGrn && lines.some((l) => l.grn.id === preGrn && l.availableQty > 0) ? preGrn : undefined) ?? lines.find((l) => l.availableQty > 0)?.grn.id
   const goodsRows = React.useMemo(
     () =>
       lines.map((l) => {
@@ -108,6 +114,7 @@ export function BillForm() {
 
   const selectVendor = (id: Id | null) => {
     setVendorId(id)
+    setPreGrn(null)
     setGoods({})
   }
   const ensureExpense = () => {

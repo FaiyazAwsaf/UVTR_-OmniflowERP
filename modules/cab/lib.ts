@@ -1,12 +1,42 @@
-import type { CashBankAccountRow, ISODate, Poisha, StatementLine } from "@/core/db/schema"
+import type { CashBankAccountRow, Id, ISODate, Poisha, StatementLine } from "@/core/db/schema"
 
 import { daysBetween } from "@/modules/ar/lib"
 
 /**
  * CAB pure helpers: the reconciliation auto-match (amount equal, date within
  * ± `rules.reconMatchDays`, and the reference), the reconciled state of a
- * statement line, and how a contra transfer is classed.
+ * statement line, how a contra transfer is classed, and which accounts a
+ * user's CAB view scope covers.
  */
+
+/** Head Office: banks, wallets and card clearing (accounts without a location) belong to it for scope. */
+export const CAB_HQ: Id = "loc_hq"
+
+/** The location an account counts as for scope: its own, else Head Office. */
+export function accountScopeLocation(account: Pick<CashBankAccountRow, "locationId">): Id {
+  return account.locationId ?? CAB_HQ
+}
+
+/** A permission check at a location, as `usePermissions().can` or `grantAllows` give it. */
+export type CanAt = (permission: string, locationId?: Id | null) => boolean
+
+/**
+ * Whether a user's CAB view covers an account (plan §3.9 scope): own-location
+ * roles (a studio's cashier or manager) see their location's till and petty
+ * cash only; Head Office and all-scope roles see every account.
+ */
+export function canSeeAccount(can: CanAt, account: Pick<CashBankAccountRow, "locationId"> | undefined): boolean {
+  return !!account && can("cab.app.view", accountScopeLocation(account))
+}
+
+/** A transfer shows to whoever sees either side of it (a till deposit shows to the studio and to HQ). */
+export function canSeeTransfer(
+  can: CanAt,
+  accounts: Map<Id, Pick<CashBankAccountRow, "locationId">>,
+  transfer: { fromAccountId: Id; toAccountId: Id }
+): boolean {
+  return canSeeAccount(can, accounts.get(transfer.fromAccountId)) || canSeeAccount(can, accounts.get(transfer.toAccountId))
+}
 
 /** A book line on the bank's GL account, as the matcher sees it. */
 export type BookLine = {

@@ -26,11 +26,11 @@ import { useLocale } from "@/lib/i18n/provider"
 import { cn } from "@/lib/utils"
 
 import { accountIdOfTag, glBalanceP } from "@/modules/ar/queries"
-import { Field, NativeSelect, Stat, useToday } from "@/modules/par/components/kit"
+import { Field, NativeSelect, Pills, Stat, useToday } from "@/modules/par/components/kit"
 import { ReasonDialog } from "@/modules/par/components/reason-dialog"
 
 import { autoMatchStatement, completeReconciliation, explainLine, importStatement, matchLine, postBankCharge, unmatchLine } from "../commands"
-import { lastMonthRange, lineSettled } from "../lib"
+import { canSeeAccount, lastMonthRange, lineSettled } from "../lib"
 
 function monthOptions(today: string, count = 6) {
   const out: { from: string; to: string }[] = []
@@ -65,12 +65,14 @@ export function Reconciliation() {
   const [selected, setSelected] = React.useState<Id | null>(params.get("id"))
   const [matching, setMatching] = React.useState<StatementLine | null>(null)
   const [explaining, setExplaining] = React.useState<StatementLine | null>(null)
+  const [show, setShow] = React.useState<"all" | "open">("all")
 
   const data = useLiveQuery(async () => {
-    const accounts = (await db.cashBankAccounts.toArray()).filter((a) => a.kind === "bank" && a.active)
-    const statements = (await db.bankStatements.toArray()).sort((a, b) => b.importedAt - a.importedAt)
+    const accounts = (await db.cashBankAccounts.toArray()).filter((a) => a.kind === "bank" && a.active && canSeeAccount(can, a))
+    const ids = new Set(accounts.map((a) => a.id))
+    const statements = (await db.bankStatements.toArray()).filter((s) => ids.has(s.cashBankAccountId)).sort((a, b) => b.importedAt - a.importedAt)
     return { accounts, statements }
-  }, [db])
+  }, [db, can])
   const forParam = data?.statements.find((s) => s.id === selected)
   const account = data?.accounts.find((a) => a.id === (forParam?.cashBankAccountId ?? accountId)) ?? data?.accounts[0]
   const statements = (data?.statements ?? []).filter((s) => s.cashBankAccountId === account?.id)
@@ -187,6 +189,18 @@ export function Reconciliation() {
               testId="recon-difference"
             />
           </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Pills
+              value={show}
+              onChange={(v) => setShow(v as "all" | "open")}
+              testId="recon-filter"
+              options={[
+                { value: "all", label: `${t("cab.recon.showAll")} · ${num(statement.lines.length)}` },
+                { value: "open", label: `${t("cab.recon.showOpen")} · ${num(open)}` },
+              ]}
+            />
+          </div>
+          {show === "open" && open === 0 ? <p className="py-2 text-sm text-muted-foreground">{t("cab.recon.noOpen")}</p> : null}
           <div className="@container/recon min-w-0 overflow-x-auto">
             <table className="w-full border-separate border-spacing-0 text-[0.8125rem]">
               <thead>
@@ -200,7 +214,7 @@ export function Reconciliation() {
                 </tr>
               </thead>
               <tbody>
-                {statement.lines.map((l) => {
+                {statement.lines.filter((l) => show === "all" || !lineSettled(l)).map((l) => {
                   const done = lineSettled(l)
                   return (
                     <tr

@@ -12,12 +12,14 @@ import { PageHeader } from "@/components/shared/page-header"
 import { addDaysISO } from "@/core/clock/dates"
 import { useDb } from "@/core/db/DbProvider"
 import type { Id } from "@/core/db/schema"
+import { usePermissions } from "@/core/security/useCan"
 import { nameOf } from "@/core/security/users"
 import { useLocale } from "@/lib/i18n/provider"
 import { cn } from "@/lib/utils"
 
 import { CsvButton, Field, ListTable, Stat, useToday, type Column } from "@/modules/par/components/kit"
 
+import { canSeeAccount } from "../lib"
 import { accountBook, type BookRow } from "../queries"
 
 /** /cab/accounts/[id]: the cash or bank book of one account with its running balance (plan §9). */
@@ -29,15 +31,17 @@ export function AccountBookView({ accountId }: { accountId: Id }) {
   const [to, setTo] = React.useState("")
   const start = from || (today ? addDaysISO(today, -30) : "")
   const end = to || today
+  const { can, loading } = usePermissions()
   const data = useLiveQuery(async () => {
     const account = await db.cashBankAccounts.get(accountId)
-    if (!account) return null
+    // Another location's till or petty cash (or a Head Office bank) is not this user's to read.
+    if (!account || (!loading && !canSeeAccount(can, account))) return null
     if (!start) return undefined
     const book = await accountBook(db, account, start, end)
     return { account, book }
-  }, [db, accountId, start, end])
+  }, [db, accountId, start, end, can, loading])
 
-  if (data === undefined) return null
+  if (data === undefined || loading) return null
   if (data === null) return <EmptyState icon={Landmark} title={t("cab.book.notFound")} action={{ label: t("cab.pages.home"), href: "/cab" }} />
   const { account, book } = data
   const rows = [...book.rows].reverse()

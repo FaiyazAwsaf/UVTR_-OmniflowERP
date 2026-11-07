@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils"
 import { Banner, CsvButton, Field, ListTable, NativeSelect, Stat, TextInput, useActionKey, useToday, type Column } from "@/modules/par/components/kit"
 
 import { PETTY_TAGS, pettyCashVoucher } from "../commands"
+import { canSeeAccount } from "../lib"
 import { TopUpDialog, useBalances } from "./transfers"
 
 /** /cab/petty-cash: imprest boxes, vouchers within the maker's limit or queued (plan §9). */
@@ -41,11 +42,14 @@ export function PettyCash() {
   const [open, setOpen] = React.useState(false)
   const [topUp, setTopUp] = React.useState<string | null>(null)
   const data = useLiveQuery(async () => {
-    const [vouchers, transfers] = await Promise.all([db.pettyCashVouchers.toArray(), db.fundTransfers.toArray()])
+    const [all, transfers, accounts] = await Promise.all([db.pettyCashVouchers.toArray(), db.fundTransfers.toArray(), db.cashBankAccounts.toArray()])
+    // Own-location roles see their own petty cash box and its vouchers only.
+    const byId = new Map(accounts.map((a) => [a.id, a]))
+    const vouchers = all.filter((v) => canSeeAccount(can, byId.get(v.cashBankAccountId)))
     return { vouchers: vouchers.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.voucherNo.localeCompare(a.voucherNo))), transfers }
-  }, [db])
+  }, [db, can])
 
-  const boxes = (balances?.accounts ?? []).filter((a) => a.kind === "petty-cash")
+  const boxes = (balances?.accounts ?? []).filter((a) => a.kind === "petty-cash" && canSeeAccount(can, a))
   const lastTopUp = (id: string) => (data?.transfers ?? []).filter((x) => x.toAccountId === id).reduce((m, x) => (x.date > m ? x.date : m), "")
 
   const columns: Column<PettyCashVoucherRow>[] = [

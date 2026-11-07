@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils"
 
 import { LinkButton, useToday } from "@/modules/par/components/kit"
 
+import { canSeeAccount } from "../lib"
 import { cashPosition, KIND_ORDER, type PositionRow } from "../queries"
 
 /** /cab: cash position across tills, petty cash, banks, wallets and card clearing (plan §9). */
@@ -31,12 +32,18 @@ export function CashPosition() {
   const { can } = usePermissions()
   const data = useLiveQuery(async () => {
     if (!today) return undefined
-    const [rows, cheques] = await Promise.all([cashPosition(db, today), db.cheques.where("status").equals("in-hand").toArray()])
-    const soon = cheques.filter((c) => c.direction === "received" && c.chequeDate <= addDaysISO(today, 7)).sort((a, b) => (a.chequeDate < b.chequeDate ? -1 : 1))
+    const [all, cheques] = await Promise.all([cashPosition(db, today), db.cheques.where("status").equals("in-hand").toArray()])
+    // Own-location roles see their location's till and petty cash only (banks, wallets and cheques are Head Office's).
+    const rows = all.filter((r) => canSeeAccount(can, r.account))
+    const accounts = new Map(all.map((r) => [r.account.id, r.account]))
+    const soon = cheques
+      .filter((c) => c.direction === "received" && c.chequeDate <= addDaysISO(today, 7) && canSeeAccount(can, accounts.get(c.cashBankAccountId)))
+      .sort((a, b) => (a.chequeDate < b.chequeDate ? -1 : 1))
     const parties = new Map((await db.parties.bulkGet([...new Set(soon.map((c) => c.partyId))])).filter(Boolean).map((p) => [p!.id, p!]))
     return { rows, soon, parties }
-  }, [db, today])
+  }, [db, today, can])
 
+  const shows = (kinds: string[]) => (data?.rows ?? []).some((r) => kinds.includes(r.account.kind))
   const sums = React.useMemo(() => {
     const by = (kinds: string[]) => (data?.rows ?? []).filter((r) => kinds.includes(r.account.kind)).reduce((s, r) => s + r.balanceP, 0)
     return { tills: by(["cash-till"]), banks: by(["bank"]), wallets: by(["mfs", "card-clearing"]), petty: by(["petty-cash"]) }
@@ -95,10 +102,10 @@ export function CashPosition() {
         }
       />
       <KpiGrid className={flash}>
-        <KpiCard variant="cyan" icon={Banknote} title={t("cab.home.tills")} value={data ? money(sums.tills) : "…"} />
-        <KpiCard variant="yellow" icon={Landmark} title={t("cab.home.banks")} value={data ? money(sums.banks) : "…"} />
-        <KpiCard variant="pink" icon={CreditCard} title={t("cab.home.wallets")} value={data ? money(sums.wallets) : "…"} href="/cab/settlements" />
-        <KpiCard variant="purple" icon={Wallet} title={t("cab.home.petty")} value={data ? money(sums.petty) : "…"} href="/cab/petty-cash" />
+        {!data || shows(["cash-till"]) ? <KpiCard variant="cyan" icon={Banknote} title={t("cab.home.tills")} value={data ? money(sums.tills) : "…"} /> : null}
+        {!data || shows(["bank"]) ? <KpiCard variant="yellow" icon={Landmark} title={t("cab.home.banks")} value={data ? money(sums.banks) : "…"} /> : null}
+        {!data || shows(["mfs", "card-clearing"]) ? <KpiCard variant="pink" icon={CreditCard} title={t("cab.home.wallets")} value={data ? money(sums.wallets) : "…"} href="/cab/settlements" /> : null}
+        {!data || shows(["petty-cash"]) ? <KpiCard variant="purple" icon={Wallet} title={t("cab.home.petty")} value={data ? money(sums.petty) : "…"} href="/cab/petty-cash" /> : null}
       </KpiGrid>
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
         <SectionCard title={t("cab.home.position")} subtitle={today ? dmy(today) : undefined} size="sm">
