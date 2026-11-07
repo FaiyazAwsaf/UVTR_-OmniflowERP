@@ -23,7 +23,7 @@ test.describe("sign-in and access", () => {
           "bad-credentials"
         )
         await expect(page.getByTestId("login-error")).toContainText(
-          `${5 - attempt} attempts left`
+          `${5 - attempt} ${5 - attempt === 1 ? "attempt" : "attempts"} left`
         )
       }
     }

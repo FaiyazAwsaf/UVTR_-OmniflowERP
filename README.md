@@ -75,18 +75,19 @@ Other address options for a window: `?user=<username>`, `&lang=bn`, `&theme=ligh
 
 ## Checks
 
-| Command                                                      | What it does                                                                                        |
-| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| `bun run typecheck`                                          | TypeScript, no emit                                                                                 |
-| `bun run lint`                                               | ESLint (0 errors; 1 accepted TanStack Table warning)                                                |
-| `bun run test`                                               | Vitest: engine, ledger, stock, tax, security, every app's commands and every launcher twice         |
-| `TEST_DAY_SHIFT=3 bun run test`                              | The same, as if today were 3 days later (the seed is relative to today)                             |
-| `TEST_DATE=2026-12-01 bun run test`                          | The same, with today pinned (useful for month ends and July, the fiscal year start)                 |
-| `bun run e2e`                                                | Playwright on a production build (port 3100): journeys, launchers, every app's screens              |
-| `PERF=1 bunx playwright test tests/e2e/perf --workers 1`     | Timings: seed, checkout commit, heavy launchers, smoothness with the Demo Wall open                 |
-| `SWEEP_DIR=/tmp/sweep bunx playwright test tests/e2e/review` | Screenshots of every screen in EN and BN, dark and light, 960x600 and 1920x1200, with layout checks |
-| `bun run i18n:check`                                         | English and Bangla string parity, no empty strings, no em dashes                                    |
-| `bun run build`                                              | Production build; must pass before every merge                                                      |
+| Command                                                                    | What it does                                                                                        |
+| -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `bun run typecheck`                                                        | TypeScript, no emit                                                                                 |
+| `bun run lint`                                                             | ESLint (0 errors; 1 accepted TanStack Table warning)                                                |
+| `bun run test`                                                             | Vitest: engine, ledger, stock, tax, security, every app's commands and every launcher twice         |
+| `TEST_DAY_SHIFT=3 bun run test`                                            | The same, as if today were 3 days later (the seed is relative to today)                             |
+| `TEST_DATE=2026-12-01 bun run test`                                        | The same, with today pinned (useful for month ends and July, the fiscal year start)                 |
+| `bun run e2e`                                                              | Playwright on a production build (port 3100): journeys, launchers, every app's screens              |
+| `PERF=1 bunx playwright test tests/e2e/perf --workers 1`                   | Timings: seed, checkout commit, heavy launchers, smoothness with the Demo Wall open                 |
+| `SWEEP_DIR=/tmp/sweep bunx playwright test tests/e2e/review/sweep.spec.ts` | Screenshots of every screen in EN and BN, dark and light, 960x600 and 1920x1200, with layout checks |
+| `PRINT_DIR=/tmp/print bunx playwright test tests/e2e/review/print.spec.ts` | Every print layout through the browser's print path to PDF, EN and BN, for a check on paper         |
+| `bun run i18n:check`                                                       | English and Bangla string parity, no empty strings, no em dashes                                    |
+| `bun run build`                                                            | Production build; must pass before every merge                                                      |
 
 ## Where things live
 

@@ -17,6 +17,8 @@ const AREAS: [string, string][] = [
   ["apps", "App names"],
   ["common", "Common words"],
   ["status", "Statuses"],
+  ["units", "Units of measure"],
+  ["colours", "Vehicle colours"],
   ["shell", "Shell: top bar, sidebar, search, bell"],
   ["login", "Sign-in screen"],
   ["approvals", "Approvals inbox"],
