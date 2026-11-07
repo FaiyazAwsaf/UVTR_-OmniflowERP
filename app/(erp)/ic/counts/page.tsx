@@ -1,6 +1,6 @@
-import { StubPage } from "@/components/shared/stub-page"
+import { CountsList } from "@/modules/ic/components/counts"
 
-/** /ic/counts: filled in Phase 2 (implementation_plan.md §9). */
+/** /ic/counts: stock counts (implementation_plan.md §9). */
 export default function Page() {
-  return <StubPage app="ic" titleKey="ic.pages.counts" />
+  return <CountsList />
 }

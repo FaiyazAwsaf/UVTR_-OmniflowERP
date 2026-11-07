@@ -1,6 +1,6 @@
-import { StubPage } from "@/components/shared/stub-page"
+import { ReorderScreen } from "@/modules/ic/components/reorder"
 
-/** /ic/reorder: filled in Phase 2 (implementation_plan.md §9). */
+/** /ic/reorder: reorder suggestions (implementation_plan.md §9). */
 export default function Page() {
-  return <StubPage app="ic" titleKey="ic.pages.reorder" />
+  return <ReorderScreen />
 }
