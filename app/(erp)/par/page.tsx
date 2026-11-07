@@ -1,6 +1,8 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /par: filled in Phase 2 (implementation_plan.md §9). */
+import { PartyList } from "@/modules/par/components/party-list"
+
+/** /par: the party master (plan §9). */
 export default function Page() {
-  return <StubPage app="par" titleKey="par.pages.home" />
+  return <PartyList />
 }

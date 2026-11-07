@@ -1,6 +1,14 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /par/vehicles: filled in Phase 2 (implementation_plan.md §9). */
+import * as React from "react"
+
+import { VehicleRegistry } from "@/modules/par/components/vehicle-registry"
+
+/** /par/vehicles: the vehicle registry (plan §9). `?id=` reads the URL, so it sits in Suspense. */
 export default function Page() {
-  return <StubPage app="par" titleKey="par.pages.vehicles" />
+  return (
+    <React.Suspense fallback={null}>
+      <VehicleRegistry />
+    </React.Suspense>
+  )
 }
