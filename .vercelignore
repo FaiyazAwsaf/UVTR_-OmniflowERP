@@ -1,10 +1,10 @@
 # Only used by Vercel CLI uploads; Git deployments already see committed files only.
 # Internal documents, never uploaded
 *.pdf
-docs/
+/docs/
 
 # Local tooling and agent worktrees
-.claude/
+/.claude/
 .env*
 
 # Test output and build caches
