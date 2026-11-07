@@ -108,7 +108,7 @@ test("E6: Prime Guard's fresh bill paid by cheque with AIT ৳6,000 and VDS ৳9
     const run = await lastRun(page, "E6")
     const [bill] = await readRows<{ billNo: string }>(page, "vendorBills", { field: "id", equals: run.refs.billId })
     const row = page.locator(`[data-testid="pay-bill-row"][data-bill-no="${bill.billNo}"]`)
-    await expect(row.getByTestId("pay-bill-check")).toHaveAttribute("data-state", "checked")
+    await expect(row.getByTestId("pay-bill-check")).toHaveAttribute("aria-checked", "true")
     await page.getByTestId("payment-method").locator('[data-value="cheque"]').click()
     await page.getByTestId("payment-cheque-no").fill(chequeNo)
     await expect(page.getByTestId("withholding-ait")).toHaveAttribute("data-amount", "600000")

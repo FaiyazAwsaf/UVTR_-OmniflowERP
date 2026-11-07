@@ -44,6 +44,8 @@ export function CashPosition() {
   }, [db, today, can])
 
   const shows = (kinds: string[]) => (data?.rows ?? []).some((r) => kinds.includes(r.account.kind))
+  // Cheques sit on Head Office's banks: the post-dated cheques card is for those who see the banks.
+  const pdcs = !data || shows(["bank"])
   const sums = React.useMemo(() => {
     const by = (kinds: string[]) => (data?.rows ?? []).filter((r) => kinds.includes(r.account.kind)).reduce((s, r) => s + r.balanceP, 0)
     return { tills: by(["cash-till"]), banks: by(["bank"]), wallets: by(["mfs", "card-clearing"]), petty: by(["petty-cash"]) }
@@ -107,7 +109,7 @@ export function CashPosition() {
         {!data || shows(["mfs", "card-clearing"]) ? <KpiCard variant="pink" icon={CreditCard} title={t("cab.home.wallets")} value={data ? money(sums.wallets) : "…"} href="/cab/settlements" /> : null}
         {!data || shows(["petty-cash"]) ? <KpiCard variant="purple" icon={Wallet} title={t("cab.home.petty")} value={data ? money(sums.petty) : "…"} href="/cab/petty-cash" /> : null}
       </KpiGrid>
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className={cn("grid gap-4", pdcs && "xl:grid-cols-[minmax(0,1fr)_20rem]")}>
         <SectionCard title={t("cab.home.position")} subtitle={today ? dmy(today) : undefined} size="sm">
           <div className="@container/pos min-w-0 overflow-x-auto" data-testid="cash-position">
             <table className="w-full border-separate border-spacing-0 text-[0.8125rem]">
@@ -152,6 +154,7 @@ export function CashPosition() {
             </table>
           </div>
         </SectionCard>
+        {pdcs ? (
         <SectionCard title={t("cab.home.pdcSoon")} size="sm" seeAllHref="/cab/cheques" icon={CalendarClock}>
           {data?.soon.length ? (
             <ul className="flex flex-col">
@@ -174,6 +177,7 @@ export function CashPosition() {
             <EmptyState icon={CalendarClock} title={t("cab.home.noPdc")} size="sm" />
           )}
         </SectionCard>
+        ) : null}
       </div>
     </div>
   )

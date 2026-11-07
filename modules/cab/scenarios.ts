@@ -176,6 +176,8 @@ const e8: ScenarioDef = {
         invoiceNo: first?.invoiceNo ?? "-",
         reservedP: allocations[0]?.amountP ?? 0,
         openP: first ? invoiceOpenP(first) : 0,
+        // What the invoice has to collect again once the cheque bounces (read before this receipt reserved it).
+        collectP: first ? invoiceAvailableP(first) : 0,
       },
     }
   },

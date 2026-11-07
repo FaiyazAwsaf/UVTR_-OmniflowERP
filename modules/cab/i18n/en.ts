@@ -270,7 +270,7 @@ export const cabEn = {
         cue1: "Metro Corporate Fleet's post-dated cheque {chequeNo} for {amountP}, dated today, reserves {reservedP} on invoice {invoiceNo}.",
         cue2: "Click Deposit: the cheque goes to the bank.",
         cue3: "The bank returns it unpaid: click Bounce and confirm.",
-        cue4: "Nothing posts: {invoiceNo} has nothing reserved, so its {openP} is outstanding again.",
+        cue4: "Nothing posts: the reservation on {invoiceNo} is released, so Still to collect is back to {collectP}.",
         cue5: "The customer's notice (simulated SMS) names only the cheque number, amount and date.",
       },
     },

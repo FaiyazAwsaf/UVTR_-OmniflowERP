@@ -135,6 +135,7 @@ describe("E8 post-dated cheque bounce launcher", () => {
     const after = (await db.salesInvoices.get(invoiceId))!
     expect(after.reservedP).toBe(before.reservedP - Number(params.reservedP))
     expect(invoiceAvailableP(after)).toBe(invoiceAvailableP(before) + Number(params.reservedP))
+    expect(invoiceAvailableP(after)).toBe(params.collectP)
     const sms = (await db.sms.where("partyId").equals(PTY.metroFleet).toArray()).filter((s) => s.templateId === "cheque-bounced" && s.text.includes(String(params.chequeNo)))
     expect(sms).toHaveLength(1)
     expect(sms[0].text).toContain("85,000")

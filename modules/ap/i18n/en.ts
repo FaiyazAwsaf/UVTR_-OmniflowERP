@@ -275,7 +275,7 @@ export const apEn = {
       E5: {
         title: "Three-way mismatch",
         summary: "A vendor bill priced above the PO goes on hold; the accounts manager releases it",
-        cue1: "The new bill is open on Gloss & Guard's {grnNo} (PO {poNo}) with their invoice {vendorRef}.",
+        cue1: "The new bill is open on Gloss & Guard's {grnNo} (for {poNo}) with their invoice {vendorRef}.",
         cue2: "On the coating kits line, type the vendor's price {invoicePriceP}. The PO says {poPriceP}, so the match shows +{pct}%.",
         cue3: "Leave the polish at {polishPriceP} and save: the bill of {totalP} goes on hold.",
         cue4: "In Farzana's window, open Approvals and release the bill.",
