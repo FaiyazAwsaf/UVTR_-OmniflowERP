@@ -390,6 +390,7 @@ export const coreBn: typeof coreEn = {
       signedInAs: "সাইন ইন করেছেন",
       openLauncher: "লঞ্চার খুলুন",
     },
+    signingIn: "{name} হিসেবে সাইন ইন হচ্ছে…",
     guard: {
       signInTitle: "এই স্ক্রিন খুলতে সাইন ইন করুন",
       signInBody:

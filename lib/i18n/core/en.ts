@@ -392,6 +392,7 @@ export const coreEn = {
       signedInAs: "Signed in as",
       openLauncher: "Open launcher",
     },
+    signingIn: "Signing in as {name}…",
     guard: {
       signInTitle: "Sign in to open this screen",
       signInBody:

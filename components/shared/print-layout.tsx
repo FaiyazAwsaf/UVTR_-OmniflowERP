@@ -49,9 +49,13 @@ const PAPER_TOKENS = {
   "--link": "#111111",
 } as React.CSSProperties
 
-function printCss(page: string) {
+function printCss(page: string, sheets: boolean) {
+  // Sheets (A4, A5) keep 8mm top and bottom on every page, so a continuation
+  // page clears the printer's unprintable edge; receipts and labels print edge
+  // to edge at their own size. On paper the sheet's on-screen minimum height
+  // goes, so a one-page document never spills onto a second page.
   return `@media print {
-  @page { size: ${page}; margin: 0; }
+  @page { size: ${page}; margin: ${sheets ? "8mm 0" : "0"}; }
   html, body { background: #fff !important; }
   /* Only the sheet goes on paper: every branch of the page that does not lead
      to it is removed (not just hidden), so it takes no room and adds no
@@ -67,7 +71,7 @@ function printCss(page: string) {
     overflow: visible !important; width: auto !important; max-width: none !important; height: auto !important; max-height: none !important; min-height: 0 !important;
     margin: 0 !important; padding: 0 !important; border: 0 !important; background: transparent !important; box-shadow: none !important; outline: 0 !important;
   }
-  [data-print-root] { position: static !important; margin: 0 !important; box-shadow: none !important; border-radius: 0 !important; }
+  [data-print-root] { position: static !important; margin: 0 !important; box-shadow: none !important; border-radius: 0 !important;${sheets ? " min-height: 0 !important; padding-top: 6mm !important;" : ""} }
 }`
 }
 
@@ -130,7 +134,7 @@ export function PrintLayout({
         className
       )}
     >
-      <style>{printCss(paper.page)}</style>
+      <style>{printCss(paper.page, size === "A4" || size === "A5")}</style>
       {showBrand ? (
         <header
           className={cn(
