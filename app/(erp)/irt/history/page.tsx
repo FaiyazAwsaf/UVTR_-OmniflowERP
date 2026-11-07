@@ -1,6 +1,6 @@
-import { StubPage } from "@/components/shared/stub-page"
+import { RunHistory } from "@/modules/irt/components/history"
 
-/** /irt/history: filled in Phase 2 (implementation_plan.md §9). */
+/** /irt/history: report run history (plan §9). */
 export default function Page() {
-  return <StubPage app="irt" titleKey="irt.pages.history" />
+  return <RunHistory />
 }

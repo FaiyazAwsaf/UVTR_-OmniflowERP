@@ -1,6 +1,6 @@
-import { StubPage } from "@/components/shared/stub-page"
+import { UsersHome } from "@/modules/sac/components/users-home"
 
-/** /sac: filled in Phase 2 (implementation_plan.md §9). */
+/** /sac: users (create, edit, deactivate, unlock, reset), plan §9. */
 export default function Page() {
-  return <StubPage app="sac" titleKey="sac.pages.home" />
+  return <UsersHome />
 }

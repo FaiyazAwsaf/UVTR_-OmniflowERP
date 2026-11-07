@@ -1,6 +1,6 @@
-import { StubPage } from "@/components/shared/stub-page"
+import { SessionsScreen } from "@/modules/sac/components/sessions"
 
-/** /sac/sessions: filled in Phase 2 (implementation_plan.md §9). */
+/** /sac/sessions: active sessions with force sign-out (plan §9). */
 export default function Page() {
-  return <StubPage app="sac" titleKey="sac.pages.sessions" />
+  return <SessionsScreen />
 }
