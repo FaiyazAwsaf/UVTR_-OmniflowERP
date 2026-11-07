@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils"
  * steps with the current one highlighted. Renders nothing otherwise.
  */
 export function CueCard() {
-  const { t, tk, num, locale } = useLocale()
+  const { t, tk, num, money, locale } = useLocale()
   const { cue } = useSession()
   const [minimised, setMinimised] = React.useState(false)
   const scenario = cue
@@ -35,12 +35,13 @@ export function CueCard() {
   const step = Math.min(Math.max(cue.step, 0), Math.max(total - 1, 0))
   const title = tk(scenario.titleKey)
   const params = cue.params ?? {}
-  // Numbers read in the window's numerals; strings (names, document numbers and
-  // accession numbers) are shown as the setup gave them.
+  // Amounts (keys ending in "P", integer poisha) read as money and other
+  // numbers in the window's numerals; strings (names, document numbers,
+  // registrations) are shown as the setup gave them.
   const shown = Object.fromEntries(
     Object.entries(params).map(([key, value]) => [
       key,
-      typeof value === "number" ? localizeDigits(String(value), locale) : value,
+      typeof value === "number" ? (key.endsWith("P") ? money(value) : localizeDigits(String(value), locale)) : value,
     ])
   )
   const go = (next: number) =>
