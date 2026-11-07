@@ -1,6 +1,7 @@
-import { StubPage } from "@/components/shared/stub-page"
+import { OrderView } from "@/modules/stl/components/order-view"
 
-/** /stl/orders/[id]: filled in Phase 2 (implementation_plan.md §9). */
-export default function Page() {
-  return <StubPage app="stl" titleKey="stl.pages.order" />
+/** /stl/orders/[id]: the order view (plan §9). */
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  return <OrderView id={decodeURIComponent(id)} />
 }

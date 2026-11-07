@@ -27,5 +27,20 @@ export const siEn = {
       PaymentTimedOut: "{method} payment timed out on {no}",
       CreditNoteIssued: "Credit note {no} issued, {amount}",
     },
+    tender: {
+      card: "Card",
+    },
+    sim: {
+      cardTitle: "Card terminal",
+      cardBody: "Tap or insert the card on the studio terminal.",
+      cardLast4: "Last 4 digits of the card",
+      cardHint: "A card ending in 0002 is declined (for the demo).",
+      approveCard: "Approve on terminal",
+      declined: "Declined by the card issuer. Try another card or tender.",
+      pushTitle: "{brand} payment request",
+      pushBody: "A payment request was pushed to {brand} wallet {phone}. It times out after {minutes} demo minutes.",
+      waiting: "Waiting for the customer to approve on the phone",
+      customerApproved: "Customer approved",
+    },
   },
 }

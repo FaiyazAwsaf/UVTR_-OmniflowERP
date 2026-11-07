@@ -1,6 +1,14 @@
-import { StubPage } from "@/components/shared/stub-page"
+"use client"
 
-/** /stl/orders/new: filled in Phase 2 (implementation_plan.md §9). */
+import * as React from "react"
+
+import { QuoteEditor } from "@/modules/stl/components/quote-editor"
+
+/** /stl/orders/new: book an order directly, with an optional deposit. */
 export default function Page() {
-  return <StubPage app="stl" titleKey="stl.pages.orderNew" />
+  return (
+    <React.Suspense fallback={null}>
+      <QuoteEditor mode="order" />
+    </React.Suspense>
+  )
 }
