@@ -201,6 +201,7 @@ export const irtEn = {
       outbox: "Sent report emails",
       outboxEmpty: "No report emails yet.",
       to: "To",
+      sentAt: "Sent",
       attachment: "Attachment",
       readOnly: "You can view schedules. Changing them needs Schedule reports.",
     },

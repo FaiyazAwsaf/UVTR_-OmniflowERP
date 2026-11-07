@@ -166,11 +166,11 @@ export function SessionsScreen() {
       <PageHeader title={t("sac.sessions.title")} subtitle={t("sac.sessions.subtitle")} />
       <SectionCard
         title={t("sac.sessions.title")}
-        subtitle={t("sac.sessions.idleNote")}
         icon={MonitorSmartphone}
         size="sm"
         action={<StatusPill tone="success">{num(open?.length ?? 0)}</StatusPill>}
       >
+        <p className="mb-3 text-xs text-muted-foreground">{t("sac.sessions.idleNote")}</p>
         <ListTable
           rows={open}
           columns={columns}

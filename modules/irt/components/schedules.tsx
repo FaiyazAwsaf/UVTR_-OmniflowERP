@@ -145,7 +145,7 @@ export function Schedules() {
   ]
 
   const emailColumns: ListColumn<EmailRow>[] = [
-    { id: "at", header: t("irt.history.columns.at"), cell: (e) => <DateText value={e.at} variant="dmyTime" /> },
+    { id: "at", header: t("irt.schedules.sentAt"), cell: (e) => <DateText value={e.at} variant="dmyTime" /> },
     {
       id: "subject",
       header: t("irt.schedules.columns.report"),

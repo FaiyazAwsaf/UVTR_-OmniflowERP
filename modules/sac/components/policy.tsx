@@ -29,7 +29,7 @@ type NumberField = keyof typeof POLICY_BOUNDS
 
 /** /sac/policy: password, lockout, idle timeout and MFA roles (`sac.savePolicy`). */
 export function PolicyScreen() {
-  const { t, num, locale } = useLocale()
+  const { t, num, locale, digits } = useLocale()
   const db = useDb()
   const directory = useUserDirectory()
   const canEdit = useCan("sac.policy.configure")
@@ -51,7 +51,7 @@ export function PolicyScreen() {
     return (
       <Input
         inputMode="numeric"
-        value={Number.isFinite(value) ? String(value) : ""}
+        value={Number.isFinite(value) ? digits(String(value)) : ""}
         onChange={(e) => {
           const text = latinDigits(e.target.value).replace(/\D/g, "")
           set(key, text === "" ? Number.NaN : Number(text))

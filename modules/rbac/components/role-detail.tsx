@@ -26,7 +26,7 @@ export function RoleDetail({ roleId }: { roleId: Id }) {
   const { t, tk, num, locale } = useLocale()
   const data = useRbacData()
   const { can, security } = usePermissions()
-  const { limitText } = useRbacFormat()
+  const { limitText, keyLabel } = useRbacFormat()
   const [editing, setEditing] = React.useState(false)
 
   const role = data?.roleById.get(roleId)
@@ -70,7 +70,7 @@ export function RoleDetail({ roleId }: { roleId: Id }) {
       {holds || !canEdit ? (
         <p className="flex items-center gap-2 rounded-md bg-surface-raised px-4 py-3 text-sm text-muted-foreground" data-testid="matrix-readonly">
           <Lock className="size-4" />
-          {holds ? t("rbac.common.readOnlyOwn") : t("rbac.common.readOnlyPerm", { permission: "rbac.role.edit" })}
+          {holds ? t("rbac.common.readOnlyOwn") : t("rbac.common.readOnlyPerm", { permission: keyLabel("rbac.role.edit") })}
         </p>
       ) : null}
 
