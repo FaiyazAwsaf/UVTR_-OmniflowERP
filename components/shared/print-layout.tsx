@@ -42,7 +42,11 @@ function printCss(page: string) {
   html, body { background: #fff !important; }
   body * { visibility: hidden !important; }
   [data-print-root], [data-print-root] * { visibility: visible !important; }
-  [data-print-root] { position: fixed !important; left: 0; top: 0; margin: 0 !important; box-shadow: none !important; border-radius: 0 !important; }
+  /* Dialogs and the app frame hold the sheet in fixed, clipped boxes; on paper
+     they become ordinary flow so a long sheet runs onto as many pages as it
+     needs (a fixed element repeats on every page and clips). */
+  *:has([data-print-root]) { position: static !important; transform: none !important; overflow: visible !important; max-height: none !important; height: auto !important; inset: auto !important; }
+  [data-print-root] { position: absolute !important; left: 0; top: 0; margin: 0 !important; box-shadow: none !important; border-radius: 0 !important; }
 }`
 }
 

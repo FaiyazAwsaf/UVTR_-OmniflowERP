@@ -267,5 +267,16 @@ export const rbacEn = {
       count: "{count} permissions",
       empty: "Pick a user to see their permissions.",
     },
+    scenarios: {
+      E13: {
+        title: "Live permission revoke",
+        summary: "An administrator's change reaches the advisor's window at once (RBAC live)",
+        cue1: "Nayeem's window sits beside this one: his quotation editor shows + New customer.",
+        cue2: "In the matrix, open the keys of PAR Create, untick par.customer.create and save: + New customer disappears in Nayeem's window at once.",
+        cue3: "Open Approval limits: set the Service Advisor's discount limit to 0% and save.",
+        cue4: "In Nayeem's quotation any discount now asks for the manager's PIN (1234).",
+        cue5: "Restore both: tick PAR Create again and set the limit back to {limit}%; Nayeem's window follows.",
+      },
+    },
   },
 }

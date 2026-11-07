@@ -222,5 +222,16 @@ export const irtEn = {
       empty: "No runs yet. Run a report from the catalogue.",
       filters: "{count} filters",
     },
+    scenarios: {
+      E16: {
+        title: "Report builder",
+        summary: "Revenue by service category and studio: build, chart, save, export (IRT)",
+        cue1: "New report: dataset Invoice lines; columns Category, Location and Net.",
+        cue2: "Date range: last 30 days; group by Category, then Location; total the Net.",
+        cue3: "Chart: bar. The preview follows every change.",
+        cue4: "Save it as Revenue by service category and studio.",
+        cue5: "Run it and export the CSV; it is in your saved reports and the run history.",
+      },
+    },
   },
 }

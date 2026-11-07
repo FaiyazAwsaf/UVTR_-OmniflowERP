@@ -218,5 +218,15 @@ export const parEn = {
       PARTY_STATUS_SAME: "The party already has that status.",
       REASON_REQUIRED: "A reason is required.",
     },
+    scenarios: {
+      E15: {
+        title: "Concurrent edit",
+        summary: "Two windows edit the same party; the second save gets the conflict dialog",
+        cue1: "Mahbub's pane shows {party} too: click Edit in both panes.",
+        cue2: "Here, as Farzana, set the contact phone to {first} and save.",
+        cue3: "In Mahbub's pane set it to {second} and save.",
+        cue4: "Mahbub gets the conflict dialog: who changed it, when, and the version; reload to see Farzana's number.",
+      },
+    },
   },
 }

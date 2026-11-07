@@ -308,6 +308,8 @@ export const coreEn = {
       approvedBy: "approved by {name}",
       rejectedBy: "rejected by {name}",
       openInbox: "Open the approvals inbox",
+      notices: "Notices",
+      markRead: "Mark all read",
     },
     search: {
       screens: "Apps and screens",
